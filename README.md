@@ -1,4 +1,4 @@
 neurons
 =======
 
-Hello world!
+Neurons is(!) the opiniated web framework based on Spyne.
