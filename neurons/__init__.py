@@ -33,3 +33,7 @@
 __version__ = '0.1'
 
 from neurons import base
+from neurons import log
+
+from spyne import TTableModel
+TableModel = TTableModel()
