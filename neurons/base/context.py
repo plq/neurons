@@ -30,6 +30,52 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-__version__ = '0.1'
+import logging
+logger = logging.getLogger(__name__)
 
-from neurons import base
+from collections import defaultdict
+
+from neurons.base.const import ANON_USERNAME
+from neurons.base.store import DataStore
+
+
+class ReadContext(object):
+    def __init__(self, parent):
+        self.parent = parent
+
+        self.user = ANON_USERNAME
+        self.logged = True
+        self.log_entry = None
+        self.sqla_sessions = defaultdict(list)
+
+    def is_read_only(self):
+        return True
+
+    def sqla_finalize(self, session):
+        logger.warning("This is a read-only context!")
+
+    def get_session(self, store, **kwargs):
+        if store.type == DataStore.SQLALCHEMY:
+            sessions = self.sqla_sessions[id(store)]
+            if len(sessions) == 0:
+                session = store.Session(**kwargs)
+                self.sqla_sessions[id(store)].append(session)
+            else:
+                assert len(kwargs) == 0
+                session = sessions[0]
+
+            return session
+
+        raise NotImplementedError(store)
+
+    def close(self, no_error=True):
+        for sessions in self.sqla_sessions.values():
+            for session in sessions:
+                if no_error:
+                    self.sqla_finalize(session)
+                session.close()
+
+
+class WriteContext(ReadContext):
+    def sqla_finalize(self, session):
+        session.commit()

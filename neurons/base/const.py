@@ -30,6 +30,4 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-__version__ = '0.1'
-
-from neurons import base
+ANON_USERNAME = 'anon'
