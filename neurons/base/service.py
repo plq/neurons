@@ -50,7 +50,7 @@ def TReaderServiceBase(_LogEntry=None):
 
 
 @memoize
-def TReaderServiceBase(_LogEntry=None):
+def TWriterServiceBase(_LogEntry=None):
     class WriterServiceBase(TReaderServiceBase(_LogEntry)):
         @classmethod
         def get_context(cls, ctx):
