@@ -37,3 +37,6 @@ from neurons import log
 
 from spyne import TTableModel
 TableModel = TTableModel()
+
+# FIXME: in case it's not clear, this is the private key for generating cookies.
+secret = '42'
