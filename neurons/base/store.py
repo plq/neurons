@@ -1,5 +1,4 @@
 
-
 class DataStore(object):
     class SQLALCHEMY: pass
 
