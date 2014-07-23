@@ -43,7 +43,10 @@ except OSError:
 ##################
 ### testing stuff
 
-install_reqs = ('spyne',)
+install_reqs = (
+    'spyne', 'msgpack-python', 'pycrypto', 'SQLAlchemy', 'werkzeug', 'lxml',
+    'Twisted')
+
 test_reqs = install_reqs + ('pytest',)
 
 ### testing stuff
