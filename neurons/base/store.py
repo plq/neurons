@@ -31,92 +31,80 @@
 #
 
 
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+from sqlalchemy.engine import create_engine
+
+from twisted.python.threadpool import ThreadPool
+from twisted.internet import reactor
+
+
+class DBThreadPool(ThreadPool):
+    def __init__(self, engine, maxthreads=10, verbose=False):
+        if engine.dialect.name == 'sqlite':
+            ThreadPool.__init__(self, minthreads=1, maxthreads=1)
+        else:
+            ThreadPool.__init__(self, maxthreads=maxthreads)
+
+        self.engine = engine
+        reactor.callWhenRunning(self.start)
+
+    def start(self):
+        reactor.addSystemEventTrigger('during', 'shutdown', self.stop)
+        ThreadPool.start(self)
+
+
 class DataStore(object):
-    class SQLALCHEMY: pass
+    class SQL: pass
 
     def __init__(self, type):
         self.type = type
 
 
 class SqlDataStore(DataStore):
-    def __init__(self, connection_string=None, engine=None, metadata=None, **kwargs):
-        super(SqlDataStore, self).__init__(type=DataStore.SQLALCHEMY)
+    def __init__(self, name, connstr, async=False, **kwargs):
+        super(SqlDataStore, self).__init__(type=DataStore.SQL)
 
-        from sqlalchemy import MetaData
-        from sqlalchemy.orm import sessionmaker
-
-        self.__kwargs = kwargs
-        self.__metadata = None
-        self.__engine = None
-        self.Session = None
-
-        self.metadata = metadata or MetaData()
-        self.engine = engine
-        self.Session = sessionmaker()
-        self.connection_string = connection_string
+        self.name = name
+        self.connstr = connstr
+        self.kwargs = kwargs
 
         self.txpool = None
-        """TxPostgres connection pool.`add_txpool` cagirinca ekleniyor."""
-
         self.deferred_start = None
-        """TxPostgres connection pool'un start()'i cagrilinca donen deferred.
-         baglantilar acilinca cagriliyor."""
+        self.engine = None
+        self.Session = None
+        self.threadpool = None
 
-    def connect(self):
-        return self.__engine.connect()
+        if async:
+            if self.connstr.startswith('postgres://'):
+                self.use_txpostgres()
 
-    @property
-    def meta(self):
-        return self.__metadata
-
-    @property
-    def metadata(self):
-        return self.__metadata
-
-    @metadata.setter
-    def metadata(self, metadata):
-        self.__metadata = metadata
-        if self.__engine is not None:
-            self.__metadata.bind = self.__engine
-
-    @property
-    def engine(self):
-        return self.__engine
-
-    @engine.setter
-    def engine(self, engine):
-        self.__engine = engine
-        if engine is not None:
-            if self.metadata is not None:
-                self.metadata.bind = engine
-            if self.Session is not None:
-                self.Session.configure(bind=engine, expire_on_commit=False)
-
-    @property
-    def kwargs(self):
-        return self.__kwargs
-
-    @property
-    def connection_string(self):
-        return self.__connection_string
-
-    @connection_string.setter
-    def connection_string(self, what):
-        from sqlalchemy.engine import create_engine
-        self.__connection_string = what
-
-        if what is None:
-            self.engine = None
-
+            raise NotImplemented(self.connstr.split('/', 1)[0] + "//") # pfft...
         else:
-            if what.startswith('sqlite://') or what.endswith(":memory:"):
-                from sqlalchemy.pool import StaticPool
+            self.use_sqlalchemy()
 
-                self.__kwargs['poolclass'] = StaticPool
+    def use_txpostgres(self):
+        engine = create_engine(self.connstr, **self.kwargs)
+        dsn = engine.raw_connection().connection.dsn
+        engine.dispose()
 
-                if what.startswith('sqlite'):
-                    self.__kwargs['connect_args'] = {'check_same_thread': False}
-                if 'pool_size' in self.__kwargs:
-                    del self.__kwargs['pool_size']
+        from txpostgres import txpostgres
 
-            self.engine = create_engine(what, **self.__kwargs)
+        self.txpool = txpostgres.ConnectionPool(self.name, dsn)
+        self.deferred_start = self.txpool.start()
+
+        self.engine.close()
+
+    def use_sqlalchemy(self):
+        if self.connstr.startswith('sqlite://') or \
+                                              self.connstr.endswith(":memory:"):
+
+            self.kwargs['poolclass'] = StaticPool
+
+            if self.connstr.startswith('sqlite'):
+                self.kwargs['connect_args'] = {'check_same_thread': False}
+            if 'pool_size' in self.kwargs:
+                del self.kwargs['pool_size']
+
+        self.engine = create_engine(self.connstr, **self.kwargs)
+        self.Session = sessionmaker(bind=self.engine)
