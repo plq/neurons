@@ -1,4 +1,4 @@
-neurons
+Neurons
 =======
 
-Neurons is(!) the opiniated web framework based on Spyne.
+Neurons is an opiniated web framework built on Spyne, Twisted and SqlAlchemy.
