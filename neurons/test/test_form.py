@@ -57,7 +57,7 @@ def _test_type(cls, inst):
 class TestForm(unittest.TestCase):
     def test_unicode(self):
         v = 'foo'
-        elt = _test_type(Unicode, v)
+        elt = _test_type(Unicode, v).xpath('input')[0]
         assert elt.attrib['type'] == 'text'
         assert elt.attrib['name'] == 'string'
         assert elt.attrib['value'] == v
