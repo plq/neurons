@@ -40,6 +40,8 @@ from lxml import etree
 
 
 def _test_type(cls, inst):
+    from spyne.util import appreg; appreg._applications.clear()
+
     class SomeService(ServiceBase):
         @rpc(_returns=cls, _body_style='bare')
         def some_call(ctx):
