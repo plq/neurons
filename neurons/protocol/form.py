@@ -38,7 +38,7 @@ from decimal import Decimal as D
 from lxml import etree, html
 from lxml.builder import E
 
-from spyne import ComplexModelBase, Unicode, Decimal
+from spyne import ComplexModelBase, Unicode, Decimal, Boolean
 from spyne.protocol.html import HtmlBase
 from spyne.util import coroutine, Break, memoize_id, DefaultAttrDict
 from spyne.util.cdict import cdict
@@ -168,6 +168,7 @@ class HtmlForm(HtmlWidget):
         self.serialization_handlers = cdict({
             Unicode: self.unicode_to_parent,
             Decimal: self.decimal_to_parent,
+            Boolean: self.boolean_to_parent,
             ComplexModelBase: self.complex_model_to_parent,
         })
 
@@ -188,6 +189,16 @@ class HtmlForm(HtmlWidget):
             elt.attrib['step'] = str(10**(-int(cls.Attributes.fraction_digits)))
 
         self._apply_number_constraints(cls_attrs, elt)
+        parent.write(elt)
+
+    def boolean_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls_attrs = _get_cls_attrs(self, cls)
+        elt = self._gen_input(cls, inst, name, cls_attrs)
+        elt.attrib.update({'type': 'checkbox', 'value': 'true'})
+
+        if bool(inst):
+            elt.attrib['checked'] = ''
+
         parent.write(elt)
 
     @coroutine

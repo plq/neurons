@@ -38,7 +38,8 @@ import logging
 from decimal import Decimal as D
 
 from neurons.protocol.form import HtmlForm, PasswordWidget
-from spyne import Application, NullServer, Unicode, ServiceBase, rpc, Decimal
+from spyne import Application, NullServer, Unicode, ServiceBase, rpc, Decimal, \
+    Boolean
 from lxml import etree
 
 logging.basicConfig(level=logging.DEBUG)
@@ -81,6 +82,14 @@ class TestForm(unittest.TestCase):
     def test_decimal_step(self):
         elt = _test_type(Decimal(fraction_digits=4), D('0.1')).xpath('input')[0]
         assert elt.attrib['step'] == '0.0001'
+
+    def test_boolean_true(self):
+        elt = _test_type(Boolean, True).xpath('input')[0]
+        assert 'checked' in elt.attrib
+
+    def test_boolean_false(self):
+        elt = _test_type(Boolean, False).xpath('input')[0]
+        assert not ('checked' in elt.attrib)
 
 if __name__ == '__main__':
     unittest.main()
