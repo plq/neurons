@@ -39,7 +39,7 @@ from lxml import etree, html
 from lxml.builder import E
 
 from spyne import ComplexModelBase, Unicode, Decimal, Boolean, Date, Time, \
-    DateTime
+    DateTime, Integer
 from spyne.protocol.html import HtmlBase
 from spyne.util import coroutine, Break, memoize_id, DefaultAttrDict
 from spyne.util.cdict import cdict
@@ -183,6 +183,7 @@ class HtmlForm(HtmlWidget):
         self.serialization_handlers = cdict({
             Date: self.date_to_parent,
             Time: self.time_to_parent,
+            Integer: self.integer_to_parent,
             Unicode: self.unicode_to_parent,
             Decimal: self.decimal_to_parent,
             Boolean: self.boolean_to_parent,
@@ -327,6 +328,14 @@ class HtmlForm(HtmlWidget):
 
         parent.write(elt)
         parent.write(script)
+
+    def integer_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls_attrs = _get_cls_attrs(self, cls)
+        elt = self._gen_input(cls, inst, name, cls_attrs)
+        elt.attrib['type'] = 'number'
+
+        self._apply_number_constraints(cls_attrs, elt)
+        parent.write(elt)
 
     @coroutine
     def subserialize(self, ctx, cls, inst, parent, name=None, **kwargs):

@@ -39,7 +39,7 @@ from decimal import Decimal as D
 
 from neurons.form import HtmlForm, PasswordWidget
 from spyne import Application, NullServer, Unicode, ServiceBase, rpc, Decimal, \
-    Boolean, Date, Time, DateTime
+    Boolean, Date, Time, DateTime, Integer
 from lxml import etree
 
 logging.basicConfig(level=logging.DEBUG)
@@ -106,6 +106,10 @@ class TestForm(unittest.TestCase):
         script = _test_type(DateTime, v).xpath('script/text()')[0]
         assert v.isoformat() in script
         # FIXME: Need to find a better way to test the generated js
+
+    def test_integer(self):
+        elt = _test_type(Integer, 42).xpath('input')[0]
+        assert elt.attrib['value'] == '42'
 
 
 if __name__ == '__main__':
