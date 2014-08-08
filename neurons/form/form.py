@@ -29,7 +29,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-
+from collections import deque
 
 from inspect import isgenerator
 
@@ -38,7 +38,7 @@ from decimal import Decimal as D
 from lxml import etree, html
 from lxml.builder import E
 
-from spyne import ComplexModelBase, Unicode, Decimal, Boolean
+from spyne import ComplexModelBase, Unicode, Decimal, Boolean, Date
 from spyne.protocol.html import HtmlBase
 from spyne.util import coroutine, Break, memoize_id, DefaultAttrDict
 from spyne.util.cdict import cdict
@@ -65,6 +65,7 @@ def camel_case_to_uscore_gen(string):
 
 camel_case_to_uscore = lambda s: ''.join(camel_case_to_uscore_gen(s))
 
+
 @memoize_id
 def _get_cls_attrs(self, cls):
     attr = DefaultAttrDict([(k, getattr(cls.Attributes, k))
@@ -73,6 +74,16 @@ def _get_cls_attrs(self, cls):
         attr.update(cls.Attributes.prot_attrs.get(self.__class__, {}))
         attr.update(cls.Attributes.prot_attrs.get(self, {}))
     return attr
+
+
+def _format_js(lines, **kwargs):
+    for i, line in enumerate(lines):
+        lines[i] = lines[i] % kwargs
+
+    return E.script("""
+$(function(){
+\t%s
+});""" % '\n\t'.join(lines), type="text/javascript")
 
 
 class HtmlWidget(HtmlBase):
@@ -155,10 +166,14 @@ class HtmlWidget(HtmlBase):
                 elt.attrib['max'] = str(cls_attrs.lt)
 
 
+def _jstag(src):
+    return E.script(src=src, type="text/javascript")
+
+
 class HtmlForm(HtmlWidget):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
                        cloth=None, attr_name='spyne_id', root_attr_name='spyne',
-                                             cloth_parser=None, hier_delim='.'):
+                             cloth_parser=None, hier_delim='.', asset_paths={}):
 
         super(HtmlForm, self).__init__(app=app,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
@@ -166,6 +181,7 @@ class HtmlForm(HtmlWidget):
                                                       cloth_parser=cloth_parser)
 
         self.serialization_handlers = cdict({
+            Date: self.date_to_parent,
             Unicode: self.unicode_to_parent,
             Decimal: self.decimal_to_parent,
             Boolean: self.boolean_to_parent,
@@ -173,9 +189,12 @@ class HtmlForm(HtmlWidget):
         })
 
         self.hier_delim = hier_delim
-        self.assets = [
-            E.script(src="/assets/jquery/1.11.1/min.js", type="text/javascript")
-        ]
+
+        self.asset_paths = {
+            ('jquery',): _jstag("/assets/jquery/1.11.1/jquery.min.js"),
+            ('jquery-ui',): _jstag("/assets/jquery-ui/1.11.0/jquery-ui.min.js"),
+        }
+        self.asset_paths.update(asset_paths)
 
     def unicode_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs, elt = self._gen_input_unicode(cls, inst, name)
@@ -204,8 +223,42 @@ class HtmlForm(HtmlWidget):
 
         parent.write(elt)
 
+    def date_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        ctx.protocol.assets.append(('jquery',))
+        ctx.protocol.assets.append(('jquery-ui', 'datepicker'))
+
+        cls_attrs = _get_cls_attrs(self, cls)
+        elt = self._gen_input(cls, inst, name, cls_attrs)
+        elt.attrib['type'] = 'text'
+
+        if cls_attrs.format is None:
+            data_format = 'yy-mm-dd'
+        else:
+            data_format = cls_attrs.format.replace('%Y', 'yy') \
+                                          .replace('%m', 'mm') \
+                                          .replace('%d', 'dd')
+
+        code = [
+            "$('#%(field_name)s').datepicker();",
+            "$('#%(field_name)s').datepicker('option', 'dateFormat', '%(format)s');",
+        ]
+
+        if inst is None:
+            script = _format_js(code, field_name=elt.attrib['id'],
+                                                             format=data_format)
+        else:
+            value = self.to_string(cls, inst)
+            code.append("$('#%(field_name)s').datepicker('setDate', '%(value)s');")
+            script = _format_js(code, field_name=elt.attrib['id'], value=value,
+                                                             format=data_format)
+
+        parent.write(elt)
+        parent.write(script)
+
     @coroutine
     def subserialize(self, ctx, cls, inst, parent, name=None, **kwargs):
+        ctx.protocol.assets = deque()
+
         with parent.element("form"):
             ret = super(HtmlForm, self).subserialize(ctx, cls, inst, parent,
                                                                  name, **kwargs)
