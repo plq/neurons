@@ -33,10 +33,15 @@
 
 
 import unittest
+import logging
+
+from decimal import Decimal as D
 
 from neurons.protocol.form import HtmlForm, PasswordWidget
-from spyne import Application, NullServer, Unicode, ServiceBase, rpc
+from spyne import Application, NullServer, Unicode, ServiceBase, rpc, Decimal
 from lxml import etree
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 def _test_type(cls, inst):
@@ -68,8 +73,14 @@ class TestForm(unittest.TestCase):
         elt = _test_type(Unicode(prot=PasswordWidget()), None).xpath('input')[0]
         assert elt.attrib['type'] == 'password'
 
+    def test_decimal(self):
+        elt = _test_type(Decimal, D('0.1')).xpath('input')[0]
+        assert elt.attrib['type'] == 'number'
+        assert elt.attrib['step'] == 'any'
+
+    def test_decimal_step(self):
+        elt = _test_type(Decimal(fraction_digits=4), D('0.1')).xpath('input')[0]
+        assert elt.attrib['step'] == '0.0001'
 
 if __name__ == '__main__':
-    import logging
-    logging.basicConfig(level=logging.DEBUG)
     unittest.main()

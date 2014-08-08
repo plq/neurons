@@ -33,10 +33,12 @@
 
 from inspect import isgenerator
 
+from decimal import Decimal as D
+
 from lxml import etree, html
 from lxml.builder import E
 
-from spyne import ComplexModelBase, Unicode
+from spyne import ComplexModelBase, Unicode, Decimal
 from spyne.protocol.html import HtmlBase
 from spyne.util import coroutine, Break, memoize_id, DefaultAttrDict
 from spyne.util.cdict import cdict
@@ -137,6 +139,21 @@ class HtmlWidget(HtmlBase):
 
         return cls_attrs, elt
 
+    @staticmethod
+    def _apply_number_constraints(cls_attrs, elt):
+        if cls_attrs.max_str_len != Decimal.Attributes.max_str_len:
+            elt.attrib['maxlength'] = str(cls_attrs.max_str_len)
+
+        if elt.attrib['type'] == 'range':
+            if cls_attrs.ge != Decimal.Attributes.ge:
+                elt.attrib['min'] = str(cls_attrs.ge)
+            if cls_attrs.gt != Decimal.Attributes.gt:
+                elt.attrib['min'] = str(cls_attrs.gt)
+            if cls_attrs.le != Decimal.Attributes.le:
+                elt.attrib['max'] = str(cls_attrs.le)
+            if cls_attrs.lt != Decimal.Attributes.lt:
+                elt.attrib['max'] = str(cls_attrs.lt)
+
 
 class HtmlForm(HtmlWidget):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
@@ -150,6 +167,7 @@ class HtmlForm(HtmlWidget):
 
         self.serialization_handlers = cdict({
             Unicode: self.unicode_to_parent,
+            Decimal: self.decimal_to_parent,
             ComplexModelBase: self.complex_model_to_parent,
         })
 
@@ -157,6 +175,19 @@ class HtmlForm(HtmlWidget):
 
     def unicode_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs, elt = self._gen_input_unicode(cls, inst, name)
+        parent.write(elt)
+
+    def decimal_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls_attrs = _get_cls_attrs(self, cls)
+        elt = self._gen_input(cls, inst, name, cls_attrs)
+        elt.attrib['type'] = 'number'
+
+        if D(cls.Attributes.fraction_digits).is_infinite():
+            elt.attrib['step'] = 'any'
+        else:
+            elt.attrib['step'] = str(10**(-int(cls.Attributes.fraction_digits)))
+
+        self._apply_number_constraints(cls_attrs, elt)
         parent.write(elt)
 
     @coroutine
