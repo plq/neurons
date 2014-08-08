@@ -47,7 +47,8 @@ install_reqs = (
     'spyne', 'msgpack-python', 'pycrypto', 'SQLAlchemy', 'werkzeug', 'lxml',
     'Twisted')
 
-test_reqs = install_reqs + ('pytest',)
+test_reqs = install_reqs + ('pytest', 'tox')
+
 
 ### testing stuff
 ##################
@@ -83,9 +84,7 @@ setup(
     url='http://spyne.io/neurons',
     license='LGPL-2.1',
     zip_safe=False,
-    install_requires=[
-      'spyne',
-    ],
+    install_requires=install_reqs,
 
     entry_points={
         'console_scripts': [ ],
