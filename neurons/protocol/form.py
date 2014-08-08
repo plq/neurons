@@ -75,11 +75,29 @@ class HtmlForm(HtmlBase):
         ))
 
     @coroutine
+    def subserialize(self, ctx, cls, inst, parent, name=None, **kwargs):
+        with parent.element("form"):
+            ret = super(HtmlForm, self).subserialize(ctx, cls, inst, parent,
+                                                                 name, **kwargs)
+            if isgenerator(ret):
+                try:
+                    while True:
+                        y = (yield)
+                        ret.send(y)
+
+                except Break as b:
+                    try:
+                        ret.throw(b)
+                    except StopIteration:
+                        pass
+
+    @coroutine
     def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         fti = cls.get_flat_type_info(cls)
 
         for k, v in sorted(fti.items(), key=_form_key):
-            ret = self.to_parent(ctx, cls, inst, parent, name, **kwargs)
+            subinst = getattr(inst, k, None)
+            ret = self.to_parent(ctx, v, subinst, parent, name, **kwargs)
             if isgenerator(ret):
                 try:
                     while True:
