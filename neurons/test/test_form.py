@@ -34,7 +34,7 @@
 
 import unittest
 
-from neurons.protocol.form import HtmlForm
+from neurons.protocol.form import HtmlForm, PasswordWidget
 from spyne import Application, NullServer, Unicode, ServiceBase, rpc
 from lxml import etree
 
@@ -63,6 +63,10 @@ class TestForm(unittest.TestCase):
         assert elt.attrib['type'] == 'text'
         assert elt.attrib['name'] == 'string'
         assert elt.attrib['value'] == v
+
+    def test_unicode_password(self):
+        elt = _test_type(Unicode(prot=PasswordWidget()), None).xpath('input')[0]
+        assert elt.attrib['type'] == 'password'
 
 
 if __name__ == '__main__':

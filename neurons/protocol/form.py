@@ -32,11 +32,13 @@
 
 
 from inspect import isgenerator
+
+from lxml import etree, html
 from lxml.builder import E
 
 from spyne import ComplexModelBase, Unicode
 from spyne.protocol.html import HtmlBase
-from spyne.util import coroutine, Break
+from spyne.util import coroutine, Break, memoize_id, DefaultAttrDict
 from spyne.util.cdict import cdict
 
 
@@ -50,7 +52,93 @@ def _form_key(k):
     return retval
 
 
-class HtmlForm(HtmlBase):
+def camel_case_to_uscore_gen(string):
+    for i, s in enumerate(string):
+        if s.isupper():
+            if i > 0:
+                yield "_"
+            yield s.lower()
+        else:
+            yield s
+
+camel_case_to_uscore = lambda s: ''.join(camel_case_to_uscore_gen(s))
+
+@memoize_id
+def _get_cls_attrs(self, cls):
+    attr = DefaultAttrDict([(k, getattr(cls.Attributes, k))
+                    for k in dir(cls.Attributes) if not k.startswith('__')])
+    if cls.Attributes.prot_attrs:
+        attr.update(cls.Attributes.prot_attrs.get(self.__class__, {}))
+        attr.update(cls.Attributes.prot_attrs.get(self, {}))
+    return attr
+
+
+class HtmlWidget(HtmlBase):
+    @staticmethod
+    def selsafe(s):
+        return s.replace('[', '').replace(']','').replace('.', '__')
+
+    def _gen_input_elt_id(self, name):
+        return self.selsafe(name) + '_input'
+
+    def _gen_input_attrs(self, cls, inst, name, cls_attrs):
+        elt_attrs = {
+            'id': self._gen_input_elt_id(name),
+            'name': name,
+            'class': camel_case_to_uscore(cls.get_type_name()),
+            'type': 'text',
+        }
+
+        if getattr(cls_attrs,'pattern', None) is not None:
+            elt_attrs['pattern'] = cls_attrs.pattern
+
+        if not cls_attrs.write:
+            elt_attrs['readonly'] = 'readonly'
+
+        if cls_attrs.read_only:
+            elt_attrs['readonly'] = 'readonly'
+
+        if cls_attrs.hidden:
+            elt_attrs['type'] = 'hidden'
+
+        if not (inst is None and isinstance(inst, type)):
+            val = self.to_string(cls, inst)
+            if val is not None:
+                elt_attrs['value'] = val
+
+        if cls_attrs.min_occurs == 1 and cls_attrs.nullable == False:
+            elt_attrs['required'] = ''
+
+        return elt_attrs
+
+    def _gen_input(self, cls, inst, name, cls_attrs):
+        elt_attrs = self._gen_input_attrs(cls, inst, name, cls_attrs)
+
+        if cls_attrs.min_occurs == 1 and cls_attrs.nullable == False:
+            elt = html.fromstring('<input required>')
+            del elt_attrs['required']
+            elt.attrib.update(elt_attrs)
+
+        else:
+            elt = E.input(**elt_attrs)
+
+        return elt
+
+    def _gen_input_unicode(self, cls, inst, name, **_):
+        cls_attrs = _get_cls_attrs(self, cls)
+
+        elt = self._gen_input(cls, inst, name, cls_attrs)
+        elt.attrib['type'] = 'text'
+
+        if cls_attrs.max_len < Unicode.Attributes.max_len:
+            elt.attrib['maxlength'] = str(int(cls_attrs.max_len))
+        if cls_attrs.min_len > Unicode.Attributes.min_len:
+            elt.attrib['minlength'] = str(int(cls_attrs.min_len))
+
+        return cls_attrs, elt
+
+
+class HtmlForm(HtmlWidget):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
                        cloth=None, attr_name='spyne_id', root_attr_name='spyne',
                                              cloth_parser=None, hier_delim='.'):
@@ -68,11 +156,8 @@ class HtmlForm(HtmlBase):
         self.hier_delim = hier_delim
 
     def unicode_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        parent.write(E.input(
-            value=inst,
-            name=name,
-            type='text',
-        ))
+        cls_attrs, elt = self._gen_input_unicode(cls, inst, name)
+        parent.write(elt)
 
     @coroutine
     def subserialize(self, ctx, cls, inst, parent, name=None, **kwargs):
@@ -109,3 +194,10 @@ class HtmlForm(HtmlBase):
                         ret.throw(b)
                     except StopIteration:
                         pass
+
+
+class PasswordWidget(HtmlWidget):
+    def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls_attrs, elt = self._gen_input_unicode(cls, inst, name)
+        elt.attrib['type'] = 'password'
+        parent.write(elt)
