@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # encoding: utf8
 #
 # This file is part of the Neurons project.
@@ -31,35 +32,34 @@
 #
 
 
-from spyne import ModelBase
-from spyne.protocol.html import HtmlColumnTable
-from spyne.util.cdict import cdict
+import unittest
 
-from neurons.protocol.form import HtmlForm
+from neurons.form import HtmlFormTable
+from spyne import Application, NullServer, ServiceBase, rpc
+from lxml import etree
 
 
-class HtmlFormTable(HtmlColumnTable):
-    def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
-                       cloth=None, attr_name='spyne_id', root_attr_name='spyne',
-                                                             cloth_parser=None):
+def _test_type(cls, inst):
+    class SomeService(ServiceBase):
+        @rpc(_returns=cls, _body_style='bare')
+        def some_call(ctx):
+            return inst
 
-        super(HtmlFormTable, self).__init__(app=app,
-                     ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
-                cloth=cloth, attr_name=attr_name, root_attr_name=root_attr_name,
-                                                      cloth_parser=cloth_parser)
+    app = Application([SomeService], 'some_ns', out_protocol=HtmlFormTable())
 
-        self.serialization_handlers = cdict({
-            ModelBase: self.model_base_to_parent,
-        })
+    null = NullServer(app, ostr=True)
+    elt = etree.fromstring(''.join(null.service.some_call()))
+    print(etree.tostring(elt, pretty_print=True))
 
-        self.prot_form = HtmlForm()
+    return elt
 
-    def model_base_to_parent(self, ctx, cls, inst, parent, name, array_index=None,
-                                                      from_arr=False, **kwargs):
-        if from_arr:
-            with parent.element('tr'):
-                with parent.element('td'):
-                    self.prot_form.to_parent(ctx, cls, inst, parent, name, **kwargs)
 
-        else:
-            self.prot_form.to_parent(ctx, cls, inst, parent, name, **kwargs)
+class TestForm(unittest.TestCase):
+    def _test_complex(self):
+        pass
+
+
+if __name__ == '__main__':
+    import logging
+    logging.basicConfig(level=logging.DEBUG)
+    unittest.main()

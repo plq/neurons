@@ -33,19 +33,27 @@
 
 
 import unittest
+import logging
 
-from neurons.protocol import HtmlFormTable
-from spyne import Application, NullServer, Unicode, ServiceBase, rpc
+from decimal import Decimal as D
+
+from neurons.form import HtmlForm, PasswordWidget
+from spyne import Application, NullServer, Unicode, ServiceBase, rpc, Decimal, \
+    Boolean
 from lxml import etree
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 def _test_type(cls, inst):
+    from spyne.util import appreg; appreg._applications.clear()
+
     class SomeService(ServiceBase):
         @rpc(_returns=cls, _body_style='bare')
         def some_call(ctx):
             return inst
 
-    app = Application([SomeService], 'some_ns', out_protocol=HtmlFormTable())
+    app = Application([SomeService], 'some_ns', out_protocol=HtmlForm())
 
     null = NullServer(app, ostr=True)
     elt = etree.fromstring(''.join(null.service.some_call()))
@@ -55,11 +63,37 @@ def _test_type(cls, inst):
 
 
 class TestForm(unittest.TestCase):
-    def _test_complex(self):
+    def test_unicode(self):
+        v = 'foo'
+        elt = _test_type(Unicode, v).xpath('input')[0]
+        assert elt.attrib['type'] == 'text'
+        assert elt.attrib['name'] == 'string'
+        assert elt.attrib['value'] == v
+
+    def test_unicode_password(self):
+        elt = _test_type(Unicode(prot=PasswordWidget()), None).xpath('input')[0]
+        assert elt.attrib['type'] == 'password'
+
+    def test_decimal(self):
+        elt = _test_type(Decimal, D('0.1')).xpath('input')[0]
+        assert elt.attrib['type'] == 'number'
+        assert elt.attrib['step'] == 'any'
+
+    def test_decimal_step(self):
+        elt = _test_type(Decimal(fraction_digits=4), D('0.1')).xpath('input')[0]
+        assert elt.attrib['step'] == '0.0001'
+
+    def test_boolean_true(self):
+        elt = _test_type(Boolean, True).xpath('input')[0]
+        assert 'checked' in elt.attrib
+
+    def test_boolean_false(self):
+        elt = _test_type(Boolean, False).xpath('input')[0]
+        assert not ('checked' in elt.attrib)
+
+    def test_date(self):
         pass
 
 
 if __name__ == '__main__':
-    import logging
-    logging.basicConfig(level=logging.DEBUG)
     unittest.main()

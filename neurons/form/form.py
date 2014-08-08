@@ -173,6 +173,9 @@ class HtmlForm(HtmlWidget):
         })
 
         self.hier_delim = hier_delim
+        self.assets = [
+            E.script(src="/assets/jquery/1.11.1/min.js", type="text/javascript")
+        ]
 
     def unicode_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs, elt = self._gen_input_unicode(cls, inst, name)
