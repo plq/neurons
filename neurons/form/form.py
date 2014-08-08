@@ -38,7 +38,8 @@ from decimal import Decimal as D
 from lxml import etree, html
 from lxml.builder import E
 
-from spyne import ComplexModelBase, Unicode, Decimal, Boolean, Date, Time
+from spyne import ComplexModelBase, Unicode, Decimal, Boolean, Date, Time, \
+    DateTime
 from spyne.protocol.html import HtmlBase
 from spyne.util import coroutine, Break, memoize_id, DefaultAttrDict
 from spyne.util.cdict import cdict
@@ -185,6 +186,7 @@ class HtmlForm(HtmlWidget):
             Unicode: self.unicode_to_parent,
             Decimal: self.decimal_to_parent,
             Boolean: self.boolean_to_parent,
+            DateTime: self.datetime_to_parent,
             ComplexModelBase: self.complex_model_to_parent,
         })
 
@@ -286,6 +288,42 @@ class HtmlForm(HtmlWidget):
             code.append("$('#%(field_name)s').timepicker('setDate', '%(value)s');")
             script = _format_js(code, field_name=elt.attrib['id'], value=value,
                                                              format=data_format)
+
+        parent.write(elt)
+        parent.write(script)
+
+    def datetime_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        ctx.protocol.assets.extend([('jquery',), ('jquery-ui', 'datepicker'),
+                                                        ('jquery-timepicker',)])
+
+        cls_attrs = _get_cls_attrs(self, cls)
+        elt = self._gen_input(cls, None, name, cls_attrs)
+        elt.attrib['type'] = 'text'
+
+        if cls_attrs.format is None:
+            data_format = 'yy-mm-dd HH:MM:SS'
+
+        else:
+            data_format = cls_attrs.format.replace('%Y', 'yy') \
+                                          .replace('%m', 'mm') \
+                                          .replace('%d', 'dd') \
+                                          .replace('%H', 'HH') \
+                                          .replace('%M', 'MM') \
+                                          .replace('%S', 'SS')
+
+        code = [
+            "$('#%(field_name)s').datetimepicker();",
+            "$('#%(field_name)s').datetimepicker('option', 'DateTimeFormat', '%(format)s');",
+        ]
+
+        if inst is None:
+            script = _format_js(code, field_name=elt.attrib['id'],
+                                                             format=data_format)
+        else:
+            value = self.to_string(cls, inst)
+            code.append("$('#%(field_name)s').datetimepicker('setDate', '%(value)s');")
+            script = _format_js(code, field_name=elt.attrib['id'],
+                                                format=data_format, value=value)
 
         parent.write(elt)
         parent.write(script)

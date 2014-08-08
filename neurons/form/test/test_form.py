@@ -30,7 +30,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-from datetime import date, time
+from datetime import date, time, datetime
 
 import unittest
 import logging
@@ -39,7 +39,7 @@ from decimal import Decimal as D
 
 from neurons.form import HtmlForm, PasswordWidget
 from spyne import Application, NullServer, Unicode, ServiceBase, rpc, Decimal, \
-    Boolean, Date, Time
+    Boolean, Date, Time, DateTime
 from lxml import etree
 
 logging.basicConfig(level=logging.DEBUG)
@@ -100,6 +100,12 @@ class TestForm(unittest.TestCase):
         elt = _test_type(Time, time(10, 9, 8)).xpath('input')[0]
         assert elt.attrib['value'] == '10:09:08'
         # FIXME: Need to find a way to test the generated js
+
+    def test_datetime(self):
+        v = datetime(2013, 12, 11, 10, 9, 8)
+        script = _test_type(DateTime, v).xpath('script/text()')[0]
+        assert v.isoformat() in script
+        # FIXME: Need to find a better way to test the generated js
 
 
 if __name__ == '__main__':
