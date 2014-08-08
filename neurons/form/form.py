@@ -39,7 +39,7 @@ from lxml import etree, html
 from lxml.builder import E
 
 from spyne import ComplexModelBase, Unicode, Decimal, Boolean, Date, Time, \
-    DateTime, Integer
+    DateTime, Integer, Duration
 from spyne.protocol.html import HtmlBase
 from spyne.util import coroutine, Break, memoize_id, DefaultAttrDict
 from spyne.util.cdict import cdict
@@ -187,6 +187,7 @@ class HtmlForm(HtmlWidget):
             Unicode: self.unicode_to_parent,
             Decimal: self.decimal_to_parent,
             Boolean: self.boolean_to_parent,
+            Duration: self.duration_to_parent,
             DateTime: self.datetime_to_parent,
             ComplexModelBase: self.complex_model_to_parent,
         })
@@ -335,6 +336,13 @@ class HtmlForm(HtmlWidget):
         elt.attrib['type'] = 'number'
 
         self._apply_number_constraints(cls_attrs, elt)
+        parent.write(elt)
+
+    # TODO: finish this
+    def duration_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls_attrs = _get_cls_attrs(self, cls)
+        elt = self._gen_input(cls, inst, name, cls_attrs)
+
         parent.write(elt)
 
     @coroutine
