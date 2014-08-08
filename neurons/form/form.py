@@ -103,17 +103,8 @@ class HtmlWidget(HtmlBase):
             'type': 'text',
         }
 
-        if getattr(cls_attrs,'pattern', None) is not None:
+        if getattr(cls_attrs, 'pattern', None) is not None:
             elt_attrs['pattern'] = cls_attrs.pattern
-
-        if not cls_attrs.write:
-            elt_attrs['readonly'] = 'readonly'
-
-        if cls_attrs.read_only:
-            elt_attrs['readonly'] = 'readonly'
-
-        if cls_attrs.hidden:
-            elt_attrs['type'] = 'hidden'
 
         if not (inst is None and isinstance(inst, type)):
             val = self.to_string(cls, inst)
