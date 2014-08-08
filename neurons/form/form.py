@@ -370,7 +370,7 @@ class HtmlForm(HtmlWidget):
 
         for k, v in sorted(fti.items(), key=_form_key):
             subinst = getattr(inst, k, None)
-            ret = self.to_parent(ctx, v, subinst, parent, name, **kwargs)
+            ret = self.to_parent(ctx, v, subinst, parent, k, **kwargs)
             if isgenerator(ret):
                 try:
                     while True:

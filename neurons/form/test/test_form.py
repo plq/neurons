@@ -30,16 +30,18 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-from datetime import date, time, datetime
+
+from __future__ import absolute_import, print_function
 
 import unittest
 import logging
 
 from decimal import Decimal as D
+from datetime import date, time, datetime
 
 from neurons.form import HtmlForm, PasswordWidget
 from spyne import Application, NullServer, Unicode, ServiceBase, rpc, Decimal, \
-    Boolean, Date, Time, DateTime, Integer
+    Boolean, Date, Time, DateTime, Integer, ComplexModel
 from lxml import etree
 
 logging.basicConfig(level=logging.DEBUG)
@@ -62,7 +64,7 @@ def _test_type(cls, inst):
     return elt
 
 
-class TestForm(unittest.TestCase):
+class TestFormPrimitive(unittest.TestCase):
     def test_unicode(self):
         v = 'foo'
         elt = _test_type(Unicode, v).xpath('input')[0]
@@ -110,6 +112,20 @@ class TestForm(unittest.TestCase):
     def test_integer(self):
         elt = _test_type(Integer, 42).xpath('input')[0]
         assert elt.attrib['value'] == '42'
+
+
+class TestFormComplex(unittest.TestCase):
+    def test_simple(self):
+        class SomeObject(ComplexModel):
+            _type_info = [
+                ('i', Integer),
+                ('s', Unicode),
+            ]
+
+        v = SomeObject(i=42, s="Arthur")
+        elt = _test_type(SomeObject, v)
+        assert elt.xpath('input/@value') == ['42', 'Arthur']
+        assert elt.xpath('input/@name') == ['i', 's']
 
 
 if __name__ == '__main__':
