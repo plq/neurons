@@ -31,8 +31,11 @@
 #
 
 
+from spyne import ModelBase
 from spyne.protocol.html import HtmlColumnTable
 from spyne.util.cdict import cdict
+
+from neurons.protocol.form import HtmlForm
 
 
 class HtmlFormTable(HtmlColumnTable):
@@ -46,6 +49,17 @@ class HtmlFormTable(HtmlColumnTable):
                                                       cloth_parser=cloth_parser)
 
         self.serialization_handlers = cdict({
-        #    ModelBase: self.model_base_to_parent,
+            ModelBase: self.model_base_to_parent,
         })
 
+        self.prot_form = HtmlForm()
+
+    def model_base_to_parent(self, ctx, cls, inst, parent, name, array_index=None,
+                                                      from_arr=False, **kwargs):
+        if from_arr:
+            with parent.element('tr'):
+                with parent.element('td'):
+                    self.prot_form.to_parent(ctx, cls, inst, parent, name, **kwargs)
+
+        else:
+            self.prot_form.to_parent(ctx, cls, inst, parent, name, **kwargs)
