@@ -38,7 +38,7 @@ from decimal import Decimal as D
 from lxml import etree, html
 from lxml.builder import E
 
-from spyne import ComplexModelBase, Unicode, Decimal, Boolean, Date
+from spyne import ComplexModelBase, Unicode, Decimal, Boolean, Date, Time
 from spyne.protocol.html import HtmlBase
 from spyne.util import coroutine, Break, memoize_id, DefaultAttrDict
 from spyne.util.cdict import cdict
@@ -166,9 +166,8 @@ class HtmlWidget(HtmlBase):
                 elt.attrib['max'] = str(cls_attrs.lt)
 
 
-def _jstag(src):
-    return E.script(src=src, type="text/javascript")
-
+_jstag = lambda src: E.script(src=src, type="text/javascript")
+_csstag = lambda src: E.link(href=src, type="text/css", rel="stylesheet")
 
 class HtmlForm(HtmlWidget):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
@@ -182,6 +181,7 @@ class HtmlForm(HtmlWidget):
 
         self.serialization_handlers = cdict({
             Date: self.date_to_parent,
+            Time: self.time_to_parent,
             Unicode: self.unicode_to_parent,
             Decimal: self.decimal_to_parent,
             Boolean: self.boolean_to_parent,
@@ -191,8 +191,12 @@ class HtmlForm(HtmlWidget):
         self.hier_delim = hier_delim
 
         self.asset_paths = {
-            ('jquery',): _jstag("/assets/jquery/1.11.1/jquery.min.js"),
-            ('jquery-ui',): _jstag("/assets/jquery-ui/1.11.0/jquery-ui.min.js"),
+            ('jquery',): [_jstag("/assets/jquery/1.11.1/jquery.min.js")],
+            ('jquery-ui',): [_jstag("/assets/jquery-ui/1.11.0/jquery-ui.min.js")],
+            ('jquery-timepicker',): [
+                _jstag("/assets/jquery-timepicker/jquery-ui-timepicker-addon.js"),
+                _csstag("/assets/jquery-timepicker/jquery-ui-timepicker-addon.css"),
+            ],
         }
         self.asset_paths.update(asset_paths)
 
@@ -224,8 +228,7 @@ class HtmlForm(HtmlWidget):
         parent.write(elt)
 
     def date_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        ctx.protocol.assets.append(('jquery',))
-        ctx.protocol.assets.append(('jquery-ui', 'datepicker'))
+        ctx.protocol.assets.extend([('jquery',), ('jquery-ui', 'datepicker')])
 
         cls_attrs = _get_cls_attrs(self, cls)
         elt = self._gen_input(cls, inst, name, cls_attrs)
@@ -249,6 +252,38 @@ class HtmlForm(HtmlWidget):
         else:
             value = self.to_string(cls, inst)
             code.append("$('#%(field_name)s').datepicker('setDate', '%(value)s');")
+            script = _format_js(code, field_name=elt.attrib['id'], value=value,
+                                                             format=data_format)
+
+        parent.write(elt)
+        parent.write(script)
+
+    def time_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        ctx.protocol.assets.extend([('jquery',), ('jquery-ui', 'datepicker'),
+                                                        ('jquery-timepicker',)])
+
+        cls_attrs = _get_cls_attrs(self, cls)
+        elt = self._gen_input(cls, inst, name, cls_attrs)
+        elt.attrib['type'] = 'text'
+
+        if cls_attrs.format is None:
+            data_format = 'HH:MM:SS'
+        else:
+            data_format = cls_attrs.format.replace('%H', 'HH') \
+                                          .replace('%M', 'MM') \
+                                          .replace('%S', 'SS')
+
+        code = [
+            "$('#%(field_name)s').timepicker();",
+            "$('#%(field_name)s').timepicker('option', 'timeFormat', '%(format)s');",
+        ]
+
+        if inst is None:
+            script = _format_js(code, field_name=elt.attrib['id'],
+                                                             format=data_format)
+        else:
+            value = self.to_string(cls, inst)
+            code.append("$('#%(field_name)s').timepicker('setDate', '%(value)s');")
             script = _format_js(code, field_name=elt.attrib['id'], value=value,
                                                              format=data_format)
 
