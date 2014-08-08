@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # encoding: utf8
 #
 # This file is part of the Neurons project.
@@ -30,13 +31,39 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-__version__ = '0.1'
 
-from spyne import TTableModel
-TableModel = TTableModel()
+import unittest
 
-from neurons import base
-from neurons import log
+from neurons.protocol.form import HtmlForm
+from spyne import Application, NullServer, Unicode, ServiceBase, rpc
+from lxml import etree
 
-# FIXME: in case it's not clear, this is the private key for generating cookies.
-secret = '42'
+
+def _test_type(cls, inst):
+    class SomeService(ServiceBase):
+        @rpc(_returns=cls, _body_style='bare')
+        def some_call(ctx):
+            return inst
+
+    app = Application([SomeService], 'some_ns', out_protocol=HtmlForm())
+
+    null = NullServer(app, ostr=True)
+    elt = etree.fromstring(''.join(null.service.some_call()))
+    print(etree.tostring(elt, pretty_print=True))
+
+    return elt
+
+
+class TestForm(unittest.TestCase):
+    def test_unicode(self):
+        v = 'foo'
+        elt = _test_type(Unicode, v)
+        assert elt.attrib['type'] == 'text'
+        assert elt.attrib['name'] == 'string'
+        assert elt.attrib['value'] == v
+
+
+if __name__ == '__main__':
+    import logging
+    logging.basicConfig(level=logging.DEBUG)
+    unittest.main()

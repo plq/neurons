@@ -30,13 +30,22 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-__version__ = '0.1'
 
-from spyne import TTableModel
-TableModel = TTableModel()
+from spyne.protocol.html import HtmlColumnTable
+from spyne.util.cdict import cdict
 
-from neurons import base
-from neurons import log
 
-# FIXME: in case it's not clear, this is the private key for generating cookies.
-secret = '42'
+class HtmlFormTable(HtmlColumnTable):
+    def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
+                       cloth=None, attr_name='spyne_id', root_attr_name='spyne',
+                                                             cloth_parser=None):
+
+        super(HtmlFormTable, self).__init__(app=app,
+                     ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
+                cloth=cloth, attr_name=attr_name, root_attr_name=root_attr_name,
+                                                      cloth_parser=cloth_parser)
+
+        self.serialization_handlers = cdict({
+        #    ModelBase: self.model_base_to_parent,
+        })
+
