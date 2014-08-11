@@ -29,10 +29,10 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-from collections import deque
 
+
+from collections import deque, namedtuple
 from inspect import isgenerator
-
 from decimal import Decimal as D
 
 from lxml import etree, html
@@ -45,14 +45,17 @@ from spyne.util import coroutine, Break, memoize_id, DefaultAttrDict
 from spyne.util.cdict import cdict
 
 
-def _form_key(k):
-    key, cls = k
-    retval = getattr(cls.Attributes, 'order', None)
+class Fieldset(namedtuple('Fieldset', ['legend', 'tag', 'attrib'])):
+    def __new__(cls, legend =None, tag='fieldset', attrib={}):
+        return super(Fieldset, cls).__new__(cls, legend, tag, attrib)
 
-    if retval is None:
-        retval = key
 
-    return retval
+def _Tform_key(prot):
+    def _form_key(sort_key):
+        k,v = sort_key
+        attrs = _get_cls_attrs(prot, v)
+        return attrs.tab, attrs.fieldset, attrs.order, k
+    return _form_key
 
 
 def camel_case_to_uscore_gen(string):
@@ -68,12 +71,12 @@ camel_case_to_uscore = lambda s: ''.join(camel_case_to_uscore_gen(s))
 
 
 @memoize_id
-def _get_cls_attrs(self, cls):
+def _get_cls_attrs(prot, cls):
     attr = DefaultAttrDict([(k, getattr(cls.Attributes, k))
                     for k in dir(cls.Attributes) if not k.startswith('__')])
     if cls.Attributes.prot_attrs:
-        attr.update(cls.Attributes.prot_attrs.get(self.__class__, {}))
-        attr.update(cls.Attributes.prot_attrs.get(self, {}))
+        attr.update(cls.Attributes.prot_attrs.get(prot.__class__, {}))
+        attr.update(cls.Attributes.prot_attrs.get(prot, {}))
     return attr
 
 
@@ -359,9 +362,23 @@ class HtmlForm(HtmlWidget):
     @coroutine
     def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         fti = cls.get_flat_type_info(cls)
+        prev_fset = fset_ctx = None
 
-        for k, v in sorted(fti.items(), key=_form_key):
+        for k, v in sorted(fti.items(), key=_Tform_key(self)):
+            subattr = _get_cls_attrs(self, v)
             subinst = getattr(inst, k, None)
+
+            fset = subattr.fieldset
+            if not (fset is prev_fset):
+                if fset_ctx is not None:
+                    fset_ctx.__exit__(None, None, None)
+
+                fset_ctx = parent.element(fset.tag, fset.attrib)
+                fset_ctx.__enter__()
+
+                parent.write(E.legend(self.trd(fset.legend, ctx.locale, k)))
+                prev_fset = fset
+
             ret = self.to_parent(ctx, v, subinst, parent, k, **kwargs)
             if isgenerator(ret):
                 try:
@@ -374,6 +391,9 @@ class HtmlForm(HtmlWidget):
                         ret.throw(b)
                     except StopIteration:
                         pass
+
+        if fset_ctx is not None:
+            fset_ctx.__exit__(None, None, None)
 
 
 class PasswordWidget(HtmlWidget):

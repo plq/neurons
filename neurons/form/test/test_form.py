@@ -40,6 +40,7 @@ from decimal import Decimal as D
 from datetime import date, time, datetime
 
 from neurons.form import HtmlForm, PasswordWidget
+from neurons.form.form import Fieldset
 from spyne import Application, NullServer, Unicode, ServiceBase, rpc, Decimal, \
     Boolean, Date, Time, DateTime, Integer, ComplexModel
 from lxml import etree
@@ -130,6 +131,31 @@ class TestFormComplex(unittest.TestCase):
         elt = _test_type(SomeObject, v)
         assert elt.xpath('input/@value') == ['42', 'Arthur']
         assert elt.xpath('input/@name') == ['i', 's']
+
+    def test_fieldset(self):
+        fset_one = Fieldset("One")
+        fset_two = Fieldset("Two")
+        class SomeObject(ComplexModel):
+            _type_info = [
+                ('i0', Integer),
+                ('s0', Unicode),
+                ('i1', Integer(fieldset=fset_one)),
+                ('s1', Unicode(fieldset=fset_one)),
+                ('i2', Integer(fieldset=fset_two)),
+                ('s2', Unicode(fieldset=fset_two)),
+            ]
+
+        v = SomeObject(
+            i0=42, s0="Arthur",
+            i1=42, s1="Arthur",
+            i2=42, s2="Arthur",
+        )
+        elt = _test_type(SomeObject, v)
+        assert elt.xpath('input/@value') == ['42', 'Arthur']
+        assert elt.xpath('input/@name') == ['i0', 's0']
+        assert elt.xpath('fieldset/input/@value') == ['42', 'Arthur',
+                                                      '42', 'Arthur',]
+        assert elt.xpath('fieldset/input/@name') == ['i1', 's1', 'i2', 's2']
 
 
 if __name__ == '__main__':
