@@ -113,6 +113,10 @@ class TestFormPrimitive(unittest.TestCase):
         elt = _test_type(Integer, 42).xpath('input')[0]
         assert elt.attrib['value'] == '42'
 
+    def test_integer_none(self):
+        elt = _test_type(Integer, None).xpath('input')[0]
+        assert not 'value' in elt.attrib
+
 
 class TestFormComplex(unittest.TestCase):
     def test_simple(self):

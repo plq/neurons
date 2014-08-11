@@ -194,6 +194,7 @@ class HtmlForm(HtmlWidget):
             ],
         }
         self.asset_paths.update(asset_paths)
+        self.use_global_null_handler = False
 
     def unicode_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs, elt = self._gen_input_unicode(cls, inst, name)
