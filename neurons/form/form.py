@@ -115,10 +115,11 @@ class HtmlWidget(HtmlBase):
             elt_attrs['pattern'] = cls_attrs.pattern
 
         if not (inst is None and isinstance(inst, type)):
-            val = self.to_string(cls, inst)
+            val = self.to_unicode(cls, inst)
             if val is not None:
                 elt_attrs['value'] = val
 
+        # FIXME: handle min_occurs > 1
         if cls_attrs.min_occurs == 1 and cls_attrs.nullable == False:
             elt_attrs['required'] = ''
 
