@@ -46,8 +46,13 @@ from spyne.util.cdict import cdict
 
 
 class Fieldset(namedtuple('Fieldset', ['legend', 'tag', 'attrib'])):
-    def __new__(cls, legend =None, tag='fieldset', attrib={}):
+    def __new__(cls, legend=None, tag='fieldset', attrib={}):
         return super(Fieldset, cls).__new__(cls, legend, tag, attrib)
+
+
+class Tab(namedtuple('Tab', ['legend', 'tag', 'attrib'])):
+    def __new__(cls, legend=None, tag='div', attrib={}):
+        return super(Tab, cls).__new__(cls, legend, tag, attrib)
 
 
 def _Tform_key(prot):
@@ -363,10 +368,26 @@ class HtmlForm(HtmlWidget):
     def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         fti = cls.get_flat_type_info(cls)
         prev_fset = fset_ctx = None
+        prev_tab = tab_ctx = None
 
         for k, v in sorted(fti.items(), key=_Tform_key(self)):
             subattr = _get_cls_attrs(self, v)
             subinst = getattr(inst, k, None)
+
+            tab = subattr.fieldset
+            if not (tab is prev_tab):
+                prev_fset = None
+                if fset_ctx is not None:
+                    fset_ctx.__exit__(None, None, None)
+
+                if tab_ctx is not None:
+                    tab_ctx.__exit__(None, None, None)
+
+                tab_ctx = parent.element(tab.tag, tab.attrib)
+                tab_ctx.__enter__()
+
+                #parent.write(E.legend(self.trd(tab.legend, ctx.locale, k)))
+                prev_tab = tab
 
             fset = subattr.fieldset
             if not (fset is prev_fset):
@@ -394,6 +415,9 @@ class HtmlForm(HtmlWidget):
 
         if fset_ctx is not None:
             fset_ctx.__exit__(None, None, None)
+
+        if tab_ctx is not None:
+            tab_ctx.__exit__(None, None, None)
 
 
 class PasswordWidget(HtmlWidget):
