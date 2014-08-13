@@ -50,6 +50,35 @@ from spyne.util.test import show
 logging.basicConfig(level=logging.DEBUG)
 
 
+def _strip_ns(par):
+    par.tag = par.tag.split('}', 1)[-1]
+    if len(par.nsmap) > 0:
+        par2 = etree.Element(par.tag, par.attrib)
+        par2.text = par.text
+        par2.tail = par.tail
+        par2.extend(par.getchildren())
+
+        par.getparent().insert(par.getparent().index(par), par2)
+        par.getparent().remove(par)
+        par = par2
+
+    for elt in par:
+        elt.tag = elt.tag.split('}', 1)[-1]
+        if len(elt.nsmap) > 0:
+            elt2 = etree.Element(elt.tag, elt.attrib)
+            elt2.text = elt.text
+            elt2.tail = elt.tail
+            elt2.extend(elt.getchildren())
+
+            elt.getparent().insert(elt.getparent().index(elt), elt2)
+            elt.getparent().remove(elt)
+            elt = elt2
+
+        _strip_ns(elt)
+
+    return par
+
+
 def _test_type(cls, inst):
     from spyne.util import appreg; appreg._applications.clear()
 
@@ -59,6 +88,29 @@ def _test_type(cls, inst):
             return inst
 
     prot = HtmlForm(cloth=T_TEST)
+    app = Application([SomeService], 'some_ns', out_protocol=prot)
+
+    null = NullServer(app, ostr=True)
+
+    elt = etree.fromstring(''.join(null.service.some_call()))
+    show(elt, stdout=False)
+    elt = elt.xpath('//*[@spyne]')[0][0] # get the form tag inside the body tag.
+    elt = _strip_ns(elt) # get rid of namespaces to simplify xpaths in tests
+
+    print(etree.tostring(elt, pretty_print=True))
+
+    return elt
+
+
+def _test_type_no_root_cloth(cls, inst):
+    from spyne.util import appreg; appreg._applications.clear()
+
+    class SomeService(ServiceBase):
+        @rpc(_returns=cls, _body_style='bare')
+        def some_call(ctx):
+            return inst
+
+    prot = HtmlForm()
     app = Application([SomeService], 'some_ns', out_protocol=prot)
 
     null = NullServer(app, ostr=True)

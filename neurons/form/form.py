@@ -206,6 +206,20 @@ class HtmlForm(HtmlWidget):
         self.asset_paths.update(asset_paths)
         self.use_global_null_handler = False
 
+    def _init_cloth(self, *args, **kwargs):
+        super(HtmlForm, self)._init_cloth(*args, **kwargs)
+        form = E.form()
+        if self._root_cloth is None:
+            self._cloth = self._root_cloth = form
+        else:
+            self._root_cloth.append(form)
+            self._root_cloth = form
+
+    def subserialize(self, ctx, cls, inst, parent, name=None, **kwargs):
+        ctx.protocol.assets = []
+        return super(HtmlForm, self).subserialize(ctx, cls, inst, parent,
+                                                                 name, **kwargs)
+
     def unicode_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs, elt = self._gen_input_unicode(cls, inst, name)
         parent.write(elt)
@@ -350,25 +364,6 @@ class HtmlForm(HtmlWidget):
     def array_type_to_parent(self, ctx, cls, inst, parent, name=None, **kwargs):
         v = iter(cls._type_info.values()).next()
         return self.to_parent(ctx, v, inst, parent, name, **kwargs)
-
-    @coroutine
-    def subserialize(self, ctx, cls, inst, parent, name=None, **kwargs):
-        ctx.protocol.assets = deque()
-
-        with parent.element("form"):
-            ret = super(HtmlForm, self).subserialize(ctx, cls, inst, parent,
-                                                                 name, **kwargs)
-            if isgenerator(ret):
-                try:
-                    while True:
-                        y = (yield)
-                        ret.send(y)
-
-                except Break as b:
-                    try:
-                        ret.throw(b)
-                    except StopIteration:
-                        pass
 
     @coroutine
     def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
