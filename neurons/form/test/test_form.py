@@ -40,6 +40,7 @@ from decimal import Decimal as D
 from datetime import date, time, datetime
 
 from neurons.form import HtmlForm, PasswordWidget
+from neurons.form.const import T_TEST
 from neurons.form.form import Fieldset
 from spyne import Application, NullServer, Unicode, ServiceBase, rpc, Decimal, \
     Boolean, Date, Time, DateTime, Integer, ComplexModel, Array
@@ -57,7 +58,8 @@ def _test_type(cls, inst):
         def some_call(ctx):
             return inst
 
-    app = Application([SomeService], 'some_ns', out_protocol=HtmlForm())
+    prot = HtmlForm(cloth=T_TEST)
+    app = Application([SomeService], 'some_ns', out_protocol=prot)
 
     null = NullServer(app, ostr=True)
     elt = etree.fromstring(''.join(null.service.some_call()))

@@ -105,6 +105,10 @@ setup(
         'console_scripts': [ ],
     },
 
+    package_data = {
+        'neurons.form.const': ['*.xhtml'],
+    },
+
     tests_require=test_reqs,
     cmdclass = {'test': Tox},
 )

@@ -54,3 +54,6 @@ docs/_build/
 
 # Ignore downloaded assets
 /assets/jquery-*
+
+# test output
+/html
