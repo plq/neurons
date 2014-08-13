@@ -375,11 +375,12 @@ class HtmlForm(HtmlWidget):
             subattr = _get_cls_attrs(self, v)
             subinst = getattr(inst, k, None)
 
-            tab = subattr.fieldset
+            tab = subattr.tab
             if not (tab is prev_tab):
-                prev_fset = None
                 if fset_ctx is not None:
                     fset_ctx.__exit__(None, None, None)
+
+                fset_ctx = prev_fset = None
 
                 if tab_ctx is not None:
                     tab_ctx.__exit__(None, None, None)
