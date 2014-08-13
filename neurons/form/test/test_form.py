@@ -42,7 +42,7 @@ from datetime import date, time, datetime
 from neurons.form import HtmlForm, PasswordWidget
 from neurons.form.form import Fieldset
 from spyne import Application, NullServer, Unicode, ServiceBase, rpc, Decimal, \
-    Boolean, Date, Time, DateTime, Integer, ComplexModel
+    Boolean, Date, Time, DateTime, Integer, ComplexModel, Array
 from lxml import etree
 
 logging.basicConfig(level=logging.DEBUG)
@@ -156,6 +156,16 @@ class TestFormComplex(unittest.TestCase):
         assert elt.xpath('fieldset/input/@value') == ['42', 'Arthur',
                                                       '42', 'Arthur',]
         assert elt.xpath('fieldset/input/@name') == ['i1', 's1', 'i2', 's2']
+
+    def test_simple_array(self):
+        class SomeObject(ComplexModel):
+            _type_info = [
+                ('ints', Array(Integer)),
+            ]
+
+        v = SomeObject(ints=range(5))
+        elt = _test_type(SomeObject, v)
+        assert False
 
 
 if __name__ == '__main__':
