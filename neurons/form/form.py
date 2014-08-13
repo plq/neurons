@@ -512,7 +512,7 @@ $(function() {
     }
 
     var del = function(event) {
-        if($('#%(field_name)s_container').children().length >1){
+        if($('#%(field_name)s_container').find('.%(field_name)s').length >1){
             $(this).parent().remove();
         }
         else{
