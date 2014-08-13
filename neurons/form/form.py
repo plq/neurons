@@ -30,6 +30,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+from __future__ import print_function
 
 from collections import deque, namedtuple
 from inspect import isgenerator
@@ -379,11 +380,15 @@ class HtmlForm(HtmlWidget):
             if not (tab is prev_tab):
                 if fset_ctx is not None:
                     fset_ctx.__exit__(None, None, None)
+                    print("exiting fset tab ", prev_fset)
 
                 fset_ctx = prev_fset = None
 
                 if tab_ctx is not None:
                     tab_ctx.__exit__(None, None, None)
+                    print("exiting tab", prev_tab)
+
+                print("entering tab", tab)
 
                 tab_ctx = parent.element(tab.tag, tab.attrib)
                 tab_ctx.__enter__()
@@ -395,13 +400,16 @@ class HtmlForm(HtmlWidget):
             if not (fset is prev_fset):
                 if fset_ctx is not None:
                     fset_ctx.__exit__(None, None, None)
+                    print("exiting fset norm", prev_fset)
 
+                print("entering fset", fset)
                 fset_ctx = parent.element(fset.tag, fset.attrib)
                 fset_ctx.__enter__()
 
                 parent.write(E.legend(self.trd(fset.legend, ctx.locale, k)))
                 prev_fset = fset
 
+            print("to_parent", v, subinst, E.duduk().nsmap)
             ret = self.to_parent(ctx, v, subinst, parent, k, **kwargs)
             if isgenerator(ret):
                 try:
@@ -417,9 +425,11 @@ class HtmlForm(HtmlWidget):
 
         if fset_ctx is not None:
             fset_ctx.__exit__(None, None, None)
+            print("exiting fset close", fset)
 
         if tab_ctx is not None:
             tab_ctx.__exit__(None, None, None)
+            print("exiting tab close", fset)
 
     @coroutine
     def array_to_parent(self, ctx, cls, inst, parent, name, parent_inst=None,
