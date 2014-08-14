@@ -187,6 +187,26 @@ class TestFormComplex(unittest.TestCase):
         assert elt.xpath('input/@value') == ['42', 'Arthur']
         assert elt.xpath('input/@name') == ['i', 's']
 
+    def test_nested(self):
+        class InnerObject(ComplexModel):
+            _type_info = [
+                ('s', Unicode),
+            ]
+        class OuterObject(ComplexModel):
+            _type_info = [
+                ('i', InnerObject),
+                ('d', Double),
+            ]
+
+        v = OuterObject(i=InnerObject(s="Arthur"), d=3.1415)
+        elt = _test_type(OuterObject, v)
+
+        # it's a bit risky doing this with doubles
+        assert elt[0].xpath('input/@value') == ['3.1415']
+        assert elt[0].xpath('input/@name') == ['d']
+        assert elt[0].xpath('fieldset/input/@value') == ['Arthur']
+        assert elt[0].xpath('fieldset/input/@name') == ['i.s']
+
     def test_fieldset(self):
         fset_one = Fieldset("One")
         fset_two = Fieldset("Two")

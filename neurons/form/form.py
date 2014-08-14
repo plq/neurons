@@ -415,6 +415,10 @@ class HtmlForm(HtmlWidget):
         prev_fset = fset_ctx = None
         prev_tab = tab_ctx = None
 
+        # FIXME: hack! why do we have top-level object receiving name?
+        if name == cls.get_type_name():
+            name = ''
+
         with parent.element('fieldset'):
             parent.write(E.legend(cls.get_type_name()))
             for k, v in sorted(fti.items(), key=_Tform_key(self)):
@@ -457,7 +461,12 @@ class HtmlForm(HtmlWidget):
                     parent.write(E.legend(self.trd(fset.legend, ctx.locale, k)))
                     prev_fset = fset
 
-                ret = self.to_parent(ctx, v, subinst, parent, k, **kwargs)
+                if name is not None and len(name) > 0:
+                    child_key = self.hier_delim.join((name, k))
+                else:
+                    child_key = k
+
+                ret = self.to_parent(ctx, v, subinst, parent, child_key, **kwargs)
                 if isgenerator(ret):
                     try:
                         while True:
