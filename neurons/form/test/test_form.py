@@ -38,6 +38,7 @@ import logging
 
 from decimal import Decimal as D
 from datetime import date, time, datetime
+import re
 
 from neurons.form import HtmlForm, PasswordWidget, Tab
 from neurons.form.const import T_TEST
@@ -269,7 +270,10 @@ class TestFormComplex(unittest.TestCase):
 
         v = SomeObject(ints=range(5))
         elt = _test_type(SomeObject, v)
-        assert False
+        assert elt[0].xpath('div/div/input/@value') == ['0', '1', '2', '3', '4']
+        assert elt[0].xpath('div/div/button/text()') == ['+', '-'] * 5
+        for i, name in enumerate(elt[0].xpath('div/div/input/@name')):
+            assert re.match(r'ints\[0*%d\]' % i, name)
 
 
 if __name__ == '__main__':
