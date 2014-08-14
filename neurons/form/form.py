@@ -171,15 +171,17 @@ class HtmlWidget(HtmlBase):
 _jstag = lambda src: E.script(src=src, type="text/javascript")
 _csstag = lambda src: E.link(href=src, type="text/css", rel="stylesheet")
 
+
 class HtmlForm(HtmlWidget):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
                        cloth=None, attr_name='spyne_id', root_attr_name='spyne',
-                             cloth_parser=None, hier_delim='.', asset_paths={}):
+                           cloth_parser=None,  polymorphic=True, hier_delim='.',
+                                                                asset_paths={}):
 
         super(HtmlForm, self).__init__(app=app,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
                 cloth=cloth, attr_name=attr_name, root_attr_name=root_attr_name,
-                                                      cloth_parser=cloth_parser)
+                             cloth_parser=cloth_parser, polymorphic=polymorphic)
 
         self.serialization_handlers = cdict({
             Date: self.date_to_parent,
