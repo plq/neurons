@@ -137,6 +137,7 @@ class TestFormPrimitive(unittest.TestCase):
         assert elt.attrib['type'] == 'number'
         assert elt.attrib['step'] == 'any'
 
+    # FIXME: enable this after fixing the relevant Spyne bug
     def _test_decimal_step(self):
         elt = _test_type(Decimal(fraction_digits=4), D('0.1')).xpath('input')[0]
         assert elt.attrib['step'] == '0.0001'
@@ -233,7 +234,7 @@ class TestFormComplex(unittest.TestCase):
         assert elt[0].xpath('input/@value') == ['42', 'Arthur']
         assert elt[0].xpath('input/@name') == ['i0', 's0']
         assert elt[0].xpath('fieldset/input/@value') == ['42', 'Arthur',
-                                                      '42', 'Arthur',]
+                                                         '42', 'Arthur']
         assert elt[0].xpath('fieldset/input/@name') == ['i1', 's1', 'i2', 's2']
 
     def test_simple_array(self):
