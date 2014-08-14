@@ -46,14 +46,14 @@ from spyne.util import coroutine, Break, memoize_id, DefaultAttrDict
 from spyne.util.cdict import cdict
 
 
-class Fieldset(namedtuple('Fieldset', ['legend', 'tag', 'attrib'])):
-    def __new__(cls, legend=None, tag='fieldset', attrib={}):
-        return super(Fieldset, cls).__new__(cls, legend, tag, attrib)
+class Fieldset(namedtuple('Fieldset', 'legend tag attrib index')):
+    def __new__(cls, legend=None, tag='fieldset', attrib={}, index=None):
+        return super(Fieldset, cls).__new__(cls, legend, tag, attrib, index)
 
 
-class Tab(namedtuple('Tab', ['legend', 'tag', 'attrib'])):
-    def __new__(cls, legend=None, tag='div', attrib={}):
-        return super(Tab, cls).__new__(cls, legend, tag, attrib)
+class Tab(namedtuple('Tab', 'legend tag attrib index')):
+    def __new__(cls, legend=None, tag='div', attrib={}, index=None):
+        return super(Tab, cls).__new__(cls, legend, tag, attrib, index)
 
 
 def _Tform_key(prot):
