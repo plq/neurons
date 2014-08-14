@@ -35,7 +35,6 @@ from __future__ import print_function
 from collections import deque, namedtuple
 from inspect import isgenerator
 from decimal import Decimal as D
-from random import sample
 
 from lxml import etree, html
 from lxml.builder import E
@@ -46,7 +45,9 @@ from spyne.protocol.html import HtmlBase
 from spyne.util import coroutine, Break, memoize_id, DefaultAttrDict
 from spyne.util.cdict import cdict
 
+
 SOME_COUNTER = 0
+
 
 class Fieldset(namedtuple('Fieldset', 'legend tag attrib index htmlid')):
     def __new__(cls, legend=None, tag='fieldset', attrib={}, index=None,
