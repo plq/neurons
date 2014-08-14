@@ -76,6 +76,33 @@ def camel_case_to_uscore_gen(string):
 camel_case_to_uscore = lambda s: ''.join(camel_case_to_uscore_gen(s))
 
 
+def _gen_array_js(parent, key):
+    parent.write(E.script("""
+$(function() {
+    var field_name = "." + "%(field_name)s";
+
+    var add = function() {
+        var f = $($(field_name)[0]).clone();
+        f.appendTo($(field_name).parent());
+        f.find(".%(field_name)s_btn_add").click(add);
+        f.find(".%(field_name)s_btn_del").click(del);
+        return false;
+    };
+
+    var del = function(event) {
+        if($('#%(field_name)s_container').find('.%(field_name)s').length >1){
+            $(this).parent().remove();
+        }
+        else{
+            $(this).parent().children().val("")
+        }
+       event.preventDefault();
+    };
+
+    $(".%(field_name)s_btn_add").click(add);
+    $(".%(field_name)s_btn_del").click(del);
+});""" % {"field_name": key}, type="text/javascript"))
+
 @memoize_id
 def _get_cls_attrs(prot, cls):
     attr = DefaultAttrDict([(k, getattr(cls.Attributes, k))
@@ -450,98 +477,97 @@ class HtmlForm(HtmlWidget):
             print("exiting tab close", fset)
 
     @coroutine
-    def array_to_parent(self, ctx, cls, inst, parent, name, parent_inst=None,
+    def _push_to_parent(self, ctx, cls, inst, parent, name, parent_inst=None,
+                        label_attrs=None, parent_key=None, no_label=False,
+                        **kwargs):
+        i = -1
+        key = self.selsafe(name)
+        attr = _get_cls_attrs(self, cls)
+        while True:
+            with parent.element('div', {"class": key}):
+                sv = (yield)
+
+                i += 0
+                new_key = '%s[%09d]' % (key, i)
+                ret = self.to_parent(ctx, cls, sv, parent, new_key,
+                                                from_arr=True, **kwargs)
+
+                if isgenerator(ret):
+                    try:
+                        while True:
+                            sv2 = (yield)
+                            ret.send(sv2)
+                    except Break as e:
+                        try:
+                            ret.throw(e)
+                        except StopIteration:
+                            pass
+
+                        if not attr.no_write:
+                            parent.write(E.button('+', **{
+                                "class": key + "_btn_add",
+                                'type': 'button'
+                            }))
+                            parent.write(E.button('-', **{
+                                "class": key + "_btn_del",
+                                'type': 'button'
+                            }))
+
+        if not attr.no_write:
+            _gen_array_js(parent, key)
+
+    @coroutine
+    def _pull_to_parent(self, ctx, cls, inst, parent, name, parent_inst=None,
                         label_attrs=None, parent_key=None, no_label=False,
                         **kwargs):
         key = self.selsafe(name)
         attr = _get_cls_attrs(self, cls)
+
+        if inst is None:
+            inst = []
+
+        for i, subval in enumerate(inst):
+            new_key = '%s[%09d]' % (key, i)
+            with parent.element('div', {"class": key}):
+                ret = self.to_parent(ctx, cls, subval, parent, new_key,
+                                parent_inst=parent_inst, no_label=True,
+                                from_arr=True, **kwargs)
+                if not attr.no_write:
+                    parent.write(E.button('+', **{
+                                  "class": key + "_btn_add", 'type': 'button'}))
+                    parent.write(E.button('-', **{
+                                  "class": key + "_btn_del", 'type': 'button'}))
+
+                if isgenerator(ret):
+                    try:
+                        while True:
+                            sv2 = (yield)
+                            ret.send(sv2)
+                    except Break as b:
+                        try:
+                            ret.throw(b)
+                        except StopIteration:
+                            pass
+
+        if not attr.no_write:
+            _gen_array_js(parent, key)
+
+    def array_to_parent(self, ctx, cls, inst, parent, name, parent_inst=None,
+                        label_attrs=None, parent_key=None, no_label=False,
+                        **kwargs):
+
+        key = self.selsafe(name)
+
         with parent.element('div', {"id": key + "_container", 'class':'array'}):
             if isinstance(inst, PushBase):
-                i = -1
-                while True:
-                    with parent.element('div', {"class": key}):
-                        sv = (yield)
-
-                        i += 0
-                        new_key = '%s[%09d]' % (key, i)
-                        ret = self.to_parent(ctx, cls, sv, parent, new_key,
-                                                        from_arr=True, **kwargs)
-
-                        if isgenerator(ret):
-                            try:
-                                while True:
-                                    sv2 = (yield)
-                                    ret.send(sv2)
-                            except Break as e:
-                                try:
-                                    ret.throw(e)
-                                except StopIteration:
-                                    pass
-
-                                if not attr.no_write:
-                                    parent.write(E.button('+', **{
-                                        "class": key + "_btn_add",
-                                        'type': 'button'
-                                    }))
-                                    parent.write(E.button('-', **{
-                                        "class": key + "_btn_del",
-                                        'type': 'button'
-                                    }))
+                return self._push_to_parent(ctx, cls, inst, parent, name,
+                                     parent_inst=parent_inst, label_attrs=None,
+                                     parent_key=None, no_label=False, **kwargs)
 
             else:
-                if inst is None:
-                    inst = []
-
-                for i, subval in enumerate(inst):
-                    new_key = '%s[%09d]' % (key, i)
-                    with parent.element('div', {"class": key}):
-                        ret = self.to_parent(ctx, cls, subval, parent, new_key,
-                                        parent_inst=parent_inst, no_label=True,
-                                        from_arr=True, **kwargs)
-                        if not attr.no_write:
-                            parent.write(E.button('+', **{
-                                     "class": key+"_btn_add", 'type':'button'}))
-                            parent.write(E.button('-', **{
-                                     "class": key+"_btn_del", 'type':'button'}))
-
-                        if isgenerator(ret):
-                            try:
-                                while True:
-                                    sv2 = (yield)
-                                    ret.send(sv2)
-                            except Break as b:
-                                try:
-                                    ret.throw(b)
-                                except StopIteration:
-                                    pass
-
-
-            if not attr.no_write:
-                parent.write(E.script("""
-$(function() {
-    var field_name = "." + "%(field_name)s";
-
-    var add = function() {
-        var f = $($(field_name)[0]).clone();
-        f.appendTo($(field_name).parent());
-        f.find(".%(field_name)s_btn_add").click(add);
-        f.find(".%(field_name)s_btn_del").click(del);
-        return false;
-    };
-
-    var del = function(event) {
-        if($('#%(field_name)s_container').find('.%(field_name)s').length >1){
-            $(this).parent().remove();
-        }
-        else{
-            $(this).parent().children().val("")
-        }
-       event.preventDefault();
-    };
-
-    $(".%(field_name)s_btn_add").click(add);
-    $(".%(field_name)s_btn_del").click(del);
-});""" % {"field_name": key}, type="text/javascript"))
+                return self._pull_to_parent(ctx, cls, inst, parent, name,
+                                     parent_inst=parent_inst, label_attrs=None,
+                                     parent_key=None, no_label=False, **kwargs)
 
 
 class PasswordWidget(HtmlWidget):
