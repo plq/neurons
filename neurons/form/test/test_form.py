@@ -205,13 +205,13 @@ class TestFormComplex(unittest.TestCase):
             ]
 
         v = OuterObject(i=InnerObject(s="Arthur"), d=3.1415)
-        elt = _test_type(OuterObject, v)
+        elt = _test_type(OuterObject, v)[0]
 
         # it's a bit risky doing this with doubles
-        assert elt[0].xpath('input/@value') == ['3.1415']
-        assert elt[0].xpath('input/@name') == ['d']
-        assert elt[0].xpath('fieldset/input/@value') == ['Arthur']
-        assert elt[0].xpath('fieldset/input/@name') == ['i.s']
+        assert elt.xpath('input/@value') == ['3.1415']
+        assert elt.xpath('input/@name') == ['d']
+        assert elt.xpath('fieldset/input/@value') == ['Arthur']
+        assert elt.xpath('fieldset/input/@name') == ['i.s']
 
     def test_fieldset(self):
         fset_one = Fieldset("One")
@@ -231,12 +231,12 @@ class TestFormComplex(unittest.TestCase):
             i1=42, s1="Arthur",
             i2=42, s2="Arthur",
         )
-        elt = _test_type(SomeObject, v)
-        assert elt[0].xpath('input/@value') == ['42', 'Arthur']
-        assert elt[0].xpath('input/@name') == ['i0', 's0']
-        assert elt[0].xpath('fieldset/input/@value') == ['42', 'Arthur',
+        elt = _test_type(SomeObject, v)[0]
+        assert elt.xpath('input/@value') == ['42', 'Arthur']
+        assert elt.xpath('input/@name') == ['i0', 's0']
+        assert elt.xpath('fieldset/input/@value') == ['42', 'Arthur',
                                                          '42', 'Arthur']
-        assert elt[0].xpath('fieldset/input/@name') == ['i1', 's1', 'i2', 's2']
+        assert elt.xpath('fieldset/input/@name') == ['i1', 's1', 'i2', 's2']
 
     def test_tab(self):
         tab1 = Tab("One")
@@ -249,18 +249,18 @@ class TestFormComplex(unittest.TestCase):
             ]
 
         v = SomeObject(i0=14, i1=28, i2=56)
-        elt = _test_type(SomeObject, v)
-        assert elt[0].xpath('input/@value') == ['14']
-        assert elt[0].xpath('input/@name') == ['i0']
+        elt = _test_type(SomeObject, v)[0]
+        assert elt.xpath('input/@value') == ['14']
+        assert elt.xpath('input/@name') == ['i0']
 
-        assert elt[0].xpath('div/ul/li/a/text()') == [tab1.legend, tab2.legend]
-        assert elt[0].xpath('div/ul/li/a/@href') == ["#" + tab1.htmlid, "#" + tab2.htmlid]
-        assert elt[0].xpath('div/div/@id') == [tab1.htmlid, tab2.htmlid]
-        assert elt[0].xpath('div/div[@id]/input/@name') == ['i1', 'i2']
-        assert elt[0].xpath('div/div[@id]/input/@value') == ['28', '56']
+        assert elt.xpath('div/ul/li/a/text()') == [tab1.legend, tab2.legend]
+        assert elt.xpath('div/ul/li/a/@href') == ["#" + tab1.htmlid, "#" + tab2.htmlid]
+        assert elt.xpath('div/div/@id') == [tab1.htmlid, tab2.htmlid]
+        assert elt.xpath('div/div[@id]/input/@name') == ['i1', 'i2']
+        assert elt.xpath('div/div[@id]/input/@value') == ['28', '56']
 
         # FIXME: properly test script tags
-        assert elt[0].xpath('div/@id')[0] in elt[0].xpath('script/text()')[0]
+        assert elt.xpath('div/@id')[0] in elt.xpath('script/text()')[0]
 
     def test_simple_array(self):
         class SomeObject(ComplexModel):
@@ -269,10 +269,10 @@ class TestFormComplex(unittest.TestCase):
             ]
 
         v = SomeObject(ints=range(5))
-        elt = _test_type(SomeObject, v)
-        assert elt[0].xpath('div/div/input/@value') == ['0', '1', '2', '3', '4']
-        assert elt[0].xpath('div/div/button/text()') == ['+', '-'] * 5
-        for i, name in enumerate(elt[0].xpath('div/div/input/@name')):
+        elt = _test_type(SomeObject, v)[0]
+        assert elt.xpath('div/div/input/@value') == ['0', '1', '2', '3', '4']
+        assert elt.xpath('div/div/button/text()') == ['+', '-'] * 5
+        for i, name in enumerate(elt.xpath('div/div/input/@name')):
             assert re.match(r'ints\[0*%d\]' % i, name)
 
 
