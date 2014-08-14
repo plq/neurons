@@ -427,7 +427,6 @@ class HtmlForm(HtmlWidget):
                 parent.write(E.legend(self.trd(fset.legend, ctx.locale, k)))
                 prev_fset = fset
 
-            print("to_parent", v, subinst, E.duduk().nsmap)
             ret = self.to_parent(ctx, v, subinst, parent, k, **kwargs)
             if isgenerator(ret):
                 try:
