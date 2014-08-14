@@ -39,7 +39,7 @@ import logging
 from decimal import Decimal as D
 from datetime import date, time, datetime
 
-from neurons.form import HtmlForm, PasswordWidget
+from neurons.form import HtmlForm, PasswordWidget, Tab
 from neurons.form.const import T_TEST
 from neurons.form.form import Fieldset
 from spyne import Application, NullServer, Unicode, ServiceBase, rpc, Decimal, \
@@ -236,6 +236,30 @@ class TestFormComplex(unittest.TestCase):
         assert elt[0].xpath('fieldset/input/@value') == ['42', 'Arthur',
                                                          '42', 'Arthur']
         assert elt[0].xpath('fieldset/input/@name') == ['i1', 's1', 'i2', 's2']
+
+    def test_tab(self):
+        tab1 = Tab("One")
+        tab2 = Tab("Two")
+        class SomeObject(ComplexModel):
+            _type_info = [
+                ('i0', Integer),
+                ('i1', Integer(tab=tab1)),
+                ('i2', Integer(tab=tab2)),
+            ]
+
+        v = SomeObject(i0=14, i1=28, i2=56)
+        elt = _test_type(SomeObject, v)
+        assert elt[0].xpath('input/@value') == ['14']
+        assert elt[0].xpath('input/@name') == ['i0']
+
+        assert elt[0].xpath('div/ul/li/a/text()') == [tab1.legend, tab2.legend]
+        assert elt[0].xpath('div/ul/li/a/@href') == ["#" + tab1.htmlid, "#" + tab2.htmlid]
+        assert elt[0].xpath('div/div/@id') == [tab1.htmlid, tab2.htmlid]
+        assert elt[0].xpath('div/div[@id]/input/@name') == ['i1', 'i2']
+        assert elt[0].xpath('div/div[@id]/input/@value') == ['28', '56']
+
+        # FIXME: properly test script tags
+        assert elt[0].xpath('div/@id')[0] in elt[0].xpath('script/text()')[0]
 
     def test_simple_array(self):
         class SomeObject(ComplexModel):

@@ -35,6 +35,7 @@ from __future__ import print_function
 from collections import deque, namedtuple
 from inspect import isgenerator
 from decimal import Decimal as D
+from random import sample
 
 from lxml import etree, html
 from lxml.builder import E
@@ -45,22 +46,40 @@ from spyne.protocol.html import HtmlBase
 from spyne.util import coroutine, Break, memoize_id, DefaultAttrDict
 from spyne.util.cdict import cdict
 
+SOME_COUNTER = 0
 
-class Fieldset(namedtuple('Fieldset', 'legend tag attrib index')):
-    def __new__(cls, legend=None, tag='fieldset', attrib={}, index=None):
-        return super(Fieldset, cls).__new__(cls, legend, tag, attrib, index)
+class Fieldset(namedtuple('Fieldset', 'legend tag attrib index htmlid')):
+    def __new__(cls, legend=None, tag='fieldset', attrib={}, index=None,
+                                                                   htmlid=None):
+        global SOME_COUNTER
+        if htmlid is None:
+            htmlid = 'fset' + str(SOME_COUNTER)
+            SOME_COUNTER += 1
+
+        return super(Fieldset, cls).__new__(cls, legend, tag, attrib, index,
+                                                                         htmlid)
 
 
-class Tab(namedtuple('Tab', 'legend tag attrib index')):
-    def __new__(cls, legend=None, tag='div', attrib={}, index=None):
-        return super(Tab, cls).__new__(cls, legend, tag, attrib, index)
+class Tab(namedtuple('Tab', 'legend attrib index htmlid')):
+    def __new__(cls, legend=None, attrib={}, index=None, htmlid=None):
+        global SOME_COUNTER
+        if htmlid is None:
+            htmlid = "tab" + str(SOME_COUNTER)
+            SOME_COUNTER += 1
+
+        return super(Tab, cls).__new__(cls, legend, attrib, index, htmlid)
 
 
 def _Tform_key(prot):
     def _form_key(sort_key):
         k, v = sort_key
         attrs = _get_cls_attrs(prot, v)
-        return attrs.tab, attrs.fieldset, attrs.order, k
+        return None if attrs.tab is None else \
+                                (attrs.tab.index, attrs.tab.htmlid), \
+               None if attrs.fieldset is None else \
+                                (attrs.fieldset.index, attrs.fieldset.htmlid), \
+               attrs.order, k
+
     return _form_key
 
 
@@ -409,11 +428,33 @@ class HtmlForm(HtmlWidget):
         v = iter(cls._type_info.values()).next()
         return self.to_parent(ctx, v, inst, parent, name, **kwargs)
 
+    def _gen_tab_headers(self, ctx, fti):
+        retval = E.ul()
+
+        tabs = {}
+        for k, v in fti.items():
+            subattr = _get_cls_attrs(self, v)
+            tab = subattr.tab
+            if tab is not None:
+                tabs[id(tab)] = tab
+
+        for i, tab in enumerate(sorted(tabs.values(),
+                                            key=lambda t: (t.index, t.htmlid))):
+            retval.append(E.li(E.a(
+                self.trd(tab.legend, ctx.locale, "Tab %d" % i),
+                href="#" + tab.htmlid
+            )))
+
+        return retval
+
     @coroutine
     def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        global SOME_COUNTER
+
         fti = cls.get_flat_type_info(cls)
         prev_fset = fset_ctx = None
-        prev_tab = tab_ctx = None
+        prev_tab = tab_ctx = tabview_ctx = None
+        tabview_id = None
 
         # FIXME: hack! why do we have top-level object receiving name?
         if name == cls.get_type_name():
@@ -429,6 +470,7 @@ class HtmlForm(HtmlWidget):
                 subinst = getattr(inst, k, None)
 
                 tab = subattr.tab
+                print("TAB", k, getattr(v.Attributes, 'tab', None), subattr.tab)
                 if not (tab is prev_tab):
                     if fset_ctx is not None:
                         fset_ctx.__exit__(None, None, None)
@@ -440,12 +482,23 @@ class HtmlForm(HtmlWidget):
                         tab_ctx.__exit__(None, None, None)
                         print("exiting tab", prev_tab)
 
+                    if prev_tab is None:
+                        print("entering tabview")
+                        tabview_id = 'tabview' + str(SOME_COUNTER)
+                        SOME_COUNTER += 1
+
+                        tabview_ctx = parent.element('div', attrib={'id': tabview_id})
+                        tabview_ctx.__enter__()
+
+                        parent.write(self._gen_tab_headers(ctx, fti))
+
                     print("entering tab", tab)
 
-                    tab_ctx = parent.element(tab.tag, tab.attrib)
+                    attrib = {'id': tab.htmlid}
+                    attrib.update(tab.attrib)
+                    tab_ctx = parent.element('div', attrib)
                     tab_ctx.__enter__()
 
-                    #parent.write(E.legend(self.trd(tab.legend, ctx.locale, k)))
                     prev_tab = tab
 
                 fset = subattr.fieldset
@@ -486,6 +539,15 @@ class HtmlForm(HtmlWidget):
             if tab_ctx is not None:
                 tab_ctx.__exit__(None, None, None)
                 print("exiting tab close", fset)
+
+            if tabview_ctx is not None:
+                tabview_ctx.__exit__(None, None, None)
+                parent.write(E.script(
+                    '$(function() { $( "#%s" ).tabs();});' % tabview_id,
+                    type="text/javascript"
+                ))
+
+                print("exiting tabview close", fset)
 
     @coroutine
     def _push_to_parent(self, ctx, cls, inst, parent, name, parent_inst=None,
