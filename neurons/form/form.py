@@ -218,6 +218,9 @@ class HtmlForm(HtmlWidget):
             self._root_cloth.append(form)
             self._root_cloth = form
 
+    def _gen_label(self, ctx, cls, name):
+        return E.label(self.trc(cls, ctx.locale, name), **{'for':name})
+
     def subserialize(self, ctx, cls, inst, parent, name=None, **kwargs):
         ctx.protocol.assets = []
         return super(HtmlForm, self).subserialize(ctx, cls, inst, parent,
@@ -225,6 +228,7 @@ class HtmlForm(HtmlWidget):
 
     def unicode_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs, elt = self._gen_input_unicode(cls, inst, name)
+        parent.write(self._gen_label(ctx, cls, name))
         parent.write(elt)
 
     def decimal_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
@@ -238,6 +242,8 @@ class HtmlForm(HtmlWidget):
             elt.attrib['step'] = str(10**(-int(cls.Attributes.fraction_digits)))
 
         self._apply_number_constraints(cls_attrs, elt)
+
+        parent.write(self._gen_label(ctx, cls, name))
         parent.write(elt)
 
     def boolean_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
@@ -249,6 +255,7 @@ class HtmlForm(HtmlWidget):
             elt.attrib['checked'] = ''
 
         parent.write(elt)
+        parent.write(self._gen_label(ctx, cls, name))
 
     def date_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         ctx.protocol.assets.extend([('jquery',), ('jquery-ui', 'datepicker')])
@@ -278,6 +285,7 @@ class HtmlForm(HtmlWidget):
             script = _format_js(code, field_name=elt.attrib['id'], value=value,
                                                              format=data_format)
 
+        parent.write(self._gen_label(ctx, cls, name))
         parent.write(elt)
         parent.write(script)
 
@@ -310,6 +318,7 @@ class HtmlForm(HtmlWidget):
             script = _format_js(code, field_name=elt.attrib['id'], value=value,
                                                              format=data_format)
 
+        parent.write(self._gen_label(ctx, cls, name))
         parent.write(elt)
         parent.write(script)
 
@@ -346,6 +355,7 @@ class HtmlForm(HtmlWidget):
             script = _format_js(code, field_name=elt.attrib['id'],
                                                 format=data_format, value=value)
 
+        parent.write(self._gen_label(ctx, cls, name))
         parent.write(elt)
         parent.write(script)
 
@@ -355,6 +365,8 @@ class HtmlForm(HtmlWidget):
         elt.attrib['type'] = 'number'
 
         self._apply_number_constraints(cls_attrs, elt)
+
+        parent.write(self._gen_label(ctx, cls, name))
         parent.write(elt)
 
     # TODO: finish this
@@ -362,6 +374,7 @@ class HtmlForm(HtmlWidget):
         cls_attrs = _get_cls_attrs(self, cls)
         elt = self._gen_input(cls, inst, name, cls_attrs)
 
+        parent.write(self._gen_label(ctx, cls, name))
         parent.write(elt)
 
     def array_type_to_parent(self, ctx, cls, inst, parent, name=None, **kwargs):
