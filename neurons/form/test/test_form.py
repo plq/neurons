@@ -43,7 +43,7 @@ from neurons.form import HtmlForm, PasswordWidget
 from neurons.form.const import T_TEST
 from neurons.form.form import Fieldset
 from spyne import Application, NullServer, Unicode, ServiceBase, rpc, Decimal, \
-    Boolean, Date, Time, DateTime, Integer, ComplexModel, Array
+    Boolean, Date, Time, DateTime, Integer, ComplexModel, Array, Double
 from lxml import etree
 from spyne.util.test import show
 
@@ -175,6 +175,10 @@ class TestFormPrimitive(unittest.TestCase):
 
 
 class TestFormComplex(unittest.TestCase):
+    # all complex objects serialize to forms with fieldsets. that's why we
+    # always run xpaths on elt[0] i.e. inside the fieldset where the data we're
+    # after is, instead of running longer xpath queries.
+
     def test_simple(self):
         class SomeObject(ComplexModel):
             _type_info = [
@@ -184,8 +188,8 @@ class TestFormComplex(unittest.TestCase):
 
         v = SomeObject(i=42, s="Arthur")
         elt = _test_type(SomeObject, v)
-        assert elt.xpath('input/@value') == ['42', 'Arthur']
-        assert elt.xpath('input/@name') == ['i', 's']
+        assert elt[0].xpath('input/@value') == ['42', 'Arthur']
+        assert elt[0].xpath('input/@name') == ['i', 's']
 
     def test_nested(self):
         class InnerObject(ComplexModel):
@@ -226,11 +230,11 @@ class TestFormComplex(unittest.TestCase):
             i2=42, s2="Arthur",
         )
         elt = _test_type(SomeObject, v)
-        assert elt.xpath('input/@value') == ['42', 'Arthur']
-        assert elt.xpath('input/@name') == ['i0', 's0']
-        assert elt.xpath('fieldset/input/@value') == ['42', 'Arthur',
+        assert elt[0].xpath('input/@value') == ['42', 'Arthur']
+        assert elt[0].xpath('input/@name') == ['i0', 's0']
+        assert elt[0].xpath('fieldset/input/@value') == ['42', 'Arthur',
                                                       '42', 'Arthur',]
-        assert elt.xpath('fieldset/input/@name') == ['i1', 's1', 'i2', 's2']
+        assert elt[0].xpath('fieldset/input/@name') == ['i1', 's1', 'i2', 's2']
 
     def test_simple_array(self):
         class SomeObject(ComplexModel):
