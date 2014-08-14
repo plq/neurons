@@ -58,7 +58,7 @@ class Tab(namedtuple('Tab', 'legend tag attrib index')):
 
 def _Tform_key(prot):
     def _form_key(sort_key):
-        k,v = sort_key
+        k, v = sort_key
         attrs = _get_cls_attrs(prot, v)
         return attrs.tab, attrs.fieldset, attrs.order, k
     return _form_key
@@ -415,66 +415,68 @@ class HtmlForm(HtmlWidget):
         prev_fset = fset_ctx = None
         prev_tab = tab_ctx = None
 
-        for k, v in sorted(fti.items(), key=_Tform_key(self)):
-            subattr = _get_cls_attrs(self, v)
-            if subattr.exc:
-                continue
+        with parent.element('fieldset'):
+            parent.write(E.legend(cls.get_type_name()))
+            for k, v in sorted(fti.items(), key=_Tform_key(self)):
+                subattr = _get_cls_attrs(self, v)
+                if subattr.exc:
+                    continue
 
-            subinst = getattr(inst, k, None)
+                subinst = getattr(inst, k, None)
 
-            tab = subattr.tab
-            if not (tab is prev_tab):
-                if fset_ctx is not None:
-                    fset_ctx.__exit__(None, None, None)
-                    print("exiting fset tab ", prev_fset)
+                tab = subattr.tab
+                if not (tab is prev_tab):
+                    if fset_ctx is not None:
+                        fset_ctx.__exit__(None, None, None)
+                        print("exiting fset tab ", prev_fset)
 
-                fset_ctx = prev_fset = None
+                    fset_ctx = prev_fset = None
 
-                if tab_ctx is not None:
-                    tab_ctx.__exit__(None, None, None)
-                    print("exiting tab", prev_tab)
+                    if tab_ctx is not None:
+                        tab_ctx.__exit__(None, None, None)
+                        print("exiting tab", prev_tab)
 
-                print("entering tab", tab)
+                    print("entering tab", tab)
 
-                tab_ctx = parent.element(tab.tag, tab.attrib)
-                tab_ctx.__enter__()
+                    tab_ctx = parent.element(tab.tag, tab.attrib)
+                    tab_ctx.__enter__()
 
-                #parent.write(E.legend(self.trd(tab.legend, ctx.locale, k)))
-                prev_tab = tab
+                    #parent.write(E.legend(self.trd(tab.legend, ctx.locale, k)))
+                    prev_tab = tab
 
-            fset = subattr.fieldset
-            if not (fset is prev_fset):
-                if fset_ctx is not None:
-                    fset_ctx.__exit__(None, None, None)
-                    print("exiting fset norm", prev_fset)
+                fset = subattr.fieldset
+                if not (fset is prev_fset):
+                    if fset_ctx is not None:
+                        fset_ctx.__exit__(None, None, None)
+                        print("exiting fset norm", prev_fset)
 
-                print("entering fset", fset)
-                fset_ctx = parent.element(fset.tag, fset.attrib)
-                fset_ctx.__enter__()
+                    print("entering fset", fset)
+                    fset_ctx = parent.element(fset.tag, fset.attrib)
+                    fset_ctx.__enter__()
 
-                parent.write(E.legend(self.trd(fset.legend, ctx.locale, k)))
-                prev_fset = fset
+                    parent.write(E.legend(self.trd(fset.legend, ctx.locale, k)))
+                    prev_fset = fset
 
-            ret = self.to_parent(ctx, v, subinst, parent, k, **kwargs)
-            if isgenerator(ret):
-                try:
-                    while True:
-                        y = (yield)
-                        ret.send(y)
-
-                except Break as b:
+                ret = self.to_parent(ctx, v, subinst, parent, k, **kwargs)
+                if isgenerator(ret):
                     try:
-                        ret.throw(b)
-                    except StopIteration:
-                        pass
+                        while True:
+                            y = (yield)
+                            ret.send(y)
 
-        if fset_ctx is not None:
-            fset_ctx.__exit__(None, None, None)
-            print("exiting fset close", fset)
+                    except Break as b:
+                        try:
+                            ret.throw(b)
+                        except StopIteration:
+                            pass
 
-        if tab_ctx is not None:
-            tab_ctx.__exit__(None, None, None)
-            print("exiting tab close", fset)
+            if fset_ctx is not None:
+                fset_ctx.__exit__(None, None, None)
+                print("exiting fset close", fset)
+
+            if tab_ctx is not None:
+                tab_ctx.__exit__(None, None, None)
+                print("exiting tab close", fset)
 
     @coroutine
     def _push_to_parent(self, ctx, cls, inst, parent, name, parent_inst=None,
