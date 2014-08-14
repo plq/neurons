@@ -389,6 +389,9 @@ class HtmlForm(HtmlWidget):
 
         for k, v in sorted(fti.items(), key=_Tform_key(self)):
             subattr = _get_cls_attrs(self, v)
+            if subattr.exc:
+                continue
+
             subinst = getattr(inst, k, None)
 
             tab = subattr.tab
