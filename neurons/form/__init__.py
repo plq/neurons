@@ -30,6 +30,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+from neurons.form.form import Fieldset, Tab
 from neurons.form.form import HtmlForm
 from neurons.form.form import PasswordWidget
 from neurons.form.form_table import HtmlFormTable
