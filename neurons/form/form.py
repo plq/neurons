@@ -527,7 +527,7 @@ $(function() {
         f.find(".%(field_name)s_btn_add").click(add);
         f.find(".%(field_name)s_btn_del").click(del);
         return false;
-    }
+    };
 
     var del = function(event) {
         if($('#%(field_name)s_container').find('.%(field_name)s').length >1){
@@ -537,7 +537,7 @@ $(function() {
             $(this).parent().children().val("")
         }
        event.preventDefault();
-    }
+    };
 
     $(".%(field_name)s_btn_add").click(add);
     $(".%(field_name)s_btn_del").click(del);
