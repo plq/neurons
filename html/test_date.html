@@ -1,0 +1,19 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head xmlns="http://www.w3.org/1999/xhtml">
+    <title>Spyne Test</title>
+    <script src="../assets/jquery-1.11.1/jquery-min.js" type="text/javascript"></script>
+    <script src="../assets/jquery-ui-1.11.0/jquery-ui.min.js" type="text/javascript"></script>
+    <script src="../assets/jquery-timepicker/jquery-ui-timepicker-addon.js" type="text/javascript"></script>
+    <link href="../assets/jquery-ui-1.11.0/jquery-ui.min.css" rel="stylesheet" type="text/css"></link>
+    <link href="../assets/jquery-ui-1.11.0/jquery-ui.structure.min.css" rel="stylesheet" type="text/css"></link>
+    <link href="../assets/jquery-ui-1.11.0/jquery-ui.theme.min.css" rel="stylesheet" type="text/css"></link>
+    <link href="../assets/jquery-timepicker/jquery-ui-timepicker-addon.css" rel="stylesheet" type="text/css"></link>
+  </head>
+  <body spyne="">
+    <form>
+      <label for="date_input">date</label>
+      <input name="date" type="text" class="date" value="2013-12-11" id="date_input"></input>
+      <script type="text/javascript">$(function(){ $('#date_input').datepicker(); $('#date_input').datepicker('option', 'dateFormat', 'yy-mm-dd'); $('#date_input').datepicker('setDate', '2013-12-11'); });</script>
+    </form>
+  </body>
+</html>

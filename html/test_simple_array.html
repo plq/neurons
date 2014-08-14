@@ -1,0 +1,80 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head xmlns="http://www.w3.org/1999/xhtml">
+    <title>Spyne Test</title>
+    <script src="../assets/jquery-1.11.1/jquery-min.js"
+            type="text/javascript"></script>
+    <script src="../assets/jquery-ui-1.11.0/jquery-ui.min.js"
+            type="text/javascript"></script>
+    <script src="../assets/jquery-timepicker/jquery-ui-timepicker-addon.js"
+            type="text/javascript"></script>
+    <link href="../assets/jquery-ui-1.11.0/jquery-ui.min.css" rel="stylesheet"
+          type="text/css"></link>
+    <link href="../assets/jquery-ui-1.11.0/jquery-ui.structure.min.css"
+          rel="stylesheet" type="text/css"></link>
+    <link href="../assets/jquery-ui-1.11.0/jquery-ui.theme.min.css"
+          rel="stylesheet" type="text/css"></link>
+    <link href="../assets/jquery-timepicker/jquery-ui-timepicker-addon.css"
+          rel="stylesheet" type="text/css"></link>
+</head>
+<body spyne="">
+<form>
+    <div id="ints_container" class="array">
+        <div class="ints">
+            <label for="ints000000000_input">ints[000000000]</label>
+            <input name="ints[000000000]" type="number" class="integer"
+                   value="0" id="ints000000000_input"/>
+            <button type="button" class="ints_btn_add">+</button>
+            <button type="button" class="ints_btn_del">-</button>
+        </div>
+        <div class="ints">
+            <label for="ints000000001_input">ints[000000001]</label>
+            <input name="ints[000000001]" type="number" class="integer"
+                   value="1" id="ints000000001_input"/>
+            <button type="button" class="ints_btn_add">+</button>
+            <button type="button" class="ints_btn_del">-</button>
+        </div>
+        <div class="ints">
+            <label for="ints000000002_input">ints[000000002]</label>
+            <input name="ints[000000002]" type="number" class="integer"
+                   value="2" id="ints000000002_input"/>
+            <button type="button" class="ints_btn_add">+</button>
+            <button type="button" class="ints_btn_del">-</button>
+        </div>
+        <div class="ints">
+            <label for="ints000000003_input">ints[000000003]</label>
+            <input name="ints[000000003]" type="number" class="integer"
+                   value="3" id="ints000000003_input"/>
+            <button type="button" class="ints_btn_add">+</button>
+            <button type="button" class="ints_btn_del">-</button>
+        </div>
+        <div class="ints">
+            <label for="ints000000004_input">ints[000000004]</label>
+            <input name="ints[000000004]" type="number" class="integer"
+                   value="4" id="ints000000004_input"/>
+            <button type="button" class="ints_btn_add">+</button>
+            <button type="button" class="ints_btn_del">-</button>
+        </div>
+        <script type="text/javascript">$(function () {
+            var field_name = "." + "ints";
+            var add = function () {
+                var f = $($(field_name)[0]).clone();
+                f.appendTo($(field_name).parent());
+                f.find(".ints_btn_add").click(add);
+                f.find(".ints_btn_del").click(del);
+                return false;
+            };
+            var del = function (event) {
+                if ($('#ints_container').find('.ints').length &gt; 1) {
+                    $(this).parent().remove();
+                } else {
+                    $(this).parent().children().val("")
+                }
+                event.preventDefault();
+            };
+            $(".ints_btn_add").click(add);
+            $(".ints_btn_del").click(del);
+        });</script>
+    </div>
+</form>
+</body>
+</html>

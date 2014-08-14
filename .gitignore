@@ -52,9 +52,3 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 
-# Ignore downloaded assets
-/assets/jquery-*
-/assets/bootstrap-*
-
-# test output
-/html
