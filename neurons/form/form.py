@@ -144,6 +144,10 @@ class HtmlWidget(HtmlBase):
         val = self.to_unicode(cls, inst)
         parent.write(E.input(type="hidden", value=val, name=name))
 
+    def _gen_label(self, ctx, cls, name, input):
+        return E.label(self.trc(cls, ctx.locale, name),
+                                                  **{'for': input.attrib['id']})
+
     def _gen_input_elt_id(self, name):
         return self.selsafe(name) + '_input'
 
@@ -265,10 +269,6 @@ class HtmlForm(HtmlWidget):
         else:
             self._root_cloth.append(form)
             self._root_cloth = form
-
-    def _gen_label(self, ctx, cls, name, input):
-        return E.label(self.trc(cls, ctx.locale, name),
-                                                  **{'for': input.attrib['id']})
 
     def subserialize(self, ctx, cls, inst, parent, name=None, **kwargs):
         ctx.protocol.assets = []
@@ -636,7 +636,7 @@ class PasswordWidget(HtmlWidget):
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs, elt = self._gen_input_unicode(cls, inst, name)
         elt.attrib['type'] = 'password'
-        parent.write(elt)
+        parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt))
 
 
 class HrefWidget(HtmlWidget):
@@ -680,4 +680,4 @@ class HrefWidget(HtmlWidget):
         if self.hidden_fields is not None:
             for key in self.hidden_fields:
                 self._gen_input_hidden(fti[key], getattr(inst, key, None),
-                                    parent, self.hier_delim.join((name, key)))
+                                      parent, self.hier_delim.join((name, key)))
