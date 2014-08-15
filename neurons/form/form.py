@@ -216,7 +216,7 @@ _csstag = lambda src: E.link(href=src, type="text/css", rel="stylesheet")
 
 
 def _idiv(*args, **kwargs):
-    kwargs['class'] = '.label-input-wrapper'
+    kwargs['class'] = 'label-input-wrapper'
     return E.div(*args, **kwargs)
 
 
