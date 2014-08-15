@@ -45,6 +45,7 @@ from spyne.protocol import get_cls_attrs
 from spyne.protocol.html import HtmlBase
 from spyne.util import coroutine, Break
 from spyne.util.cdict import cdict
+from spyne.util.six.moves.urllib.parse import urlencode
 
 SOME_COUNTER = 0
 
@@ -638,3 +639,47 @@ class PasswordWidget(HtmlWidget):
         cls_attrs, elt = self._gen_input_unicode(cls, inst, name)
         elt.attrib['type'] = 'password'
         parent.write(elt)
+
+
+class HrefWidget(HtmlWidget):
+    def __init__(self, id_field=None, text_field=None, hidden_fields=None,
+                                                                     type=None):
+        self.id_field = id_field
+        self.text_field = text_field
+        self.hidden_fields = hidden_fields
+        self.type = type
+        self.hier_delim = '.' # FIXME: get this from parent prot
+        super(HtmlWidget, self).__init__()
+
+    def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        fti = cls.get_flat_type_info(cls)
+
+        id_name = id_type = id_str = None
+        if self.id_field is not None:
+            id_name = self.id_field
+            id_type = fti[id_name]
+
+        text_name = self.text_field
+        text_type = fti[text_name]
+        text_str = "[Unknown]"
+
+        if inst is not None:
+            if id_name is not None:
+                id_val = getattr(inst, id_name)
+                id_str = self.to_unicode(id_type, id_val)
+
+            text_val = getattr(inst, text_name)
+            text_str = self.to_unicode(text_type, text_val)
+
+        a_kwargs = {}
+        if id_str is not None:
+            tn = cls.get_type_name()
+            tn_url = camel_case_to_uscore(tn)
+            a_kwargs['href'] = tn_url + "?" + urlencode({'id': id_str})
+
+        parent.write(E.a(text_str, **a_kwargs))
+
+        if self.hidden_fields is not None:
+            for key in self.hidden_fields:
+                self._gen_input_hidden(fti[key], getattr(inst, key, None),
+                                    parent, self.hier_delim.join((name, key)))
