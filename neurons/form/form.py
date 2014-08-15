@@ -41,10 +41,10 @@ from lxml.builder import E
 
 from spyne import ComplexModelBase, Unicode, Decimal, Boolean, Date, Time, \
     DateTime, Integer, Duration, PushBase, Array
+from spyne.protocol import get_cls_attrs
 from spyne.protocol.html import HtmlBase
-from spyne.util import coroutine, Break, memoize_id, DefaultAttrDict
+from spyne.util import coroutine, Break
 from spyne.util.cdict import cdict
-
 
 SOME_COUNTER = 0
 
@@ -74,7 +74,7 @@ class Tab(namedtuple('Tab', 'legend attrib index htmlid')):
 def _Tform_key(prot):
     def _form_key(sort_key):
         k, v = sort_key
-        attrs = _get_cls_attrs(prot, v)
+        attrs = get_cls_attrs(prot, v)
         return None if attrs.tab is None else \
                                 (attrs.tab.index, attrs.tab.htmlid), \
                None if attrs.fieldset is None else \
@@ -123,15 +123,6 @@ $(function() {
     $(".%(field_name)s_btn_del").click(del);
 });""" % {"field_name": key}, type="text/javascript"))
 
-@memoize_id
-def _get_cls_attrs(prot, cls):
-    attr = DefaultAttrDict([(k, getattr(cls.Attributes, k))
-                    for k in dir(cls.Attributes) if not k.startswith('__')])
-    if cls.Attributes.prot_attrs:
-        attr.update(cls.Attributes.prot_attrs.get(prot.__class__, {}))
-        attr.update(cls.Attributes.prot_attrs.get(prot, {}))
-    return attr
-
 
 def _format_js(lines, **kwargs):
     for i, line in enumerate(lines):
@@ -147,6 +138,10 @@ class HtmlWidget(HtmlBase):
     @staticmethod
     def selsafe(s):
         return s.replace('[', '').replace(']','').replace('.', '__')
+
+    def _gen_input_hidden(self, cls, inst, parent, name):
+        val = self.to_unicode(cls, inst)
+        parent.write(E.input(type="hidden", value=val, name=name))
 
     def _gen_input_elt_id(self, name):
         return self.selsafe(name) + '_input'
@@ -187,7 +182,7 @@ class HtmlWidget(HtmlBase):
         return elt
 
     def _gen_input_unicode(self, cls, inst, name, **_):
-        cls_attrs = _get_cls_attrs(self, cls)
+        cls_attrs = get_cls_attrs(self, cls)
 
         elt = self._gen_input(cls, inst, name, cls_attrs)
         elt.attrib['type'] = 'text'
@@ -284,7 +279,7 @@ class HtmlForm(HtmlWidget):
         parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt))
 
     def decimal_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        cls_attrs = _get_cls_attrs(self, cls)
+        cls_attrs = get_cls_attrs(self, cls)
         elt = self._gen_input(cls, inst, name, cls_attrs)
         elt.attrib['type'] = 'number'
 
@@ -298,7 +293,7 @@ class HtmlForm(HtmlWidget):
         parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt))
 
     def boolean_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        cls_attrs = _get_cls_attrs(self, cls)
+        cls_attrs = get_cls_attrs(self, cls)
         elt = self._gen_input(cls, inst, name, cls_attrs)
         elt.attrib.update({'type': 'checkbox', 'value': 'true'})
 
@@ -310,7 +305,7 @@ class HtmlForm(HtmlWidget):
     def date_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         ctx.protocol.assets.extend([('jquery',), ('jquery-ui', 'datepicker')])
 
-        cls_attrs = _get_cls_attrs(self, cls)
+        cls_attrs = get_cls_attrs(self, cls)
         elt = self._gen_input(cls, inst, name, cls_attrs)
         elt.attrib['type'] = 'text'
 
@@ -341,7 +336,7 @@ class HtmlForm(HtmlWidget):
         ctx.protocol.assets.extend([('jquery',), ('jquery-ui', 'datepicker'),
                                                         ('jquery-timepicker',)])
 
-        cls_attrs = _get_cls_attrs(self, cls)
+        cls_attrs = get_cls_attrs(self, cls)
         elt = self._gen_input(cls, inst, name, cls_attrs)
         elt.attrib['type'] = 'text'
 
@@ -372,7 +367,7 @@ class HtmlForm(HtmlWidget):
         ctx.protocol.assets.extend([('jquery',), ('jquery-ui', 'datepicker'),
                                                         ('jquery-timepicker',)])
 
-        cls_attrs = _get_cls_attrs(self, cls)
+        cls_attrs = get_cls_attrs(self, cls)
         elt = self._gen_input(cls, None, name, cls_attrs)
         elt.attrib['type'] = 'text'
 
@@ -404,7 +399,7 @@ class HtmlForm(HtmlWidget):
         parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt, script))
 
     def integer_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        cls_attrs = _get_cls_attrs(self, cls)
+        cls_attrs = get_cls_attrs(self, cls)
         elt = self._gen_input(cls, inst, name, cls_attrs)
         elt.attrib['type'] = 'number'
 
@@ -414,7 +409,7 @@ class HtmlForm(HtmlWidget):
 
     # TODO: finish this
     def duration_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        cls_attrs = _get_cls_attrs(self, cls)
+        cls_attrs = get_cls_attrs(self, cls)
         elt = self._gen_input(cls, inst, name, cls_attrs)
 
         parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt))
@@ -428,7 +423,7 @@ class HtmlForm(HtmlWidget):
 
         tabs = {}
         for k, v in fti.items():
-            subattr = _get_cls_attrs(self, v)
+            subattr = get_cls_attrs(self, v)
             tab = subattr.tab
             if tab is not None:
                 tabs[id(tab)] = tab
@@ -458,7 +453,7 @@ class HtmlForm(HtmlWidget):
         with parent.element('fieldset'):
             parent.write(E.legend(cls.get_type_name()))
             for k, v in sorted(fti.items(), key=_Tform_key(self)):
-                subattr = _get_cls_attrs(self, v)
+                subattr = get_cls_attrs(self, v)
                 if subattr.exc:
                     continue
 
@@ -550,7 +545,7 @@ class HtmlForm(HtmlWidget):
                         **kwargs):
         i = -1
         key = self.selsafe(name)
-        attr = _get_cls_attrs(self, cls)
+        attr = get_cls_attrs(self, cls)
         while True:
             with parent.element('div', {"class": key}):
                 sv = (yield)
@@ -589,7 +584,7 @@ class HtmlForm(HtmlWidget):
                         label_attrs=None, parent_key=None, no_label=False,
                         **kwargs):
         key = self.selsafe(name)
-        attr = _get_cls_attrs(self, cls)
+        attr = get_cls_attrs(self, cls)
 
         if inst is None:
             inst = []
