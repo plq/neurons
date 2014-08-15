@@ -219,10 +219,15 @@ _jstag = lambda src: E.script(src=src, type="text/javascript")
 _csstag = lambda src: E.link(href=src, type="text/css", rel="stylesheet")
 
 
+def _idiv(*args, **kwargs):
+    kwargs['class'] = '.label-input-wrapper'
+    return E.div(*args, **kwargs)
+
+
 class HtmlForm(HtmlWidget):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
                        cloth=None, attr_name='spyne_id', root_attr_name='spyne',
-                           cloth_parser=None,  polymorphic=True, hier_delim='.',
+                            cloth_parser=None, polymorphic=True, hier_delim='.',
                                                                 asset_paths={}):
 
         super(HtmlForm, self).__init__(app=app,
@@ -276,8 +281,7 @@ class HtmlForm(HtmlWidget):
 
     def unicode_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs, elt = self._gen_input_unicode(cls, inst, name)
-        parent.write(self._gen_label(ctx, cls, name, elt))
-        parent.write(elt)
+        parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt))
 
     def decimal_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = _get_cls_attrs(self, cls)
@@ -291,8 +295,7 @@ class HtmlForm(HtmlWidget):
 
         self._apply_number_constraints(cls_attrs, elt)
 
-        parent.write(self._gen_label(ctx, cls, name, elt))
-        parent.write(elt)
+        parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt))
 
     def boolean_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = _get_cls_attrs(self, cls)
@@ -302,8 +305,7 @@ class HtmlForm(HtmlWidget):
         if bool(inst):
             elt.attrib['checked'] = ''
 
-        parent.write(elt)
-        parent.write(self._gen_label(ctx, cls, name, elt))
+        parent.write(_idiv(elt, self._gen_label(ctx, cls, name, elt)))
 
     def date_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         ctx.protocol.assets.extend([('jquery',), ('jquery-ui', 'datepicker')])
@@ -333,9 +335,7 @@ class HtmlForm(HtmlWidget):
             script = _format_js(code, field_name=elt.attrib['id'], value=value,
                                                              format=data_format)
 
-        parent.write(self._gen_label(ctx, cls, name, elt))
-        parent.write(elt)
-        parent.write(script)
+        parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt, script))
 
     def time_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         ctx.protocol.assets.extend([('jquery',), ('jquery-ui', 'datepicker'),
@@ -366,9 +366,7 @@ class HtmlForm(HtmlWidget):
             script = _format_js(code, field_name=elt.attrib['id'], value=value,
                                                              format=data_format)
 
-        parent.write(self._gen_label(ctx, cls, name, elt))
-        parent.write(elt)
-        parent.write(script)
+        parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt, script))
 
     def datetime_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         ctx.protocol.assets.extend([('jquery',), ('jquery-ui', 'datepicker'),
@@ -403,9 +401,7 @@ class HtmlForm(HtmlWidget):
             script = _format_js(code, field_name=elt.attrib['id'],
                                                 format=data_format, value=value)
 
-        parent.write(self._gen_label(ctx, cls, name, elt))
-        parent.write(elt)
-        parent.write(script)
+        parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt, script))
 
     def integer_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = _get_cls_attrs(self, cls)
@@ -414,16 +410,14 @@ class HtmlForm(HtmlWidget):
 
         self._apply_number_constraints(cls_attrs, elt)
 
-        parent.write(self._gen_label(ctx, cls, name, elt))
-        parent.write(elt)
+        parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt))
 
     # TODO: finish this
     def duration_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = _get_cls_attrs(self, cls)
         elt = self._gen_input(cls, inst, name, cls_attrs)
 
-        parent.write(self._gen_label(ctx, cls, name, elt))
-        parent.write(elt)
+        parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt))
 
     def array_type_to_parent(self, ctx, cls, inst, parent, name=None, **kwargs):
         v = iter(cls._type_info.values()).next()
