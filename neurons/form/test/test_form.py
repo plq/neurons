@@ -124,55 +124,55 @@ def _test_type_no_root_cloth(cls, inst):
 class TestFormPrimitive(unittest.TestCase):
     def test_unicode(self):
         v = 'foo'
-        elt = _test_type(Unicode, v).xpath('input')[0]
+        elt = _test_type(Unicode, v).xpath('div/input')[0]
         assert elt.attrib['type'] == 'text'
         assert elt.attrib['name'] == 'string'
         assert elt.attrib['value'] == v
 
     def test_unicode_password(self):
-        elt = _test_type(Unicode(prot=PasswordWidget()), None).xpath('input')[0]
+        elt = _test_type(Unicode(prot=PasswordWidget()), None).xpath('div/input')[0]
         assert elt.attrib['type'] == 'password'
 
     def test_decimal(self):
-        elt = _test_type(Decimal, D('0.1')).xpath('input')[0]
+        elt = _test_type(Decimal, D('0.1')).xpath('div/input')[0]
         assert elt.attrib['type'] == 'number'
         assert elt.attrib['step'] == 'any'
 
     # FIXME: enable this after fixing the relevant Spyne bug
     def _test_decimal_step(self):
-        elt = _test_type(Decimal(fraction_digits=4), D('0.1')).xpath('input')[0]
+        elt = _test_type(Decimal(fraction_digits=4), D('0.1')).xpath('div/input')[0]
         assert elt.attrib['step'] == '0.0001'
 
     def test_boolean_true(self):
-        elt = _test_type(Boolean, True).xpath('input')[0]
+        elt = _test_type(Boolean, True).xpath('div/input')[0]
         assert 'checked' in elt.attrib
 
     def test_boolean_false(self):
-        elt = _test_type(Boolean, False).xpath('input')[0]
+        elt = _test_type(Boolean, False).xpath('div/input')[0]
         assert not ('checked' in elt.attrib)
 
     def test_date(self):
-        elt = _test_type(Date, date(2013, 12, 11)).xpath('input')[0]
+        elt = _test_type(Date, date(2013, 12, 11)).xpath('div/input')[0]
         assert elt.attrib['value'] == '2013-12-11'
         # FIXME: Need to find a way to test the generated js
 
     def test_time(self):
-        elt = _test_type(Time, time(10, 9, 8)).xpath('input')[0]
+        elt = _test_type(Time, time(10, 9, 8)).xpath('div/input')[0]
         assert elt.attrib['value'] == '10:09:08'
         # FIXME: Need to find a way to test the generated js
 
     def test_datetime(self):
         v = datetime(2013, 12, 11, 10, 9, 8)
-        script = _test_type(DateTime, v).xpath('script/text()')[0]
+        script = _test_type(DateTime, v).xpath('div/script/text()')[0]
         assert v.isoformat() in script
         # FIXME: Need to find a better way to test the generated js
 
     def test_integer(self):
-        elt = _test_type(Integer, 42).xpath('input')[0]
+        elt = _test_type(Integer, 42).xpath('div/input')[0]
         assert elt.attrib['value'] == '42'
 
     def test_integer_none(self):
-        elt = _test_type(Integer, None).xpath('input')[0]
+        elt = _test_type(Integer, None).xpath('div/input')[0]
         assert not 'value' in elt.attrib
 
 
@@ -190,8 +190,8 @@ class TestFormComplex(unittest.TestCase):
 
         v = SomeObject(i=42, s="Arthur")
         elt = _test_type(SomeObject, v)
-        assert elt[0].xpath('input/@value') == ['42', 'Arthur']
-        assert elt[0].xpath('input/@name') == ['i', 's']
+        assert elt[0].xpath('div/input/@value') == ['42', 'Arthur']
+        assert elt[0].xpath('div/input/@name') == ['i', 's']
 
     def test_nested(self):
         class InnerObject(ComplexModel):
@@ -208,10 +208,10 @@ class TestFormComplex(unittest.TestCase):
         elt = _test_type(OuterObject, v)[0]
 
         # it's a bit risky doing this with doubles
-        assert elt.xpath('input/@value') == ['3.1415']
-        assert elt.xpath('input/@name') == ['d']
-        assert elt.xpath('fieldset/input/@value') == ['Arthur']
-        assert elt.xpath('fieldset/input/@name') == ['i.s']
+        assert elt.xpath('div/input/@value') == ['3.1415']
+        assert elt.xpath('div/input/@name') == ['d']
+        assert elt.xpath('fieldset/div/input/@value') == ['Arthur']
+        assert elt.xpath('fieldset/div/input/@name') == ['i.s']
 
     def test_fieldset(self):
         fset_one = Fieldset("One")
@@ -232,11 +232,11 @@ class TestFormComplex(unittest.TestCase):
             i2=42, s2="Arthur",
         )
         elt = _test_type(SomeObject, v)[0]
-        assert elt.xpath('input/@value') == ['42', 'Arthur']
-        assert elt.xpath('input/@name') == ['i0', 's0']
-        assert elt.xpath('fieldset/input/@value') == ['42', 'Arthur',
-                                                         '42', 'Arthur']
-        assert elt.xpath('fieldset/input/@name') == ['i1', 's1', 'i2', 's2']
+        assert elt.xpath('div/input/@value') == ['42', 'Arthur']
+        assert elt.xpath('div/input/@name') == ['i0', 's0']
+        assert elt.xpath('fieldset/div/input/@value') == ['42', 'Arthur',
+                                                          '42', 'Arthur']
+        assert elt.xpath('fieldset/div/input/@name') == ['i1', 's1', 'i2', 's2']
 
     def test_tab(self):
         tab1 = Tab("One")
@@ -250,14 +250,14 @@ class TestFormComplex(unittest.TestCase):
 
         v = SomeObject(i0=14, i1=28, i2=56)
         elt = _test_type(SomeObject, v)[0]
-        assert elt.xpath('input/@value') == ['14']
-        assert elt.xpath('input/@name') == ['i0']
+        assert elt.xpath('div/input/@value') == ['14']
+        assert elt.xpath('div/input/@name') == ['i0']
 
         assert elt.xpath('div/ul/li/a/text()') == [tab1.legend, tab2.legend]
         assert elt.xpath('div/ul/li/a/@href') == ["#" + tab1.htmlid, "#" + tab2.htmlid]
         assert elt.xpath('div/div/@id') == [tab1.htmlid, tab2.htmlid]
-        assert elt.xpath('div/div[@id]/input/@name') == ['i1', 'i2']
-        assert elt.xpath('div/div[@id]/input/@value') == ['28', '56']
+        assert elt.xpath('div/div[@id]/div/input/@name') == ['i1', 'i2']
+        assert elt.xpath('div/div[@id]/div/input/@value') == ['28', '56']
 
         # FIXME: properly test script tags
         assert elt.xpath('div/@id')[0] in elt.xpath('script/text()')[0]
@@ -270,7 +270,7 @@ class TestFormComplex(unittest.TestCase):
 
         v = SomeObject(ints=range(5))
         elt = _test_type(SomeObject, v)[0]
-        assert elt.xpath('div/div/input/@value') == ['0', '1', '2', '3', '4']
+        assert elt.xpath('div/div/div/input/@value') == ['0', '1', '2', '3', '4']
         assert elt.xpath('div/div/button/text()') == ['+', '-'] * 5
         for i, name in enumerate(elt.xpath('div/div/input/@name')):
             assert re.match(r'ints\[0*%d\]' % i, name)
