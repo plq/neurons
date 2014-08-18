@@ -461,7 +461,6 @@ class HtmlForm(HtmlWidget):
                 subinst = getattr(inst, k, None)
 
                 tab = subattr.tab
-                print("TAB", k, getattr(v.Attributes, 'tab', None), subattr.tab)
                 if not (tab is prev_tab):
                     if fset_ctx is not None:
                         fset_ctx.__exit__(None, None, None)
@@ -532,13 +531,12 @@ class HtmlForm(HtmlWidget):
                 print("exiting tab close", fset)
 
             if tabview_ctx is not None:
+                print("exiting tabview close", fset)
                 tabview_ctx.__exit__(None, None, None)
                 parent.write(E.script(
                     '$(function() { $( "#%s" ).tabs();});' % tabview_id,
                     type="text/javascript"
                 ))
-
-                print("exiting tabview close", fset)
 
     @coroutine
     def _push_to_parent(self, ctx, cls, inst, parent, name, parent_inst=None,

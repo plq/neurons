@@ -32,5 +32,9 @@
 
 from neurons.form.form import Fieldset, Tab
 from neurons.form.form import HtmlForm
+
+from neurons.form.form import HrefWidget
 from neurons.form.form import PasswordWidget
+from neurons.form.form import ComboBoxWidget
+
 from neurons.form.form_table import HtmlFormTable
