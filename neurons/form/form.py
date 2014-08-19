@@ -145,6 +145,13 @@ class HtmlWidget(HtmlBase):
     def selsafe(s):
         return s.replace('[', '').replace(']','').replace('.', '__')
 
+    @classmethod
+    def _check_supported_types(cls, t):
+        if cls.supported_types is not None and \
+                                      not issubclass(t, cls.supported_types):
+            logger.warning("%r claims not to support %r. You have been warned.",
+                           cls, t)
+
     def _gen_input_hidden(self, cls, inst, parent, name):
         val = self.to_unicode(cls, inst)
         parent.write(E.input(type="hidden", value=val, name=name))
@@ -641,9 +648,7 @@ class PasswordWidget(HtmlWidget):
     supported_types = (Unicode,)
 
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        if self.supported_types and not issubclass(cls, self.supported_types):
-            logger.warning("%r claims not to support %r. You have been warned.",
-                           self.__class__, cls)
+        self._check_supported_types(cls)
 
         cls_attrs, elt = self._gen_input_unicode(cls, inst, name)
         elt.attrib['type'] = 'password'
@@ -651,6 +656,8 @@ class PasswordWidget(HtmlWidget):
 
 
 class HrefWidget(HtmlWidget):
+    supported_types = (ComplexModelBase,)
+
     def __init__(self, id_field=None, text_field=None, hidden_fields=None,
                                                                      type=None):
         self.id_field = id_field
@@ -661,6 +668,8 @@ class HrefWidget(HtmlWidget):
         super(HtmlWidget, self).__init__()
 
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        self._check_supported_types(cls)
+
         fti = cls.get_flat_type_info(cls)
 
         id_name = id_type = id_str = None
