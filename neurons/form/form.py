@@ -664,7 +664,7 @@ class HrefWidget(HtmlWidget):
         self.text_field = text_field
         self.hidden_fields = hidden_fields
         self.type = type
-        self.hier_delim = '.' # FIXME: get this from parent prot
+        self.hier_delim = '.'  # FIXME: get this from parent prot
         super(HtmlWidget, self).__init__()
 
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
