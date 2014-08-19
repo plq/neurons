@@ -693,7 +693,7 @@ class HrefWidget(HtmlWidget):
         if id_str is not None:
             tn = cls.get_type_name()
             tn_url = camel_case_to_uscore(tn)
-            a_kwargs['href'] = tn_url + "?" + urlencode({'id': id_str})
+            a_kwargs['href'] = tn_url + "?" + urlencode({self.id_field: id_str})
 
         parent.write(E.a(text_str, **a_kwargs))
 
