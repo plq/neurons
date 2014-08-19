@@ -455,8 +455,8 @@ class HtmlForm(HtmlWidget):
         global SOME_COUNTER
 
         fti = cls.get_flat_type_info(cls)
-        prev_fset = fset_ctx = None
-        prev_tab = tab_ctx = tabview_ctx = None
+        prev_fset = fset_ctx = fset = None
+        prev_tab = tab_ctx = tab = tabview_ctx = None
         tabview_id = None
 
         # FIXME: hack! why do we have top-level object receiving name?
@@ -540,10 +540,10 @@ class HtmlForm(HtmlWidget):
 
             if tab_ctx is not None:
                 tab_ctx.__exit__(None, None, None)
-                print("exiting tab close", fset)
+                print("exiting tab close", tab)
 
             if tabview_ctx is not None:
-                print("exiting tabview close", fset)
+                print("exiting tabview close")
                 tabview_ctx.__exit__(None, None, None)
                 parent.write(E.script(
                     '$(function() { $( "#%s" ).tabs();});' % tabview_id,
