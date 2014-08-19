@@ -189,9 +189,9 @@ class TestFormComplex(unittest.TestCase):
             ]
 
         v = SomeObject(i=42, s="Arthur")
-        elt = _test_type(SomeObject, v)
-        assert elt[0].xpath('div/input/@value') == ['42', 'Arthur']
-        assert elt[0].xpath('div/input/@name') == ['i', 's']
+        elt = _test_type(SomeObject, v)[0]
+        assert elt.xpath('div/input/@value') == ['42', 'Arthur']
+        assert elt.xpath('div/input/@name') == ['i', 's']
 
     def test_nested(self):
         class InnerObject(ComplexModel):
