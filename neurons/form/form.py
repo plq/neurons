@@ -657,8 +657,7 @@ class PasswordWidget(HtmlWidget):
 class ComplexRenderWidget(HtmlWidget):
     supported_types = (ComplexModelBase,)
 
-    def __init__(self, id_field=None, text_field=None, hidden_fields=None,
-                                                                     type=None):
+    def __init__(self, id_field, text_field, hidden_fields=None, type=None):
         self.id_field = id_field
         self.text_field = text_field
         self.hidden_fields = hidden_fields
@@ -710,8 +709,8 @@ class HrefWidget(ComplexRenderWidget):
 
 
 class ComboBoxWidget(ComplexRenderWidget):
-    def __init__(self, id_field, text_field, hidden_fields=None,
-                                                       type=None, others=False):
+    def __init__(self, id_field, text_field, hidden_fields=None, type=None,
+                                                                  others=False):
         super(ComboBoxWidget, self).__init__(id_field=id_field,
                   text_field=text_field, hidden_fields=hidden_fields, type=type)
         self.others = others
