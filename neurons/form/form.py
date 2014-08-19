@@ -32,6 +32,9 @@
 
 from __future__ import print_function
 
+import logging
+logger = logging.getLogger(__name__)
+
 from collections import deque, namedtuple
 from inspect import isgenerator
 from decimal import Decimal as D
@@ -136,6 +139,8 @@ $(function(){
 
 
 class HtmlWidget(HtmlBase):
+    supported_types = None
+
     @staticmethod
     def selsafe(s):
         return s.replace('[', '').replace(']','').replace('.', '__')
@@ -633,7 +638,13 @@ class HtmlForm(HtmlWidget):
 
 
 class PasswordWidget(HtmlWidget):
+    supported_types = (Unicode,)
+
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        if self.supported_types and not issubclass(cls, self.supported_types):
+            logger.warning("%r claims not to support %r. You have been warned.",
+                           self.__class__, cls)
+
         cls_attrs, elt = self._gen_input_unicode(cls, inst, name)
         elt.attrib['type'] = 'password'
         parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt))
