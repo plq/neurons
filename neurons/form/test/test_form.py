@@ -40,7 +40,8 @@ from decimal import Decimal as D
 from datetime import date, time, datetime
 import re
 
-from neurons.form import HtmlForm, PasswordWidget, Tab, HrefWidget
+from neurons.form import HtmlForm, PasswordWidget, Tab, HrefWidget, \
+    ComboBoxWidget
 from neurons.form.const import T_TEST
 from neurons.form.form import Fieldset
 from spyne import Application, NullServer, Unicode, ServiceBase, rpc, Decimal, \
@@ -275,6 +276,7 @@ class TestFormComplex(unittest.TestCase):
         for i, name in enumerate(elt.xpath('div/div/input/@name')):
             assert re.match(r'ints\[0*%d\]' % i, name)
 
+
 class TestHrefWidget(object):
     def test_simple(self):
         class SomeObject(ComplexModel):
@@ -291,6 +293,25 @@ class TestHrefWidget(object):
 
         assert elt.xpath('a/text()') == ['Arthur']
         assert elt.xpath('a/@href') == ['some_object?i=42']
+
+
+class TestComboBoxWidget(object):
+    def test_simple(self):
+        class SomeObject(ComplexModel):
+            class Attributes(ComplexModel.Attributes):
+                prot = ComboBoxWidget('i', 's')
+
+            _type_info = [
+                ('i', Integer),
+                ('s', Unicode),
+            ]
+
+        v = SomeObject(i=42, s="Arthur")
+        elt = _test_type(SomeObject, v)
+
+        assert elt.xpath('select/option/text()') == ['Arthur']
+        assert elt.xpath('select/option/@value') == ['42']
+
 
 if __name__ == '__main__':
     unittest.main()
