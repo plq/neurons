@@ -654,8 +654,7 @@ class PasswordWidget(HtmlWidget):
         elt.attrib['type'] = 'password'
         parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt))
 
-
-class HrefWidget(HtmlWidget):
+class ComplexRenderWidget(HtmlWidget):
     supported_types = (ComplexModelBase,)
 
     def __init__(self, id_field=None, text_field=None, hidden_fields=None,
@@ -667,7 +666,7 @@ class HrefWidget(HtmlWidget):
         self.hier_delim = '.'  # FIXME: get this from parent prot
         super(HtmlWidget, self).__init__()
 
-    def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+    def _prep_inst(self, cls, inst):
         self._check_supported_types(cls)
 
         fti = cls.get_flat_type_info(cls)
@@ -688,6 +687,19 @@ class HrefWidget(HtmlWidget):
 
             text_val = getattr(inst, text_name)
             text_str = self.to_unicode(text_type, text_val)
+
+        return fti, id_str, text_str
+
+
+class HrefWidget(ComplexRenderWidget):
+    def __init__(self, id_field, text_field, hidden_fields=None,
+                                                       type=None, others=False):
+        super(HrefWidget, self).__init__(id_field=id_field,
+                  text_field=text_field, hidden_fields=hidden_fields, type=type)
+        self.others = others
+
+    def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        fti, id_str, text_str = self._prep_inst(cls, inst)
 
         a_kwargs = {}
         if id_str is not None:
