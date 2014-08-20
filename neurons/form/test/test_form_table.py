@@ -33,30 +33,43 @@
 
 
 import unittest
+from neurons.form.test import strip_ns
+from spyne.util.test import show
 
 from neurons.form import HtmlFormTable
-from spyne import Application, NullServer, ServiceBase, rpc
+from neurons.form.const import T_TEST
+from spyne import Application, NullServer, ServiceBase, rpc, Unicode
 from lxml import etree
 
 
 def _test_type(cls, inst):
+    from spyne.util import appreg; appreg._applications.clear()
+
     class SomeService(ServiceBase):
         @rpc(_returns=cls, _body_style='bare')
         def some_call(ctx):
             return inst
 
-    app = Application([SomeService], 'some_ns', out_protocol=HtmlFormTable())
+    prot = HtmlFormTable(cloth=T_TEST)
+    app = Application([SomeService], 'some_ns', out_protocol=prot)
 
     null = NullServer(app, ostr=True)
+
     elt = etree.fromstring(''.join(null.service.some_call()))
+    show(elt, stdout=False)
+    elt = elt.xpath('//*[@spyne]')[0]
+    elt = strip_ns(elt)  # get rid of namespaces to simplify xpaths in tests
+
     print(etree.tostring(elt, pretty_print=True))
 
     return elt
 
 
 class TestForm(unittest.TestCase):
-    def _test_complex(self):
-        pass
+    def test_unicode(self):
+        v = 'foo'
+        elt = _test_type(Unicode, v).xpath('div/input')[0]
+        assert False
 
 
 if __name__ == '__main__':

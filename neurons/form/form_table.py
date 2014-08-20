@@ -31,18 +31,22 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+import logging
+logger = logging.getLogger(__name__)
+
+from lxml.builder import E
 
 from spyne import ModelBase
 from spyne.protocol.html import HtmlColumnTable
 from spyne.util.cdict import cdict
 
-from neurons.form.form import HtmlForm
+from neurons.form import HtmlForm
 
 
 class HtmlFormTable(HtmlColumnTable):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
                        cloth=None, attr_name='spyne_id', root_attr_name='spyne',
-                                                             cloth_parser=None):
+                       cloth_parser=None, can_add=True, can_remove=True):
 
         super(HtmlFormTable, self).__init__(app=app,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
@@ -54,13 +58,29 @@ class HtmlFormTable(HtmlColumnTable):
         })
 
         self.prot_form = HtmlForm()
+        self.can_add = can_add
+        self.can_remove = can_remove
+
+    def _init_cloth(self, *args, **kwargs):
+        super(HtmlFormTable, self)._init_cloth(*args, **kwargs)
+        form = E.form(method='POST', enctype="multipart/form-data")
+        if self._root_cloth is None:
+            self._cloth = self._root_cloth = form
+        else:
+            self._root_cloth.append(form)
+            self._root_cloth = form
 
     def model_base_to_parent(self, ctx, cls, inst, parent, name, array_index=None,
                                                       from_arr=False, **kwargs):
         if from_arr:
             with parent.element('tr'):
-                with parent.element('td'):
-                    self.prot_form.to_parent(ctx, cls, inst, parent, name, **kwargs)
+              with parent.element('td'):
+                self.prot_form.to_parent(ctx, cls, inst, parent, name, **kwargs)
 
         else:
             self.prot_form.to_parent(ctx, cls, inst, parent, name, **kwargs)
+
+    def extend_header_row(self, ctx, cls, parent, name, **kwargs):
+        if self.can_add or self.can_remove:
+            parent.write(E.td())
+

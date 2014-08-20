@@ -44,41 +44,13 @@ from neurons.form import HtmlForm, PasswordWidget, Tab, HrefWidget, \
     ComboBoxWidget
 from neurons.form.const import T_TEST
 from neurons.form.form import Fieldset
+from neurons.form.test import strip_ns
 from spyne import Application, NullServer, Unicode, ServiceBase, rpc, Decimal, \
     Boolean, Date, Time, DateTime, Integer, ComplexModel, Array, Double
 from lxml import etree
 from spyne.util.test import show
 
 logging.basicConfig(level=logging.DEBUG)
-
-
-def _strip_ns(par):
-    par.tag = par.tag.split('}', 1)[-1]
-    if len(par.nsmap) > 0:
-        par2 = etree.Element(par.tag, par.attrib)
-        par2.text = par.text
-        par2.tail = par.tail
-        par2.extend(par.getchildren())
-
-        par.getparent().insert(par.getparent().index(par), par2)
-        par.getparent().remove(par)
-        par = par2
-
-    for elt in par:
-        elt.tag = elt.tag.split('}', 1)[-1]
-        if len(elt.nsmap) > 0:
-            elt2 = etree.Element(elt.tag, elt.attrib)
-            elt2.text = elt.text
-            elt2.tail = elt.tail
-            elt2.extend(elt.getchildren())
-
-            elt.getparent().insert(elt.getparent().index(elt), elt2)
-            elt.getparent().remove(elt)
-            elt = elt2
-
-        _strip_ns(elt)
-
-    return par
 
 
 def _test_type(cls, inst):
@@ -97,7 +69,7 @@ def _test_type(cls, inst):
     elt = etree.fromstring(''.join(null.service.some_call()))
     show(elt, stdout=False)
     elt = elt.xpath('//*[@spyne]')[0][0] # get the form tag inside the body tag.
-    elt = _strip_ns(elt) # get rid of namespaces to simplify xpaths in tests
+    elt = strip_ns(elt) # get rid of namespaces to simplify xpaths in tests
 
     print(etree.tostring(elt, pretty_print=True))
 
