@@ -32,13 +32,15 @@
 #
 
 
-import unittest
+import re, unittest
+
 from neurons.form.test import strip_ns
 from spyne.util.test import show
 
 from neurons.form import HtmlFormTable
 from neurons.form.const import T_TEST
-from spyne import Application, NullServer, ServiceBase, rpc, Unicode
+from spyne import Application, NullServer, ServiceBase, rpc, Unicode, \
+    ComplexModel, Integer, Array
 from lxml import etree
 
 
@@ -66,11 +68,18 @@ def _test_type(cls, inst):
 
 
 class TestForm(unittest.TestCase):
-    def test_unicode(self):
-        v = 'foo'
-        elt = _test_type(Unicode, v).xpath('div/input')[0]
-        assert False
+    def test_simple_array(self):
+        class SomeObject(ComplexModel):
+            _type_info = [
+                ('ints', Array(Integer)),
+            ]
 
+        v = SomeObject(ints=range(5))
+        elt = _test_type(SomeObject, v)[0]
+        assert elt.xpath('div/div/div/input/@value') == ['0', '1', '2', '3', '4']
+        assert elt.xpath('div/div/button/text()') == ['+', '-'] * 5
+        for i, name in enumerate(elt.xpath('div/div/input/@name')):
+            assert re.match(r'ints\[0*%d\]' % i, name)
 
 if __name__ == '__main__':
     import logging
