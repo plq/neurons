@@ -33,8 +33,10 @@
 
 from __future__ import absolute_import, print_function
 
-import unittest
 import logging
+logging.basicConfig(level=logging.DEBUG)
+
+import unittest
 
 from decimal import Decimal as D
 from datetime import date, time, datetime
@@ -49,8 +51,6 @@ from spyne import Application, NullServer, Unicode, ServiceBase, rpc, Decimal, \
     Boolean, Date, Time, DateTime, Integer, ComplexModel, Array, Double
 from lxml import etree
 from spyne.util.test import show
-
-logging.basicConfig(level=logging.DEBUG)
 
 
 def _test_type(cls, inst):
