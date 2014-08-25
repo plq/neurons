@@ -31,6 +31,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 import re, unittest
 
@@ -82,6 +84,4 @@ class TestForm(unittest.TestCase):
             assert re.match(r'ints\[0*%d\]' % i, name)
 
 if __name__ == '__main__':
-    import logging
-    logging.basicConfig(level=logging.DEBUG)
     unittest.main()
