@@ -145,35 +145,44 @@ class Daemon(ComplexModel):
     @property
     def _services(self):
         if self.services is not None:
+            for k, v in self.services.items():
+                v.name = k
+
             return self.services.values()
 
     @_services.setter
     def _services(self, what):
         self.services = what
         if what is not None:
-            self.services = dict([(s.name, s) for s in what])
+            self.services = _wdict([(s.name, s) for s in what])
 
     @property
     def _stores(self):
         if self.stores is not None:
+            for k, v in self.stores.items():
+                v.name = k
+
             return self.stores.values()
 
     @_stores.setter
     def _stores(self, what):
         self.stores = what
         if what is not None:
-            self.stores = dict([(s.name, s) for s in what])
+            self.stores = _wdict([(s.name, s) for s in what])
 
     @property
     def _loggers(self):
         if self.loggers is not None:
+            for k, v in self.loggers.items():
+                v.name = k
+
             return self.loggers.values()
 
     @_loggers.setter
     def _loggers(self, what):
         self.loggers = what
         if what is not None:
-            self.loggers = dict([(s.path, s) for s in what])
+            self.loggers = _wdict([(s.path, s) for s in what])
 
     @classmethod
     def get_default(cls, daemon_name):
@@ -189,15 +198,6 @@ class Daemon(ComplexModel):
                                                (daemon_name, getpass.getuser()),
                     sync_pool=True,
                     async_pool=True,
-                ),
-            ],
-            _services=[
-                HttpListener(
-                    name="http_main",
-                    host="localhost",
-                    port=2048,
-                    thread_min=3,
-                    thread_max=10,
                 ),
             ],
             _loggers=[
@@ -295,7 +295,12 @@ def parse_config(daemon_name, argv, cls=Daemon):
         if v is not None:
             setattr(retval, k, v)
 
-    if not exists:
-        open(file_name, 'wb').write(get_object_as_yaml(retval, cls, polymorphic=True))
+    retval.config_file = file_name
 
     return retval
+
+
+def write_config(daemon):
+    if not isfile(daemon.config_file):
+        open(daemon.config_file, 'wb').write(get_object_as_yaml(daemon,
+                                            daemon.__class__, polymorphic=True))

@@ -31,7 +31,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from neurons.daemon.config import parse_config, Daemon
+from neurons.daemon.config import parse_config, Daemon, write_config
 
 
 def main(daemon_name, argv, init, cls=Daemon):
@@ -39,6 +39,8 @@ def main(daemon_name, argv, init, cls=Daemon):
     daemon.apply()
 
     init(daemon)
+
+    write_config(daemon)
 
     from twisted.internet import reactor
     return reactor.run()
