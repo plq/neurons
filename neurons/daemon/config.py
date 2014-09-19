@@ -149,6 +149,16 @@ class Daemon(ComplexModel):
         ('_loggers', Array(Logger, sub_name='loggers')),
     ]
 
+    def __init__(self, *args, **kwargs):
+        super(Daemon, self).__init__(*args, **kwargs)
+
+        if self.services is None:
+            self.services = _wdict()
+        if self.stores is None:
+            self.stores = _wdict()
+        if self.loggers is None:
+            self.loggers = _wdict()
+
     @property
     def _services(self):
         if self.services is not None:
@@ -156,6 +166,9 @@ class Daemon(ComplexModel):
                 v.name = k
 
             return self.services.values()
+
+        self.services = _wdict()
+        return []
 
     @_services.setter
     def _services(self, what):
@@ -171,6 +184,9 @@ class Daemon(ComplexModel):
 
             return self.stores.values()
 
+        self.stores = _wdict()
+        return []
+
     @_stores.setter
     def _stores(self, what):
         self.stores = what
@@ -184,6 +200,9 @@ class Daemon(ComplexModel):
                 v.name = k
 
             return self.loggers.values()
+
+        self.loggers = _wdict()
+        return []
 
     @_loggers.setter
     def _loggers(self, what):
@@ -283,30 +302,28 @@ class Daemon(ComplexModel):
         for store in self._stores or []:
             store.apply()
 
+    @classmethod
+    def parse_config(cls, daemon_name, argv):
+        retval = cls.get_default(daemon_name)
+        file_name = '%s.yaml' % daemon_name
 
-def parse_config(daemon_name, argv, cls=Daemon):
-    retval = cls.get_default(daemon_name)
-    file_name = '%s.yaml' % daemon_name
+        cli = dict(spyne_to_argparse(cls).parse_args(argv[1:]).__dict__.items())
+        if cli['config_file'] is not None:
+            file_name = cli['config_file']
+            del cli['config_file']
 
-    cli = dict(spyne_to_argparse(cls).parse_args(argv[1:]).__dict__.items())
-    if cli['config_file'] is not None:
-        file_name = cli.config.file
-        del cli.config_file
+        exists = isfile(file_name) and os.access(file_name, os.R_OK)
+        if exists:
+            retval = yaml_loads(open(file_name).read(), cls, validator='soft')
 
-    exists = isfile(file_name) and os.access(file_name, os.R_OK)
-    if exists:
-        retval = yaml_loads(open(file_name).read(), cls, validator='soft')
+        for k,v in cli.items():
+            if v is not None:
+                setattr(retval, k, v)
 
-    for k,v in cli.items():
-        if v is not None:
-            setattr(retval, k, v)
+        retval.config_file = file_name
 
-    retval.config_file = file_name
+        return retval
 
-    return retval
-
-
-def write_config(daemon):
-    if not isfile(daemon.config_file):
-        open(daemon.config_file, 'wb').write(get_object_as_yaml(daemon,
-                                            daemon.__class__, polymorphic=True))
+    def write_config(self):
+        open(self.config_file, 'wb').write(get_object_as_yaml(self,
+                                              self.__class__, polymorphic=True))

@@ -31,16 +31,19 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from neurons.daemon.config import parse_config, Daemon, write_config
+from os.path import isfile
+
+from neurons.daemon.config import Daemon
 
 
 def main(daemon_name, argv, init, cls=Daemon):
-    daemon = parse_config(daemon_name, argv, cls)
+    daemon = cls.parse_config(daemon_name, argv)
     daemon.apply()
 
     init(daemon)
 
-    write_config(daemon)
+    if not isfile(daemon.config_file):
+        daemon.write_config()
 
     from twisted.internet import reactor
     return reactor.run()
