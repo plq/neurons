@@ -108,6 +108,7 @@ class Logger(ComplexModel):
 
         _logger.setLevel(LOGLEVEL_MAP[self.level])
 
+
 class _wdict(dict):
     def get(self, key, *args):
         if len(args) > 0:
@@ -115,6 +116,7 @@ class _wdict(dict):
                 self[key], = args
             return self[key]
         return self[key]
+
 
 class Daemon(ComplexModel):
     """A couple of neurons."""
