@@ -133,8 +133,10 @@ def spyne_to_argparse(cls):
             kwargs['action'] = "store_true"
 
         elif issubclass(v, Unicode):
-            if v.Attributes.values is not None:
+            if len(v.Attributes.values) > 0:
                 kwargs['type'] = enum(v.Attributes.values)
+            else:
+                kwargs['type'] = unicode
 
         elif issubclass(v, tuple(ARGTYPE_MAP.keys())):
             kwargs['type'] = ARGTYPE_MAP[v]
