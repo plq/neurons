@@ -71,6 +71,13 @@ class Relational(StorageInfo):
 
     def apply(self):
         self.itself = SqlDataStore(self.conn_str, self.pool_size)
+        if self.async_pool:
+            self.itself.add_txpool()
+        if not self.sync_pool:
+            self.itself.Session = None
+            self.itself.metadata = None
+            self.itself.engine.close()
+            self.itself.engine = None
 
 
 class Service(ComplexModel):
