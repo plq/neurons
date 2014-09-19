@@ -248,7 +248,6 @@ class Daemon(ComplexModel):
         handler = TwistedHandler()
         handler.setFormatter(formatter)
         logging.getLogger().addHandler(handler)
-        logging.getLogger().debug("ALOOOO")
 
         for l in self._loggers or []:
             l.apply()
