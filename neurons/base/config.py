@@ -36,7 +36,7 @@ import os
 from spyne import Boolean, ComplexModel, Unicode, ByteArray, UnsignedInteger, \
     Array
 
-AbsolutePath = Unicode
+AbsolutePath = Unicode()
 SystemUser = Unicode(pattern='[a-z0-9_]+', type_name='SystemUser')
 SystemGroup = Unicode(pattern='[a-z0-9_]+', type_name='SystemGroup')
 

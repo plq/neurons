@@ -31,6 +31,28 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-__version__ = '0.1'
+from spyne import TTableModel
+from spyne.util.sqlalchemy import get_pk_columns
 
-from neurons.model import TableModel
+TableModel = TTableModel()
+
+
+def respawn(cls, ctx=None):
+    if ctx is not None and ctx.in_object is not None and len(ctx.in_object) > 0 \
+                       and ctx.in_object[0] is not None \
+                       and ctx.app is not None and hasattr(ctx.app, 'main'):
+
+        in_object = ctx.in_object[0]
+
+        filters = {}
+        for k,v in get_pk_columns(cls):
+            filters[k] = getattr(in_object, k)
+
+        from arskom.web import DalBase
+
+        session = DalBase(ctx).session
+        retval = session.query(cls).with_polymorphic('*').filter_by(**filters).one()
+        return retval
+
+
+TableModel.__respawn__ = classmethod(respawn)

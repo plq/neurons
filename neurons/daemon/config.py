@@ -31,29 +31,27 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-import logging
-from neurons.daemon.daemonize import daemonize
+from __future__ import print_function
 
+import logging
 logger = logging.getLogger(__name__)
 
 import os
 import sys
 import getpass
-import argparse
 
 from uuid import uuid1
-from decimal import Decimal as D
 from os import access
 from os.path import isfile, abspath, dirname
 
 from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
-    UnsignedInteger, UnsignedInteger16, Array, Integer, Decimal, \
-    ComplexModelBase
+    UnsignedInteger, UnsignedInteger16, Array
 
-from spyne.util.cdict import cdict
-from spyne.util.dictdoc import YamlDocument, yaml_loads, get_object_as_yaml
+from spyne.util.dictdoc import yaml_loads, get_object_as_yaml
 
-from spyne.protocol import get_cls_attrs
+from neurons.daemon.daemonize import daemonize
+from neurons.daemon.store import SqlDataStore
+from neurons.daemon.cli import spyne_to_argparse
 
 
 class StorageInfo(ComplexModel):
@@ -67,14 +65,24 @@ class Relational(StorageInfo):
     sync_pool = Boolean
     async_pool = Boolean
 
+    def __init__(self, *args, **kwargs):
+        super(Relational, self).__init__(*args, **kwargs)
+        self.itself = None
 
-class Listener(ComplexModel):
+    def apply(self):
+        self.itself = SqlDataStore(self.conn_str, self.pool_size)
+
+
+class Service(ComplexModel):
     name = Unicode
+    thread_min = UnsignedInteger
+    thread_max = UnsignedInteger
+
+
+class Listener(Service):
     host = Unicode
     port = UnsignedInteger16
     unix_socket = Unicode
-    thread_min = UnsignedInteger
-    thread_max = UnsignedInteger
 
 
 class HttpListener(Listener):
@@ -100,6 +108,13 @@ class Logger(ComplexModel):
 
         _logger.setLevel(LOGLEVEL_MAP[self.level])
 
+class _wdict(dict):
+    def get(self, key, *args):
+        if len(args) > 0:
+            if not key in self:
+                self[key], = args
+            return self[key]
+        return self[key]
 
 class Daemon(ComplexModel):
     """A couple of neurons."""
@@ -107,27 +122,63 @@ class Daemon(ComplexModel):
     LOGGING_DEVEL_FORMAT = "%(module)-15s | %(message)s"
     LOGGING_PROD_FORMAT = "%(asctime)s | %(module)-8s | %(levelname)s: %(message)s"
 
-    uuid = Uuid
-    secret = ByteArray
-    daemonize = Boolean(default=False)
-    gid = Unicode
-    uid = Unicode
-    log_file = Unicode
-    pid_file = Unicode
-    listeners = Array(Listener)
-    stores = Array(StorageInfo)
-    loggers = Array(Logger)
-    
-    show_rpc = Boolean
-    show_queries = Boolean
-    show_results = Boolean
+    _type_info = [
+        ('uuid', Uuid),
+        ('secret', ByteArray),
+        ('daemonize', Boolean(default=False)),
+        ('gid', Unicode),
+        ('uid', Unicode),
+        ('log_file', Unicode),
+        ('pid_file', Unicode),
+
+        ('show_rpc', Boolean),
+        ('show_queries', Boolean),
+        ('show_results', Boolean),
+
+        ('_services', Array(Service, sub_name='services')),
+        ('_stores', Array(StorageInfo, sub_name='stores')),
+        ('_loggers', Array(Logger, sub_name='loggers')),
+    ]
+
+    @property
+    def _services(self):
+        if self.services is not None:
+            return self.services.values()
+
+    @_services.setter
+    def _services(self, what):
+        self.services = what
+        if what is not None:
+            self.services = dict([(s.name, s) for s in what])
+
+    @property
+    def _stores(self):
+        if self.stores is not None:
+            return self.stores.values()
+
+    @_stores.setter
+    def _stores(self, what):
+        self.stores = what
+        if what is not None:
+            self.stores = dict([(s.name, s) for s in what])
+
+    @property
+    def _loggers(self):
+        if self.loggers is not None:
+            return self.loggers.values()
+
+    @_loggers.setter
+    def _loggers(self, what):
+        self.loggers = what
+        if what is not None:
+            self.loggers = dict([(s.path, s) for s in what])
 
     @classmethod
     def get_default(cls, daemon_name):
         return cls(
             uuid=uuid1(),
             secret=os.urandom(64),
-            stores=[
+            _stores=[
                 Relational(
                     name="sql_main",
                     backend="sqlalchemy",
@@ -138,7 +189,7 @@ class Daemon(ComplexModel):
                     async_pool=True,
                 ),
             ],
-            listeners=[
+            _services=[
                 HttpListener(
                     name="http_main",
                     host="localhost",
@@ -147,7 +198,7 @@ class Daemon(ComplexModel):
                     thread_max=10,
                 ),
             ],
-            loggers=[
+            _loggers=[
                 Logger(path='.', level='DEBUG', format=cls.LOGGING_DEVEL_FORMAT),
             ],
         )
@@ -190,7 +241,7 @@ class Daemon(ComplexModel):
         logging.getLogger().addHandler(handler)
         logging.getLogger().debug("ALOOOO")
 
-        for l in self.loggers:
+        for l in self._loggers or []:
             l.apply()
 
         if self.show_rpc or self.show_queries or self.show_results:
@@ -208,85 +259,37 @@ class Daemon(ComplexModel):
             logging.getLogger('sqlalchemy').setLevel(logging.DEBUG)
 
     def apply(self):
+        """Daemonizes the process if requested, then sets up logging and data
+        stores.
+        """
+
         assert not ('twisted' in sys.modules)
 
         if self.daemonize:
             daemonize()
 
         self.apply_logging()
-        print(sys.modules['twisted'])
+        self.apply_storage()
 
-
-ARGTYPE_MAP = cdict({
-    Integer: int,
-    Decimal: D,
-})
-
-
-def is_array_of_primitives(cls):
-    if issubclass(cls, Array):
-        subcls, = cls._type_info.values()
-        return not issubclass(subcls, ComplexModelBase)
-
-    elif cls.Attributes.max_occurs > 1:
-        return not issubclass(cls, ComplexModelBase)
-
-    return False
-
-
-def is_array_of_complexes(cls):
-    if issubclass(cls, Array):
-        subcls, = cls._type_info.values()
-        return issubclass(subcls, ComplexModelBase)
-
-    elif cls.Attributes.max_occurs > 1:
-        return issubclass(cls, ComplexModelBase)
-
-    return False
-
-
-def spyne_to_argparse(cls):
-    fti = cls.get_flat_type_info(cls)
-    parser = argparse.ArgumentParser(description=Daemon.__doc__)
-
-    for k, v in sorted(fti.items(), key=lambda i: i[0]):
-        attrs = get_cls_attrs(None, v)
-        args = ['--%s' % k]
-        if attrs.short is not None:
-            args.append('-%s' % attrs.short)
-
-        kwargs = {}
-
-        if attrs.help is not None:
-            kwargs['help'] = attrs.help
-
-        # types
-        if is_array_of_primitives(v):
-            kwargs['nargs'] = "+"
-
-        elif is_array_of_complexes(v):
-            continue
-
-        elif issubclass(v, Boolean):
-            kwargs['action'] = "store_true"
-
-        elif issubclass(v, tuple(ARGTYPE_MAP.keys())):
-            kwargs['type'] = ARGTYPE_MAP[v]
-
-        parser.add_argument(*args, **kwargs)
-
-    return parser
+    def apply_storage(self):
+        for store in self._stores or []:
+            store.apply()
 
 
 def parse_config(daemon_name, argv, cls=Daemon):
     retval = cls.get_default(daemon_name)
     file_name = '%s.yaml' % daemon_name
 
+    cli = dict(spyne_to_argparse(cls).parse_args(argv[1:]).__dict__.items())
+    if cli['config_file'] is not None:
+        file_name = cli.config.file
+        del cli.config_file
+
     exists = isfile(file_name) and os.access(file_name, os.R_OK)
     if exists:
         retval = yaml_loads(open(file_name).read(), cls, validator='soft')
 
-    for k,v in spyne_to_argparse(cls).parse_args(argv[1:]).__dict__.items():
+    for k,v in cli.items():
         if v is not None:
             setattr(retval, k, v)
 
@@ -294,4 +297,3 @@ def parse_config(daemon_name, argv, cls=Daemon):
         open(file_name, 'wb').write(get_object_as_yaml(retval, cls, polymorphic=True))
 
     return retval
-

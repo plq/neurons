@@ -31,6 +31,14 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-__version__ = '0.1'
+from neurons.daemon.config import parse_config, Daemon
 
-from neurons.model import TableModel
+
+def main(daemon_name, argv, init, cls=Daemon):
+    daemon = parse_config(daemon_name, argv, cls)
+    daemon.apply()
+
+    init(daemon)
+
+    from twisted.internet import reactor
+    return reactor.run()
