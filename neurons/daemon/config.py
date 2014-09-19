@@ -31,14 +31,20 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-import os
 import logging
+from neurons.daemon.daemonize import daemonize
+
+logger = logging.getLogger(__name__)
+
+import os
+import sys
 import getpass
 import argparse
 
 from uuid import uuid1
 from decimal import Decimal as D
-from os.path import isfile
+from os import access
+from os.path import isfile, abspath, dirname
 
 from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
     UnsignedInteger, UnsignedInteger16, Array, Integer, Decimal, \
@@ -75,13 +81,31 @@ class HttpListener(Listener):
     static_dir = Unicode
 
 
+LOGLEVEL_MAP = dict(zip(
+    ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+    [logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR,
+                                                               logging.CRITICAL]
+))
+
+
 class Logger(ComplexModel):
     path = Unicode
     level = Unicode(values=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'])
 
+    def apply(self):
+        if self.path == '.':
+            _logger = logging.getLogger()
+        else:
+            _logger = logging.getLogger(self.path)
+
+        _logger.setLevel(LOGLEVEL_MAP[self.level])
+
 
 class Daemon(ComplexModel):
     """A couple of neurons."""
+
+    LOGGING_DEVEL_FORMAT = "%(module)-15s | %(message)s"
+    LOGGING_PROD_FORMAT = "%(asctime)s | %(module)-8s | %(levelname)s: %(message)s"
 
     uuid = Uuid
     secret = ByteArray
@@ -93,6 +117,10 @@ class Daemon(ComplexModel):
     listeners = Array(Listener)
     stores = Array(StorageInfo)
     loggers = Array(Logger)
+    
+    show_rpc = Boolean
+    show_queries = Boolean
+    show_results = Boolean
 
     @classmethod
     def get_default(cls, daemon_name):
@@ -120,9 +148,74 @@ class Daemon(ComplexModel):
                 ),
             ],
             loggers=[
-                Logger(path='.', level='DEBUG'),
+                Logger(path='.', level='DEBUG', format=cls.LOGGING_DEVEL_FORMAT),
             ],
         )
+
+    def apply_logging(self):
+        # We're using twisted logging only for IO.
+        from twisted.python import log
+
+        class TwistedHandler(logging.Handler):
+            def emit(self, record):
+                assert isinstance(record, logging.LogRecord)
+                log.msg(self.format(record), logLevel=record.levelno)
+
+        if self.log_file is not None:
+            from twisted.python.logfile import DailyLogFile
+
+            self.log_file = abspath(self.log_file)
+            assert access(dirname(self.log_file), os.R_OK | os.W_OK | os.X_OK),\
+                "%r is not accessible. We need rwx on it." % self.log_file
+
+            log_dest = DailyLogFile.fromFullPath(self.log_file)
+            log.startLogging(log_dest, setStdout=False)
+
+            formatter = logging.Formatter(self.LOGGING_PROD_FORMAT)
+
+        else:
+            formatter = logging.Formatter(self.LOGGING_DEVEL_FORMAT)
+            log.startLogging(sys.stdout, setStdout=False)
+
+            try:
+                import colorama
+                colorama.init()
+                logger.debug("colorama loaded.")
+    
+            except Exception as e:
+                logger.debug("coloarama not loaded: %r" % e)
+
+        handler = TwistedHandler()
+        handler.setFormatter(formatter)
+        logging.getLogger().addHandler(handler)
+        logging.getLogger().debug("ALOOOO")
+
+        for l in self.loggers:
+            l.apply()
+
+        if self.show_rpc or self.show_queries or self.show_results:
+            logging.getLogger().setHandler(logging.DEBUG)
+
+        if self.show_rpc:
+            logging.getLogger('spyne.protocol').setLevel(logging.DEBUG)
+            logging.getLogger('spyne.protocol.xml').setLevel(logging.DEBUG)
+            logging.getLogger('spyne.protocol.dictdoc').setLevel(logging.DEBUG)
+
+        if self.show_queries:
+            logging.getLogger('sqlalchemy').setLevel(logging.INFO)
+
+        if self.show_results:
+            logging.getLogger('sqlalchemy').setLevel(logging.DEBUG)
+
+    def apply(self):
+        assert not ('twisted' in sys.modules)
+
+        if self.daemonize:
+            daemonize()
+
+        self.apply_logging()
+        print(sys.modules['twisted'])
+
 
 ARGTYPE_MAP = cdict({
     Integer: int,
@@ -201,3 +294,4 @@ def parse_config(daemon_name, argv, cls=Daemon):
         open(file_name, 'wb').write(get_object_as_yaml(retval, cls, polymorphic=True))
 
     return retval
+
