@@ -135,8 +135,10 @@ class Daemon(ComplexModel):
         ('uuid', Uuid),
         ('secret', ByteArray),
         ('daemonize', Boolean(default=False)),
+
         ('gid', Unicode),
         ('uid', Unicode),
+
         ('log_file', Unicode),
         ('pid_file', Unicode),
 
@@ -285,6 +287,12 @@ class Daemon(ComplexModel):
         if self.show_results:
             logging.getLogger('sqlalchemy').setLevel(logging.DEBUG)
 
+    def sanitize(self):
+        if self.log_file is not None:
+            self.log_file = abspath(self.log_file)
+        if self.pid_file is not None:
+            self.pid_file = abspath(self.pid_file)
+
     def apply(self):
         """Daemonizes the process if requested, then sets up logging and data
         stores.
@@ -292,7 +300,9 @@ class Daemon(ComplexModel):
 
         assert not ('twisted' in sys.modules)
 
+        self.sanitize()
         if self.daemonize:
+            assert self.log_file
             daemonize()
 
         self.apply_logging()
@@ -305,7 +315,7 @@ class Daemon(ComplexModel):
     @classmethod
     def parse_config(cls, daemon_name, argv):
         retval = cls.get_default(daemon_name)
-        file_name = '%s.yaml' % daemon_name
+        file_name = abspath('%s.yaml' % daemon_name)
 
         cli = dict(spyne_to_argparse(cls).parse_args(argv[1:]).__dict__.items())
         if cli['config_file'] is not None:
