@@ -85,7 +85,7 @@ class Listener(Service):
     unix_socket = Unicode
 
 
-class HttpListener(Listener):
+class WsgiListener(Listener):
     static_dir = Unicode
 
 
