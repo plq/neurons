@@ -224,19 +224,27 @@ class Daemon(ComplexModel):
     LOGGING_PROD_FORMAT = "%(asctime)s | %(module)-8s | %(levelname)s: %(message)s"
 
     _type_info = [
-        ('uuid', Uuid),
-        ('secret', ByteArray),
-        ('daemonize', Boolean(default=False)),
+        ('uuid', Uuid(help="Daemon uuid. Regenerated every time a new "
+                           "config file is written. It could come in handy.")),
+        ('secret', ByteArray(help="Secret key for signing cookies and other "
+                                  "stuff.")),
+        ('daemonize', Boolean(default=False,
+                              help="Daemonizes before everything else.")),
 
-        ('gid', Unicode),
-        ('uid', Unicode),
+        ('uid', Unicode(help="The daemon user. You need to start the server as"
+                             " a priviledged user for this to work.")),
+        ('gid', Unicode(help="The daemon group. You need to start the server as"
+                             " a priviledged user for this to work.")),
 
-        ('log_file', Unicode),
-        ('pid_file', Unicode),
+        ('log_file', Unicode(help="The path to the log file. The server won't "
+               "daemonize without this. Converted to an absolute path if not")),
+        ('pid_file', Unicode(help="The path to a text file that contains the pid"
+                                  "of the daemonized process.")),
 
-        ('show_rpc', Boolean),
-        ('show_queries', Boolean),
-        ('show_results', Boolean),
+        ('log_rpc', Boolean(help="Log raw rpc data.")),
+        ('log_queries', Boolean(help="Log sql queries.")),
+        ('log_results', Boolean(help="Log query results in addition to queries"
+                                     "themselves.")),
 
         ('_services', Array(Service, sub_name='services')),
         ('_stores', Array(StorageInfo, sub_name='stores')),
