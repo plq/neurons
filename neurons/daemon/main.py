@@ -33,14 +33,19 @@
 
 from os.path import isfile
 
-from neurons.daemon.config import Daemon
+from neurons.daemon.config import Daemon, ServiceDisabled
 
 
 def main(daemon_name, argv, init, cls=Daemon):
     daemon = cls.parse_config(daemon_name, argv)
     daemon.apply()
 
-    init(daemon)
+    for k, v in init(daemon).items():
+        if not (k in daemon.services and daemon.services[k].disabled):
+            try:
+                v(daemon)
+            except ServiceDisabled:
+                pass
 
     if not isfile(daemon.config_file):
         daemon.write_config()

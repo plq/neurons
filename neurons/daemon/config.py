@@ -82,18 +82,93 @@ class Relational(StorageInfo):
 
 class Service(ComplexModel):
     name = Unicode
-    thread_min = UnsignedInteger
-    thread_max = UnsignedInteger
 
 
 class Listener(Service):
     host = Unicode
     port = UnsignedInteger16
+    disabled = Boolean
     unix_socket = Unicode
 
 
-class WsgiListener(Listener):
-    static_dir = Unicode
+class HttpApplication(ComplexModel):
+    url = Unicode
+    name = Unicode
+
+
+class StaticFileServer(HttpApplication):
+    path = Unicode
+    list_contents = Boolean(default=False)
+
+    def __init__(self, *args, **kwargs):
+        super(StaticFileServer, self).__init__(*args, **kwargs)
+        self.name = '{neurons.daemon}StaticFile'
+
+    def gen_resource(self):
+        from twisted.web.static import File
+        from twisted.web.resource import ForbiddenResource
+
+        if self.list_contents:
+            return File(abspath(self.path))
+
+        class StaticFile(File):
+            def directoryListing(self):
+                return ForbiddenResource()
+
+        return StaticFile(abspath(self.path))
+
+
+class HttpListener(Listener):
+    _type_info = [
+        ('static_dir', Unicode),
+        ('_subapps', Array(HttpApplication, sub_name='subapps')),
+    ]
+
+    def __init__(self, *args, **kwargs):
+        super(HttpListener, self).__init__(*args, **kwargs)
+
+        subapps = kwargs.get('subapps', None)
+        if subapps is not None:
+            self.subapps = subapps
+        if not hasattr(self, 'subpaths') or self.subapps is None:
+            self.subapps = _wdict()
+
+    def gen_site(self):
+        from twisted.web.server import Site
+        from twisted.web.resource import Resource
+
+        root_app = self.subapps.get('', None)
+        if root_app is None:
+            root = Resource()
+        else:
+            root = root_app.gen_resource()
+
+        for subapp in self.subapps:
+            if subapp.uri != '':
+                root.putChild(subapp.uri, subapp.gen_resource())
+        return Site(root)
+
+    @property
+    def _subpaths(self):
+        if self.subpaths is not None:
+            for k, v in self.subpaths.items():
+                v.uri = k
+
+            return self.subpaths.values()
+
+        self.subpaths = _wdict()
+        return []
+
+    @_subpaths.setter
+    def _subpaths(self, what):
+        self.subpaths = what
+        if what is not None:
+            self.subpaths = _wdict([(s.uri, s) for s in what])
+
+
+class WsgiListener(HttpListener):
+    thread_min = UnsignedInteger
+    thread_max = UnsignedInteger
 
 
 LOGLEVEL_MAP = dict(zip(
@@ -114,15 +189,32 @@ class Logger(ComplexModel):
             _logger = logging.getLogger(self.path)
 
         _logger.setLevel(LOGLEVEL_MAP[self.level])
+        logger.info("Setting logging level for %r to %r.", _logger.name, self.path)
+
+
+class ServiceDisabled(Exception):
+    pass
 
 
 class _wdict(dict):
-    def get(self, key, *args):
+    def getwrite(self, key, *args):
         if len(args) > 0:
             if not key in self:
                 self[key], = args
             return self[key]
         return self[key]
+
+
+class _wrdict(_wdict):
+    def getwrite(self, key, *args):
+        """Raises ServiceDisabled when the service has disabled == True"""
+
+        retval = super(_wrdict, self).getwrite(key, *args)
+
+        if getattr(retval, 'disabled', None):
+            raise ServiceDisabled(getattr(retval, 'name', "??"))
+
+        return retval
 
 
 class Daemon(ComplexModel):
@@ -151,14 +243,27 @@ class Daemon(ComplexModel):
         ('_loggers', Array(Logger, sub_name='loggers')),
     ]
 
+    # FIXME: we need this atrocity with custom constructor and properties
+    # because spyne doesn't support custom containers
     def __init__(self, *args, **kwargs):
         super(Daemon, self).__init__(*args, **kwargs)
 
-        if self.services is None:
+        services = kwargs.get('services', None)
+        if services is not None:
+            self.services = services
+        if not hasattr(self, 'services') or self.services is None:
             self.services = _wdict()
-        if self.stores is None:
+
+        stores = kwargs.get('stores', None)
+        if stores is not None:
+            self.stores = stores
+        if not hasattr(self, 'stores') or self.stores is None:
             self.stores = _wdict()
-        if self.loggers is None:
+
+        loggers = kwargs.get('loggers', None)
+        if loggers is not None:
+            self.loggers = loggers
+        if not hasattr(self, 'loggers') or self.loggers is None:
             self.loggers = _wdict()
 
     @property
@@ -169,14 +274,14 @@ class Daemon(ComplexModel):
 
             return self.services.values()
 
-        self.services = _wdict()
+        self.services = _wrdict()
         return []
 
     @_services.setter
     def _services(self, what):
         self.services = what
         if what is not None:
-            self.services = _wdict([(s.name, s) for s in what])
+            self.services = _wrdict([(s.name, s) for s in what])
 
     @property
     def _stores(self):
@@ -324,7 +429,8 @@ class Daemon(ComplexModel):
 
         exists = isfile(file_name) and os.access(file_name, os.R_OK)
         if exists:
-            retval = yaml_loads(open(file_name).read(), cls, validator='soft')
+            retval = yaml_loads(open(file_name).read(), cls, validator='soft',
+                                                               polymorphic=True)
 
         for k,v in cli.items():
             if v is not None:
