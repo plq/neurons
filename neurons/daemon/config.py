@@ -221,7 +221,7 @@ class Daemon(ComplexModel):
     """A couple of neurons."""
 
     LOGGING_DEVEL_FORMAT = "%(module)-15s | %(message)s"
-    LOGGING_PROD_FORMAT = "%(asctime)s | %(module)-8s | %(levelname)s: %(message)s"
+    LOGGING_PROD_FORMAT = "%(asctime)s | %(module)-8s | %(levelname)-7s: %(message)s"
 
     _type_info = [
         ('uuid', Uuid(help="Daemon uuid. Regenerated every time a new "
@@ -348,34 +348,50 @@ class Daemon(ComplexModel):
 
     def apply_logging(self):
         # We're using twisted logging only for IO.
-        from twisted.python import log
+        from twisted.python.logger import Logger, LegacyLogger, LogLevel, globalLogPublisher
+        llog = LegacyLogger()
+
+        LOGLEVEL_TWISTED_MAP = {
+            logging.DEBUG: LogLevel.debug,
+            logging.INFO: LogLevel.info,
+            logging.WARN: LogLevel.warn,
+            logging.ERROR: LogLevel.error,
+            logging.CRITICAL: LogLevel.critical,
+        }
 
         class TwistedHandler(logging.Handler):
             def emit(self, record):
                 assert isinstance(record, logging.LogRecord)
-                log.msg(self.format(record), logLevel=record.levelno)
+                Logger(record.name).emit(LOGLEVEL_TWISTED_MAP[record.levelno],
+                                         log_text=self.format(record))
 
         if self.log_file is not None:
             from twisted.python.logfile import DailyLogFile
+            from twisted.python.logger import FileLogObserver
 
             self.log_file = abspath(self.log_file)
-            assert access(dirname(self.log_file), os.R_OK | os.W_OK | os.X_OK),\
-                "%r is not accessible. We need rwx on it." % self.log_file
+            if access(dirname(self.log_file), os.R_OK | os.W_OK | os.X_OK):
+                log_dest = DailyLogFile.fromFullPath(self.log_file)
 
-            log_dest = DailyLogFile.fromFullPath(self.log_file)
-            log.startLogging(log_dest, setStdout=False)
+            else:
+                Logger().warn("%r is not accessible. We need rwx on it to "
+                               "rotate logs." % dirname(self.log_file))
+                log_dest = open(self.log_file, 'wb+')
+
+            observer = FileLogObserver(log_dest, lambda x: x['log_text']+'\n')
+            globalLogPublisher.addObserver(observer)
 
             formatter = logging.Formatter(self.LOGGING_PROD_FORMAT)
 
         else:
             formatter = logging.Formatter(self.LOGGING_DEVEL_FORMAT)
-            log.startLogging(sys.stdout, setStdout=False)
+            llog.startLogging(sys.stdout, setStdout=False)
 
             try:
                 import colorama
                 colorama.init()
                 logger.debug("colorama loaded.")
-    
+
             except Exception as e:
                 logger.debug("coloarama not loaded: %r" % e)
 
