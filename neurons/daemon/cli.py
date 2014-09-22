@@ -53,14 +53,14 @@ def Tmust_exist(test_func):
             :func:`os.path.ismount`.
     """
 
-    def punk(file_name):
+    def must_exist(file_name):
         if file_name:
             file_name = os.path.abspath(file_name)
             if not test_func(file_name):
                 raise OSError("%r is invalid." % file_name)
             return file_name
 
-    return punk
+    return must_exist
 
 
 def enum(*values):
@@ -69,13 +69,13 @@ def enum(*values):
     :param values: Values that the option at hand can have. Must all be unicode.
     """
 
-    def punk(value):
+    def enum_(value):
         if value:
             if not (value in values):
                 raise ValueError('Argument must be one of %r' % values)
             return value
 
-    return punk
+    return enum_
 
 file_must_exist = Tmust_exist(os.path.isfile)
 dir_must_exist = Tmust_exist(os.path.isdir)
@@ -101,6 +101,7 @@ def _is_array_of_complexes(cls):
         return issubclass(cls, ComplexModelBase)
 
     return False
+
 
 def spyne_to_argparse(cls):
     fti = cls.get_flat_type_info(cls)

@@ -189,7 +189,7 @@ class Logger(ComplexModel):
             _logger = logging.getLogger(self.path)
 
         _logger.setLevel(LOGLEVEL_MAP[self.level])
-        logger.info("Setting logging level for %r to %r.", _logger.name, self.path)
+        logger.info("Setting logging level for %r to %r.", _logger.name, self.level)
 
 
 class ServiceDisabled(Exception):
@@ -386,18 +386,18 @@ class Daemon(ComplexModel):
         for l in self._loggers or []:
             l.apply()
 
-        if self.show_rpc or self.show_queries or self.show_results:
+        if self.log_rpc or self.log_queries or self.log_results:
             logging.getLogger().setHandler(logging.DEBUG)
 
-        if self.show_rpc:
+        if self.log_rpc:
             logging.getLogger('spyne.protocol').setLevel(logging.DEBUG)
             logging.getLogger('spyne.protocol.xml').setLevel(logging.DEBUG)
             logging.getLogger('spyne.protocol.dictdoc').setLevel(logging.DEBUG)
 
-        if self.show_queries:
+        if self.log_queries:
             logging.getLogger('sqlalchemy').setLevel(logging.INFO)
 
-        if self.show_results:
+        if self.log_results:
             logging.getLogger('sqlalchemy').setLevel(logging.DEBUG)
 
     def sanitize(self):
