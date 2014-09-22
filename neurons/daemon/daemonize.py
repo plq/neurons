@@ -46,16 +46,12 @@ def daemonize():
     background as a daemon.
     """
 
-    try:
-        # Fork a child process so the parent can exit.  This returns control to
-        # the command-line or shell.  It also guarantees that the child will not
-        # be a process group leader, since the child receives a new process ID
-        # and inherits the parent's process group ID.  This step is required
-        # to insure that the next call to os.setsid is successful.
-        pid = os.fork()
-
-    except OSError as e:
-        raise Exception("%s [%d]" % (e.strerror, e.errno))
+    # Fork a child process so the parent can exit.  This returns control to
+    # the command-line or shell.  It also guarantees that the child will not
+    # be a process group leader, since the child receives a new process ID
+    # and inherits the parent's process group ID.  This step is required
+    # to insure that the next call to os.setsid is successful.
+    pid = os.fork()
 
     if pid == 0:      # The first child.
         # To become the session leader of this new session and the process group
@@ -93,19 +89,15 @@ def daemonize():
         import signal           # Set handlers for asynchronous events.
         signal.signal(signal.SIGHUP, signal.SIG_IGN)
 
-        try:
-            # Fork a second child and exit immediately to prevent zombies.  This
-            # causes the second child process to be orphaned, making the init
-            # process responsible for its cleanup. And, since the first child is
-            # a session leader without a controlling terminal, it's possible for
-            # it to acquire one by opening a terminal in the future (System V-
-            # based systems).  This second fork guarantees that the child is no
-            # longer a session leader, preventing the daemon from ever acquiring
-            # a controlling terminal.
-            pid = os.fork()    # Fork a second child.
-
-        except OSError as e:
-            raise Exception("%s [%d]" % (e.strerror, e.errno))
+        # Fork a second child and exit immediately to prevent zombies.  This
+        # causes the second child process to be orphaned, making the init
+        # process responsible for its cleanup. And, since the first child is
+        # a session leader without a controlling terminal, it's possible for
+        # it to acquire one by opening a terminal in the future (System V-
+        # based systems).  This second fork guarantees that the child is no
+        # longer a session leader, preventing the daemon from ever acquiring
+        # a controlling terminal.
+        pid = os.fork()    # Fork a second child.
 
         if pid == 0:    # The second child.
             # Since the current working directory may be a mounted filesystem,
@@ -167,7 +159,7 @@ def daemonize():
     for fd in range(0, maxfd):
         try:
             os.close(fd)
-        except OSError:    # ERROR, fd wasn't open to begin with (ignored)
+        except OSError as e:    # ERROR, fd wasn't open to begin with (ignored)
             pass
 
     # Redirect the standard I/O file descriptors to the specified file.  Since

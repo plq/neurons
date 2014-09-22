@@ -348,8 +348,8 @@ class Daemon(ComplexModel):
 
     def apply_logging(self):
         # We're using twisted logging only for IO.
+        from twisted.python.logger import FileLogObserver
         from twisted.python.logger import Logger, LegacyLogger, LogLevel, globalLogPublisher
-        llog = LegacyLogger()
 
         LOGLEVEL_TWISTED_MAP = {
             logging.DEBUG: LogLevel.debug,
@@ -367,10 +367,9 @@ class Daemon(ComplexModel):
 
         if self.log_file is not None:
             from twisted.python.logfile import DailyLogFile
-            from twisted.python.logger import FileLogObserver
 
             self.log_file = abspath(self.log_file)
-            if access(dirname(self.log_file), os.R_OK | os.W_OK | os.X_OK):
+            if access(dirname(self.log_file), os.R_OK | os.W_OK):
                 log_dest = DailyLogFile.fromFullPath(self.log_file)
 
             else:
@@ -378,14 +377,11 @@ class Daemon(ComplexModel):
                                "rotate logs." % dirname(self.log_file))
                 log_dest = open(self.log_file, 'wb+')
 
-            observer = FileLogObserver(log_dest, lambda x: x['log_text']+'\n')
-            globalLogPublisher.addObserver(observer)
-
             formatter = logging.Formatter(self.LOGGING_PROD_FORMAT)
 
         else:
             formatter = logging.Formatter(self.LOGGING_DEVEL_FORMAT)
-            llog.startLogging(sys.stdout, setStdout=False)
+            log_dest = open('/dev/stdout', 'wb+')
 
             try:
                 import colorama
@@ -394,6 +390,9 @@ class Daemon(ComplexModel):
 
             except Exception as e:
                 logger.debug("coloarama not loaded: %r" % e)
+
+        observer = FileLogObserver(log_dest, lambda x: x['log_text']+'\n')
+        globalLogPublisher.addObserver(observer)
 
         handler = TwistedHandler()
         handler.setFormatter(formatter)
@@ -434,6 +433,11 @@ class Daemon(ComplexModel):
             assert self.log_file
             daemonize()
 
+        if self.pid_file is not None:
+            pid = os.getpid()
+            with open(self.pid_file, 'w') as f:
+                f.write(str(pid))
+
         self.apply_logging()
         self.apply_storage()
 
@@ -455,9 +459,13 @@ class Daemon(ComplexModel):
         if exists:
             retval = yaml_loads(open(file_name).read(), cls, validator='soft',
                                                                polymorphic=True)
+        else:
+            if not access(dirname(file_name), os.R_OK | os.W_OK):
+                raise Exception("File %r can't be created in %r" %
+                                                (file_name, dirname(file_name)))
 
-        for k,v in cli.items():
-            if v is not None:
+        for k, v in cli.items():
+            if v is not None and v != False:
                 setattr(retval, k, v)
 
         retval.config_file = file_name

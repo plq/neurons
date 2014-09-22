@@ -107,7 +107,7 @@ def spyne_to_argparse(cls):
     fti = cls.get_flat_type_info(cls)
     parser = argparse.ArgumentParser(description=cls.__doc__)
 
-    parser.add_argument('-c', '--config-file', type=file_must_exist,
+    parser.add_argument('-c', '--config-file', type=os.path.abspath,
                                             help="An alternative config file.")
 
     for k, v in sorted(fti.items(), key=lambda i: i[0]):
