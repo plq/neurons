@@ -226,8 +226,8 @@ class Daemon(ComplexModel):
     _type_info = [
         ('uuid', Uuid(help="Daemon uuid. Regenerated every time a new "
                            "config file is written. It could come in handy.")),
-        ('secret', ByteArray(help="Secret key for signing cookies and other "
-                                  "stuff.")),
+        ('secret', ByteArray(no_cli=True, help="Secret key for signing cookies "
+                                               "and other stuff.")),
         ('daemonize', Boolean(default=False,
                               help="Daemonizes before everything else.")),
 
