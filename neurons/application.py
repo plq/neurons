@@ -31,7 +31,14 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-__version__ = '0.1'
+import spyne
 
-from neurons.model import TableModel
-from neurons.application import Application
+from neurons.base.event import on_method_context_closed
+
+
+class Application(spyne.Application):
+    def __init__(self, *args, **kwargs):
+        super(Application, self).__init__(*args, **kwargs)
+
+        self.event_manager.add_listener("method_context_closed",
+                                                       on_method_context_closed)
