@@ -112,6 +112,9 @@ def spyne_to_argparse(cls):
 
     for k, v in sorted(fti.items(), key=lambda i: i[0]):
         attrs = get_cls_attrs(None, v)
+        if attrs.no_cli:
+            continue
+
         args = ['--%s' % k.replace('_', '-')]
         if attrs.short is not None:
             args.append('-%s' % attrs.short)
