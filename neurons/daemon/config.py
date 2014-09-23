@@ -221,7 +221,7 @@ class Daemon(ComplexModel):
     """A couple of neurons."""
 
     LOGGING_DEVEL_FORMAT = "%(module)-15s | %(message)s"
-    LOGGING_PROD_FORMAT = "%(asctime)s | %(module)-8s | %(levelname)-7s: %(message)s"
+    LOGGING_PROD_FORMAT = "%(asctime)s | %(module)-8s | %(message)s"
 
     _type_info = [
         ('uuid', Uuid(help="Daemon uuid. Regenerated every time a new "
