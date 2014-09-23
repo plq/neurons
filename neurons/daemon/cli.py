@@ -111,10 +111,6 @@ def spyne_to_argparse(cls):
     parser.add_argument('-c', '--config-file', type=os.path.abspath,
                         help="An alternative config file.")
 
-    parser.add_argument('--bootstrap', action='store_true',
-                        help="Bootstrap the application. Create schema, insert "
-                             "initial data, etc.")
-
     for k, v in sorted(fti.items(), key=lambda i: i[0]):
         attrs = get_cls_attrs(None, v)
         if attrs.no_cli:

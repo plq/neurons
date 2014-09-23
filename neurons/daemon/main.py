@@ -44,7 +44,8 @@ def main(daemon_name, argv, init, bootstrap=None, cls=Daemon):
         if not callable(bootstrap):
             raise ValueError("'bootstrap' must be a callable. It's %r." %
                                                                       bootstrap)
-        bootstrap(daemon)
+
+        return bootstrap(daemon)
 
     for k, v in init(daemon).items():
         if not (k in daemon.services and daemon.services[k].disabled):

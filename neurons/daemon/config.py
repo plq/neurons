@@ -48,11 +48,24 @@ from os.path import isfile, abspath, dirname
 from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
     UnsignedInteger, UnsignedInteger16, Array
 
+from spyne.protocol import get_cls_attrs
+from spyne.protocol.yaml import YamlDocument
+
 from spyne.util.dictdoc import yaml_loads, get_object_as_yaml
 
 from neurons.daemon.daemonize import daemonize
 from neurons.daemon.store import SqlDataStore
 from neurons.daemon.cli import spyne_to_argparse
+
+
+
+def _apply_custom_attributes(cls):
+    fti = cls.get_flat_type_info(cls)
+    for k, v in sorted(fti.items(), key=lambda i: i[0]):
+        attrs = get_cls_attrs(None, v)
+        if attrs.no_config == True:
+            v.Attributes.prot_attrs={YamlDocument: dict(exc=True)}
+    return cls
 
 
 class StorageInfo(ComplexModel):
@@ -246,6 +259,9 @@ class Daemon(ComplexModel):
         ('log_queries', Boolean(help="Log sql queries.")),
         ('log_results', Boolean(help="Log query results in addition to queries"
                                      "themselves.")),
+
+        ('bootstrap', Boolean(help="Bootstrap the application. Create schema, "
+                                   "insert initial data, etc.", no_config=True)),
 
         ('_services', Array(Service, sub_name='services')),
         ('_stores', Array(StorageInfo, sub_name='stores')),
@@ -453,6 +469,7 @@ class Daemon(ComplexModel):
 
     @classmethod
     def parse_config(cls, daemon_name, argv, parse_cli=True):
+        cls = _apply_custom_attributes(cls)
         retval = cls.get_default(daemon_name)
         file_name = abspath('%s.yaml' % daemon_name)
 
