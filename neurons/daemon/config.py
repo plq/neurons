@@ -41,6 +41,7 @@ import sys
 import getpass
 
 from uuid import uuid1
+from pprint import pformat
 from os import access
 from os.path import isfile, abspath, dirname
 
@@ -391,7 +392,12 @@ class Daemon(ComplexModel):
             except Exception as e:
                 logger.debug("coloarama not loaded: %r" % e)
 
-        observer = FileLogObserver(log_dest, lambda x: x['log_text']+'\n')
+        def record_as_string(record):
+            if 'log_text' in record:
+                return record['log_text'] + "\n"
+            return pformat(record)
+
+        observer = FileLogObserver(log_dest, record_as_string)
         globalLogPublisher.addObserver(observer)
 
         handler = TwistedHandler()
