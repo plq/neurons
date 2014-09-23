@@ -37,6 +37,7 @@ import os.path
 from decimal import Decimal as D
 from spyne import Boolean, Unicode, Integer, Decimal, ComplexModelBase, Array
 from spyne.protocol import get_cls_attrs
+from spyne.util import six
 from spyne.util.cdict import cdict
 
 
@@ -108,7 +109,11 @@ def spyne_to_argparse(cls):
     parser = argparse.ArgumentParser(description=cls.__doc__)
 
     parser.add_argument('-c', '--config-file', type=os.path.abspath,
-                                            help="An alternative config file.")
+                        help="An alternative config file.")
+
+    parser.add_argument('--bootstrap', action='store_true',
+                        help="Bootstrap the application. Create schema, insert "
+                             "initial data, etc.")
 
     for k, v in sorted(fti.items(), key=lambda i: i[0]):
         attrs = get_cls_attrs(None, v)
@@ -140,7 +145,7 @@ def spyne_to_argparse(cls):
             if len(v.Attributes.values) > 0:
                 kwargs['type'] = enum(v.Attributes.values)
             else:
-                kwargs['type'] = unicode
+                kwargs['type'] = six.text_type
 
         elif issubclass(v, tuple(ARGTYPE_MAP.keys())):
             kwargs['type'] = ARGTYPE_MAP[v]

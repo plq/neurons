@@ -36,9 +36,15 @@ from os.path import isfile
 from neurons.daemon.config import Daemon, ServiceDisabled
 
 
-def main(daemon_name, argv, init, cls=Daemon):
+def main(daemon_name, argv, init, bootstrap=None, cls=Daemon):
     daemon = cls.parse_config(daemon_name, argv)
     daemon.apply()
+
+    if daemon.bootstrap:
+        if not callable(bootstrap):
+            raise ValueError("'bootstrap' must be a callable. It's %r." %
+                                                                      bootstrap)
+        bootstrap(daemon)
 
     for k, v in init(daemon).items():
         if not (k in daemon.services and daemon.services[k].disabled):
