@@ -37,7 +37,6 @@ logger = logging.getLogger(__name__)
 from collections import defaultdict
 
 from neurons.base.const import ANON_USERNAME
-from neurons.base.store import DataStore
 
 
 class ReadContext(object):
@@ -56,7 +55,7 @@ class ReadContext(object):
         logger.warning("This is a read-only context!")
 
     def get_session(self, store, **kwargs):
-        if store.type == DataStore.SQLALCHEMY:
+        if store.backend == 'sqlalchemy':
             sessions = self.sqla_sessions[id(store)]
             if len(sessions) == 0:
                 session = store.Session(**kwargs)
