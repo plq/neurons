@@ -42,3 +42,8 @@ def on_method_call(ctx):
         ctx.udc = ctx.service_class.get_context(ctx)
 
     ctx.udc.user = ANON_USERNAME
+
+
+def on_method_context_closed(ctx):
+    if ctx is not None and ctx.udc is not None and hasattr(ctx.udc, 'close'):
+        ctx.udc.close(ctx.out_error is None)
