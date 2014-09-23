@@ -467,7 +467,7 @@ class Daemon(ComplexModel):
                                                 (file_name, dirname(file_name)))
 
         for k, v in cli.items():
-            if v is not None and v != False:
+            if not v in (None, False):
                 setattr(retval, k, v)
 
         retval.config_file = file_name
