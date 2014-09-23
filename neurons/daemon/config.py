@@ -402,7 +402,7 @@ class Daemon(ComplexModel):
             l.apply()
 
         if self.log_rpc or self.log_queries or self.log_results:
-            logging.getLogger().setHandler(logging.DEBUG)
+            logging.getLogger().setLevel(logging.DEBUG)
 
         if self.log_rpc:
             logging.getLogger('spyne.protocol').setLevel(logging.DEBUG)
