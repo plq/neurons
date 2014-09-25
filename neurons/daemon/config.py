@@ -444,12 +444,18 @@ class Daemon(ComplexModel):
         if self.pid_file is not None:
             self.pid_file = abspath(self.pid_file)
 
-    def apply(self):
+    def apply(self, for_testing=False):
         """Daemonizes the process if requested, then sets up logging and data
         stores.
         """
 
-        assert not ('twisted' in sys.modules)
+        # FIXME: apply_storage could return a deferred due to txpool init.
+
+        # Daemonization won't work if twisted is imported before fork().
+        # It's best to know this in advance or you'll have to deal with daemons
+        # that work perfectly well in development environments but won't boot
+        # in production ones, solely because of fork()ingw.
+        assert for_testing or not ('twisted' in sys.modules)
 
         self.sanitize()
         if self.daemonize:
