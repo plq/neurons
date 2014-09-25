@@ -410,6 +410,8 @@ class Daemon(ComplexModel):
         def record_as_string(record):
             if 'log_text' in record:
                 return record['log_text'] + "\n"
+            if 'message' in record:
+                return record['message'] + "\n"
             return pformat(record)
 
         observer = FileLogObserver(log_dest, record_as_string)
