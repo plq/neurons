@@ -58,7 +58,6 @@ from neurons.daemon.store import SqlDataStore
 from neurons.daemon.cli import spyne_to_argparse
 
 
-
 def _apply_custom_attributes(cls):
     fti = cls.get_flat_type_info(cls)
     for k, v in sorted(fti.items(), key=lambda i: i[0]):
@@ -366,7 +365,7 @@ class Daemon(ComplexModel):
     def apply_logging(self):
         # We're using twisted logging only for IO.
         from twisted.python.logger import FileLogObserver
-        from twisted.python.logger import Logger, LegacyLogger, LogLevel, globalLogPublisher
+        from twisted.python.logger import Logger, LogLevel, globalLogPublisher
 
         LOGLEVEL_TWISTED_MAP = {
             logging.DEBUG: LogLevel.debug,
