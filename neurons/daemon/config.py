@@ -475,13 +475,13 @@ class Daemon(ComplexModel):
             store.apply()
 
     @classmethod
-    def parse_config(cls, daemon_name, argv, parse_cli=True):
+    def parse_config(cls, daemon_name, argv=None):
         cls = _apply_custom_attributes(cls)
         retval = cls.get_default(daemon_name)
         file_name = abspath('%s.yaml' % daemon_name)
 
         cli = {}
-        if parse_cli:
+        if cli is not None and len(cli) > 1:
             cli = dict(spyne_to_argparse(cls).parse_args(argv[1:]).__dict__.items())
             if cli['config_file'] is not None:
                 file_name = cli['config_file']
