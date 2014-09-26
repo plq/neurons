@@ -481,7 +481,7 @@ class Daemon(ComplexModel):
         file_name = abspath('%s.yaml' % daemon_name)
 
         cli = {}
-        if cli is not None and len(cli) > 1:
+        if argv is not None and len(argv) > 1:
             cli = dict(spyne_to_argparse(cls).parse_args(argv[1:]).__dict__.items())
             if cli['config_file'] is not None:
                 file_name = cli['config_file']
