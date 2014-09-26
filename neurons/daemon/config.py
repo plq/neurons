@@ -85,7 +85,11 @@ class Relational(StorageInfo):
     def apply(self):
         self.itself = SqlDataStore(self.conn_str, self.pool_size)
         if self.async_pool:
-            self.itself.add_txpool()
+            if self.conn_str.startswith('postgres'):
+                self.itself.add_txpool()
+            else:
+                self.async_pool = False
+
         if not self.sync_pool:
             self.itself.Session = None
             self.itself.metadata = None
