@@ -114,7 +114,7 @@ class HttpApplication(ComplexModel):
 
 
 class StaticFileServer(HttpApplication):
-    path = Unicode
+    path = String
     list_contents = Boolean(default=False)
 
     def __init__(self, *args, **kwargs):
@@ -253,9 +253,9 @@ class Daemon(ComplexModel):
         ('gid', Unicode(help="The daemon group. You need to start the server as"
                              " a priviledged user for this to work.")),
 
-        ('log_file', Unicode(help="The path to the log file. The server won't "
+        ('log_file', String(help="The path to the log file. The server won't "
                "daemonize without this. Converted to an absolute path if not")),
-        ('pid_file', Unicode(help="The path to a text file that contains the pid"
+        ('pid_file', String(help="The path to a text file that contains the pid"
                                   "of the daemonized process.")),
 
         ('log_rpc', Boolean(help="Log raw rpc data.")),
