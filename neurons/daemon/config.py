@@ -254,7 +254,7 @@ class Daemon(ComplexModel):
                              " a priviledged user for this to work.")),
 
         ('log_file', String(help="The path to the log file. The server won't "
-               "daemonize without this. Converted to an absolute path if not")),
+              "daemonize without this. Converted to an absolute path if not.")),
         ('pid_file', String(help="The path to a text file that contains the pid"
                                   "of the daemonized process.")),
 
