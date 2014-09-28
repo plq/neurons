@@ -147,7 +147,7 @@ class HttpListener(Listener):
         subapps = kwargs.get('subapps', None)
         if subapps is not None:
             self.subapps = subapps
-        if not hasattr(self, 'subpaths') or self.subapps is None:
+        if not hasattr(self, 'subapps') or self.subapps is None:
             self.subapps = _wdict()
 
     def gen_site(self):
@@ -160,27 +160,27 @@ class HttpListener(Listener):
         else:
             root = root_app.gen_resource()
 
-        for subapp in self.subapps:
-            if subapp.uri != '':
-                root.putChild(subapp.uri, subapp.gen_resource())
+        for subapp in self._subapps:
+            if subapp.url != '':
+                root.putChild(subapp.url, subapp.gen_resource())
         return Site(root)
 
     @property
-    def _subpaths(self):
-        if self.subpaths is not None:
-            for k, v in self.subpaths.items():
-                v.uri = k
+    def _subapps(self):
+        if self.subapps is not None:
+            for k, v in self.subapps.items():
+                v.url = k
 
-            return self.subpaths.values()
+            return self.subapps.values()
 
-        self.subpaths = _wdict()
+        self.subapps = _wdict()
         return []
 
-    @_subpaths.setter
-    def _subpaths(self, what):
-        self.subpaths = what
+    @_subapps.setter
+    def _subapps(self, what):
+        self.subapps = what
         if what is not None:
-            self.subpaths = _wdict([(s.uri, s) for s in what])
+            self.subapps = _wdict([(s.url, s) for s in what])
 
 
 class WsgiListener(HttpListener):
