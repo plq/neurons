@@ -46,7 +46,7 @@ from os import access
 from os.path import isfile, abspath, dirname
 
 from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
-    UnsignedInteger, UnsignedInteger16, Array
+    UnsignedInteger, UnsignedInteger16, Array, String
 
 from spyne.protocol import get_cls_attrs
 from spyne.protocol.yaml import YamlDocument
@@ -466,12 +466,14 @@ class Daemon(ComplexModel):
             assert self.log_file
             daemonize()
 
+        self.apply_logging()
+
         if self.pid_file is not None:
             pid = os.getpid()
             with open(self.pid_file, 'w') as f:
                 f.write(str(pid))
+                logger.debug("Pid file is at: %r", self.pid_file)
 
-        self.apply_logging()
         self.apply_storage()
 
     def apply_storage(self):
