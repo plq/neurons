@@ -39,6 +39,7 @@ from neurons.daemon.config import Daemon, ServiceDisabled
 def main(daemon_name, argv, init, bootstrap=None, cls=Daemon):
     daemon = cls.parse_config(daemon_name, argv)
     services = list(daemon._services)
+    stores = list(daemon._stores)
     try:
         daemon.apply()
 
@@ -57,7 +58,8 @@ def main(daemon_name, argv, init, bootstrap=None, cls=Daemon):
                     pass
 
     finally:
-        if not isfile(daemon.config_file) or services != daemon._services:
+        if not isfile(daemon.config_file) or services != daemon._services \
+                                          or stores != daemon._stores:
             daemon.write_config()
 
     from twisted.internet import reactor
