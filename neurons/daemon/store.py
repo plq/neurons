@@ -32,6 +32,10 @@
 #
 
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 class DataStoreBase(object):
     def __init__(self, type):
         self.type = type
@@ -70,6 +74,7 @@ class LdapDataStore(DataStoreBase):
         return retval
 
 
+# FIXME: get rid of the overly complicated property setters.
 class SqlDataStore(DataStoreBase):
     def __init__(self, connection_string=None, engine=None, metadata=None, **kwargs):
         DataStoreBase.__init__(self, type='sqlalchemy')
@@ -97,9 +102,10 @@ class SqlDataStore(DataStoreBase):
         from txpostgres import txpostgres
 
         dsn = self.engine.raw_connection().connection.dsn
-        self.txpool = txpostgres.ConnectionPool("heleleley", dsn)
+        self.txpool = txpostgres.ConnectionPool("heleleley", dsn, min=1)
         self.txpool_start_deferred = self.txpool.start()
-
+        self.txpool_start_deferred.addCallback(
+                                 lambda p: logger.info("TxPool %r started.", p))
         return self.txpool_start_deferred
 
     def connect(self):
@@ -160,6 +166,7 @@ class SqlDataStore(DataStoreBase):
                     del self.__kwargs['pool_size']
 
             self.engine = create_engine(what, **self.__kwargs)
+            logger.info("%r started", self.engine)
 
 
 def get_data_store(type, *args, **kwargs):

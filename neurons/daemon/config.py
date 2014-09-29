@@ -84,6 +84,9 @@ class Relational(StorageInfo):
 
     def apply(self):
         self.itself = SqlDataStore(self.conn_str, self.pool_size)
+        if not (self.async_pool or self.sync_pool):
+            logger.debug("Store '%s' is disabled.", self.name)
+
         if self.async_pool:
             if self.conn_str.startswith('postgres'):
                 self.itself.add_txpool()
