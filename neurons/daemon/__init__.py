@@ -32,3 +32,4 @@
 #
 
 from neurons.daemon.main import main
+from neurons.daemon.config import Daemon

@@ -37,30 +37,30 @@ from neurons.daemon.config import Daemon, ServiceDisabled
 
 
 def main(daemon_name, argv, init, bootstrap=None, cls=Daemon):
-    daemon = cls.parse_config(daemon_name, argv)
-    services = list(daemon._services)
-    stores = list(daemon._stores)
+    config = cls.parse_config(daemon_name, argv)
+    services = list(config._services)
+    stores = list(config._stores)
     try:
-        daemon.apply()
+        config.apply()
 
-        if daemon.bootstrap:
+        if config.bootstrap:
             if not callable(bootstrap):
                 raise ValueError("'bootstrap' must be a callable. It's %r." %
                                                                       bootstrap)
 
-            return bootstrap(daemon)
+            return bootstrap(config)
 
-        for k, v in init(daemon).items():
-            if not (k in daemon.services and daemon.services[k].disabled):
+        for k, v in init(config).items():
+            if not (k in config.services and config.services[k].disabled):
                 try:
-                    v(daemon)
+                    v(config)
                 except ServiceDisabled:
                     pass
 
     finally:
-        if not isfile(daemon.config_file) or services != daemon._services \
-                                          or stores != daemon._stores:
-            daemon.write_config()
+        if not isfile(config.config_file) or services != config._services \
+                                          or stores != config._stores:
+            config.write_config()
 
     from twisted.internet import reactor
     return reactor.run()
