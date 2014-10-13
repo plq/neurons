@@ -36,27 +36,40 @@ from os.path import isfile
 from neurons.daemon.config import Daemon, ServiceDisabled
 
 
+def _inner_main(config, init, bootstrap):
+    config.apply()
+
+    if config.bootstrap:
+        if not callable(bootstrap):
+            raise ValueError("'bootstrap' must be a callable. It's %r." %
+                                                                  bootstrap)
+
+        retval = bootstrap(config)
+        if retval is None:
+            return 0
+        return retval
+
+    items = init(config)
+    if hasattr(items, 'items'): # if it's a dict
+        items = items.items()
+
+    for k, v in items:
+        if not (k in config.services and config.services[k].disabled):
+            try:
+                v(config)
+            except ServiceDisabled:
+                pass
+
+
 def main(daemon_name, argv, init, bootstrap=None, cls=Daemon):
     config = cls.parse_config(daemon_name, argv)
     services = list(config._services)
     stores = list(config._stores)
+
     try:
-        config.apply()
-
-        if config.bootstrap:
-            if not callable(bootstrap):
-                raise ValueError("'bootstrap' must be a callable. It's %r." %
-                                                                      bootstrap)
-
-            return bootstrap(config)
-
-        for k, v in init(config).items():
-            if not (k in config.services and config.services[k].disabled):
-                try:
-                    v(config)
-                except ServiceDisabled:
-                    pass
-
+        retval = _inner_main(config, init, bootstrap)
+        if retval is not None:
+            return retval
     finally:
         if not isfile(config.config_file) or services != config._services \
                                           or stores != config._stores:
