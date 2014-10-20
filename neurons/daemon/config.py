@@ -237,6 +237,18 @@ class _wrdict(_wdict):
         return retval
 
 
+def _Twrdict(keyattr=None):
+    class wrdict(_wrdict):
+        if keyattr is not None:
+            def __setitem__(self, key, value):
+                super(_wrdict, self).__setitem__(key, value)
+                setattr(value, keyattr, key)
+        else:
+            def __setitem__(self, key, value):
+                super(_wrdict, self).__setitem__(key, value)
+    return wrdict
+
+
 class Daemon(ComplexModel):
     """A couple of neurons."""
 
