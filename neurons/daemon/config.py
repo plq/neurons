@@ -46,7 +46,8 @@ from os import access
 from os.path import isfile, abspath, dirname
 
 from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
-    UnsignedInteger, UnsignedInteger16, Array, String
+    UnsignedInteger, UnsignedInteger16, Array, String, Application, \
+    ComplexModelBase
 
 from spyne.protocol import get_cls_attrs
 from spyne.protocol.yaml import YamlDocument
@@ -113,7 +114,27 @@ class Listener(Service):
 
 class HttpApplication(ComplexModel):
     url = Unicode
-    name = Unicode
+
+    def __init__(self, app=None, url=None):
+        super(HttpApplication, self).__init__(url=url)
+        self.app = app
+
+    def gen_resource(self):
+        from spyne.server.twisted import TwistedWebResource
+        from spyne.server.wsgi import WsgiApplication
+        from spyne.util.wsgi_wrapper import WsgiMounter
+        from twisted.internet import reactor
+        from twisted.web.resource import Resource
+        from twisted.web.wsgi import WSGIResource
+
+        if isinstance(self.app, Resource):
+            return self.app
+        elif isinstance(self.app, Application):
+            return TwistedWebResource(self.app)
+        elif isinstance(self.app, (WsgiApplication, WsgiMounter)):
+            return WSGIResource(reactor, reactor.getThreadPool(), self.app)
+        raise ValueError(self.app)
+
 
 
 class StaticFileServer(HttpApplication):
@@ -121,8 +142,7 @@ class StaticFileServer(HttpApplication):
     list_contents = Boolean(default=False)
 
     def __init__(self, *args, **kwargs):
-        super(StaticFileServer, self).__init__(*args, **kwargs)
-        self.name = '{neurons.daemon}StaticFile'
+        ComplexModelBase.__init__(self, *args, **kwargs)
 
     def gen_resource(self):
         from twisted.web.static import File
@@ -148,14 +168,30 @@ class HttpListener(Listener):
         super(HttpListener, self).__init__(*args, **kwargs)
 
         subapps = kwargs.get('subapps', None)
-        if subapps is not None:
-            self.subapps = subapps
-        if not hasattr(self, 'subapps') or self.subapps is None:
-            self.subapps = _wdict()
+        if isinstance(subapps, dict):
+            self.subapps = _Twrdict('url')()
+            for k, v in subapps.items():
+                self.subapps[k] = v
+        elif isinstance(subapps, (tuple, list)):
+            self.subapps = _Twrdict('url')()
+            for v in subapps:
+                assert v.url is not None, "%r.url is None" % v
+                self.subapps[v.url] = v
 
     def gen_site(self):
         from twisted.web.server import Site
         from twisted.web.resource import Resource
+
+        subapps = []
+        for url, subapp in self.subapps.items():
+            if isinstance(subapp, HttpApplication):
+                assert subapp.url is not None, subapp.app
+                if hasattr(subapp, 'app'):
+                    assert subapp.app is not None, subapp.url
+                subapps.append(subapp)
+            else:
+                subapps.append(HttpApplication(subapp, url=url))
+        self._subapps = subapps
 
         root_app = self.subapps.get('', None)
         if root_app is None:
@@ -166,6 +202,7 @@ class HttpListener(Listener):
         for subapp in self._subapps:
             if subapp.url != '':
                 root.putChild(subapp.url, subapp.gen_resource())
+
         return Site(root)
 
     @property
@@ -176,7 +213,7 @@ class HttpListener(Listener):
 
             return self.subapps.values()
 
-        self.subapps = _wdict()
+        self.subapps = _wrdict()
         return []
 
     @_subapps.setter
@@ -214,7 +251,6 @@ class Logger(ComplexModel):
 
 class ServiceDisabled(Exception):
     pass
-
 
 class _wdict(dict):
     def getwrite(self, key, *args):
