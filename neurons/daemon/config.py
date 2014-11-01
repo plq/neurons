@@ -84,7 +84,7 @@ class Relational(StorageInfo):
         self.itself = None
 
     def apply(self):
-        self.itself = SqlDataStore(self.conn_str, self.pool_size)
+        self.itself = SqlDataStore(self.conn_str, pool_size=self.pool_size)
         if not (self.async_pool or self.sync_pool):
             logger.debug("Store '%s' is disabled.", self.name)
 
