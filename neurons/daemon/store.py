@@ -81,6 +81,12 @@ class SqlDataStore(DataStoreBase):
 
         from sqlalchemy import MetaData
         from sqlalchemy.orm import sessionmaker
+        from sqlalchemy.engine import Engine
+
+        if engine is not None:
+            assert isinstance(engine, Engine)
+        if metadata is not None:
+            assert isinstance(metadata, MetaData)
 
         self.__kwargs = kwargs
         self.__metadata = None
@@ -166,7 +172,7 @@ class SqlDataStore(DataStoreBase):
                     del self.__kwargs['pool_size']
 
             self.engine = create_engine(what, **self.__kwargs)
-            logger.info("%r started", self.engine)
+            logger.info("%r started with: %r", self.engine, self.kwargs)
 
 
 def get_data_store(type, *args, **kwargs):
