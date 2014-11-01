@@ -31,6 +31,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+import logging
+logger = logging.getLogger(__name__)
+
 from os.path import isfile
 
 from neurons.daemon.config import Daemon, ServiceDisabled
@@ -76,4 +79,5 @@ def main(daemon_name, argv, init, bootstrap=None, cls=Daemon):
             config.write_config()
 
     from twisted.internet import reactor
+    logger.info("Starting reactor...")
     return reactor.run()
