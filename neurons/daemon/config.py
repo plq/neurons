@@ -112,6 +112,21 @@ class Listener(Service):
     unix_socket = Unicode
 
 
+class SslListener(Listener):
+    cacert = Unicode
+    cacert_path = Unicode
+    cacert_dir = Unicode
+
+    cert = Unicode
+    cert_path = Unicode
+
+    privcert = Unicode
+    privcert_path = Unicode
+
+    key = Unicode
+    key_path = Unicode
+
+
 class HttpApplication(ComplexModel):
     url = Unicode
 
@@ -251,6 +266,7 @@ class Logger(ComplexModel):
 
 class ServiceDisabled(Exception):
     pass
+
 
 class _wdict(dict):
     def getwrite(self, key, *args):
