@@ -66,8 +66,7 @@ class HtmlFormTable(HtmlColumnTable):
             self._root_cloth.append(form)
             self._root_cloth = form
 
-    def model_base_to_parent(self, ctx, cls, inst, parent, name, array_index=None,
-                                                      from_arr=False, **kwargs):
+    def model_base_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         self.prot_form.to_parent(ctx, cls, inst, parent, name, **kwargs)
 
     def extend_header_row(self, ctx, cls, parent, name, **kwargs):

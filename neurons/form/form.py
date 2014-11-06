@@ -469,8 +469,10 @@ class HtmlForm(HtmlWidget):
             for k, v in sorted(fti.items(), key=_Tform_key(self)):
                 subattr = get_cls_attrs(self, v)
                 if subattr.exc:
+                    logger.debug("Excluding %s", k)
                     continue
 
+                logger.debug("Generating form element for %s", k)
                 subinst = getattr(inst, k, None)
 
                 tab = subattr.tab
@@ -601,12 +603,13 @@ class HtmlForm(HtmlWidget):
         if inst is None:
             inst = []
 
+        import ipdb; ipdb.set_trace()
         for i, subval in enumerate(inst):
             new_key = '%s[%09d]' % (key, i)
             with parent.element('div', {"class": key}):
                 ret = self.to_parent(ctx, cls, subval, parent, new_key,
-                                parent_inst=parent_inst, no_label=True,
-                                from_arr=True, **kwargs)
+                                         parent_inst=parent_inst, no_label=True,
+                                         from_arr=True, **kwargs)
                 if not attr.no_write:
                     parent.write(E.button('+', **{
                                   "class": key + "_btn_add", 'type': 'button'}))

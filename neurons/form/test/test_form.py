@@ -49,7 +49,7 @@ from neurons.form.form import Fieldset
 from neurons.form.test import strip_ns
 from spyne import Application, NullServer, Unicode, ServiceBase, rpc, Decimal, \
     Boolean, Date, Time, DateTime, Integer, ComplexModel, Array, Double
-from lxml import etree
+from lxml import etree, html
 from spyne.util.test import show
 
 
@@ -66,7 +66,13 @@ def _test_type(cls, inst):
 
     null = NullServer(app, ostr=True)
 
-    elt = etree.fromstring(''.join(null.service.some_call()))
+    ret = ''.join(null.service.some_call())
+    try:
+        elt = html.fromstring(ret)
+    except:
+        print(ret)
+        raise
+
     show(elt, stdout=False)
     elt = elt.xpath('//*[@spyne]')[0][0] # get the form tag inside the body tag.
     elt = strip_ns(elt) # get rid of namespaces to simplify xpaths in tests

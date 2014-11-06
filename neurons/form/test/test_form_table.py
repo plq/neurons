@@ -34,16 +34,17 @@
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
-import re, unittest
-
-from neurons.form.test import strip_ns
-from spyne.util.test import show
+import re
+import unittest
 
 from neurons.form import HtmlFormTable
+from neurons.form.test import strip_ns
 from neurons.form.const import T_TEST
-from spyne import Application, NullServer, ServiceBase, rpc, Unicode, \
-    ComplexModel, Integer, Array
-from lxml import etree
+
+from spyne.util.test import show
+from spyne import Application, NullServer, ServiceBase, rpc, ComplexModel, \
+    Integer, Array
+from lxml import etree, html
 
 
 def _test_type(cls, inst):
@@ -59,8 +60,14 @@ def _test_type(cls, inst):
 
     null = NullServer(app, ostr=True)
 
-    elt = etree.fromstring(''.join(null.service.some_call()))
-    show(elt, stdout=False)
+    ret = ''.join(null.service.some_call())
+    try:
+        elt = html.fromstring(ret)
+    except:
+        print(ret)
+        raise
+
+    show(elt)
     elt = elt.xpath('//*[@spyne]')[0]
     elt = strip_ns(elt)  # get rid of namespaces to simplify xpaths in tests
 
@@ -78,8 +85,10 @@ class TestForm(unittest.TestCase):
 
         v = SomeObject(ints=range(5))
         elt = _test_type(SomeObject, v)[0]
-        assert elt.xpath('div/div/div/input/@value') == ['0', '1', '2', '3', '4']
-        assert elt.xpath('div/div/button/text()') == ['+', '-'] * 5
+
+        assert elt.xpath('table/tbody/tr/td/div/input/@value') == \
+                                                       ['0', '1', '2', '3', '4']
+        assert elt.xpath('table/tbody/tr/td/button/text()') == ['+', '-'] * 5
         for i, name in enumerate(elt.xpath('div/div/input/@name')):
             assert re.match(r'ints\[0*%d\]' % i, name)
 
