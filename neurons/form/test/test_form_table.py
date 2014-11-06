@@ -87,6 +87,28 @@ class TestForm(unittest.TestCase):
         for i, name in enumerate(elt.xpath('div/div/input/@name')):
             assert re.match(r'ints\[0*%d\]' % i, name)
 
+    def test_complex_array(self):
+        v = "domates"  # 🍅
+
+        class SomeObject(ComplexModel):
+            i = Integer
+            s = Unicode
+
+        v = [SomeObject(i=i, s=s) for i, s in enumerate(v)]
+        elt = _test_type(Array(SomeObject), v)[0]
+
+        assert elt.xpath(
+            'table/tbody/tr/td/div/input[@class="integer"]/@value') == \
+                                                           [str(o.i) for o in v]
+        assert elt.xpath(
+            'table/tbody/tr/td/div/input[@class="string"]/@value') == \
+                                                           [str(o.s) for o in v]
+
+
+        assert elt.xpath('table/tbody/tr/td/button/text()') == ['-'] * 7 + ['+']
+        for i, name in enumerate(elt.xpath('div/div/input/@name')):
+            assert re.match(r'ints\[0*%d\]' % i, name)
+
 
 if __name__ == '__main__':
     unittest.main()
