@@ -731,6 +731,8 @@ class ComboBoxWidget(ComplexRenderWidget):
         self.others = others
 
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        if self.type is not None:
+            cls = self.type
         fti, id_str, text_str = self._prep_inst(cls, inst)
 
         parent.write(E.select(E.option(text_str, value=id_str, selected='')))
