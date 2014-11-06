@@ -155,6 +155,8 @@ class HtmlWidget(HtmlBase):
 
     def _gen_input_hidden(self, cls, inst, parent, name, **kwargs):
         val = self.to_unicode(cls, inst)
+        if val is None:
+            val = ""
         parent.write(E.input(type="hidden", value=val, name=name))
 
     def _gen_label(self, ctx, cls, name, input):
