@@ -53,10 +53,6 @@ class HtmlFormTable(HtmlColumnTable):
                 cloth=cloth, attr_name=attr_name, root_attr_name=root_attr_name,
                                                       cloth_parser=cloth_parser)
 
-        self.serialization_handlers = cdict({
-            ModelBase: self.model_base_to_parent,
-        })
-
         self.prot_form = HtmlForm()
         self.can_add = can_add
         self.can_remove = can_remove
@@ -72,13 +68,7 @@ class HtmlFormTable(HtmlColumnTable):
 
     def model_base_to_parent(self, ctx, cls, inst, parent, name, array_index=None,
                                                       from_arr=False, **kwargs):
-        if from_arr:
-            with parent.element('tr'):
-              with parent.element('td'):
-                self.prot_form.to_parent(ctx, cls, inst, parent, name, **kwargs)
-
-        else:
-            self.prot_form.to_parent(ctx, cls, inst, parent, name, **kwargs)
+        self.prot_form.to_parent(ctx, cls, inst, parent, name, **kwargs)
 
     def extend_header_row(self, ctx, cls, parent, name, **kwargs):
         if self.can_add or self.can_remove:
