@@ -734,7 +734,8 @@ class ComboBoxWidget(ComplexRenderWidget):
         if self.type is not None:
             cls = self.type
         fti, id_str, text_str = self._prep_inst(cls, inst)
-
+        if id_str is None:
+            id_str = ""
         parent.write(E.select(E.option(text_str, value=id_str, selected='')))
 
         if self.hidden_fields is not None:
