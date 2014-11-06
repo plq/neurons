@@ -437,7 +437,7 @@ class HtmlForm(HtmlWidget):
         parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt))
 
     def array_type_to_parent(self, ctx, cls, inst, parent, name=None, **kwargs):
-        v = iter(cls._type_info.values()).next()
+        v = next(iter(cls._type_info.values()))
         return self.to_parent(ctx, v, inst, parent, name, **kwargs)
 
     def _gen_tab_headers(self, ctx, fti):
@@ -614,9 +614,10 @@ class HtmlForm(HtmlWidget):
         for i, subval in enumerate(inst):
             new_key = '%s[%09d]' % (key, i)
             with parent.element('div', {"class": key}):
+                kwargs['from_arr'] = True
                 ret = self.to_parent(ctx, cls, subval, parent, new_key,
                                          parent_inst=parent_inst, no_label=True,
-                                         from_arr=True, **kwargs)
+                                         **kwargs)
                 if not attr.no_write:
                     parent.write(E.button('+', **{
                                   "class": key + "_btn_add", 'type': 'button'}))

@@ -83,7 +83,7 @@ class TestForm(unittest.TestCase):
 
         assert elt.xpath('table/tbody/tr/td/div/input/@value') == \
                                                        ['0', '1', '2', '3', '4']
-        assert elt.xpath('table/tbody/tr/td/button/text()') == ['+', '-'] * 5
+        assert elt.xpath('table/tbody/tr/td/button/text()') == ['-'] * 5 + ['+']
         for i, name in enumerate(elt.xpath('div/div/input/@name')):
             assert re.match(r'ints\[0*%d\]' % i, name)
 

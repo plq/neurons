@@ -38,6 +38,7 @@ from inspect import isgenerator
 
 from lxml.builder import E
 
+from spyne import ComplexModelBase, Array
 from spyne.util import Break, coroutine
 from spyne.protocol.html import HtmlColumnTable
 
@@ -215,20 +216,26 @@ class HtmlFormTable(HtmlColumnTable):
             parent.write(E.td())
 
     def extend_data_row(self, ctx, cls, inst, parent, name, array_index=None,
-                        **kwargs):
+                        add=False, **kwargs):
 
         if array_index is None:
             return
 
-        template_id = "%s_%d_row_template" % (
-        self.prot_form.selsafe(name), array_index)
+        template_id = "%s_%d_row_template" % (self.prot_form.selsafe(name),
+                                                                    array_index)
         if not (self.can_remove or self.can_add):
             return
 
         td = E.td(style='white-space: nowrap;')
+        self._gen_buttons(td, add, self.can_remove and not add, template_id)
 
-        if self.can_add:
-            td.append(
+        parent.write(td)
+
+    def _gen_buttons(self, elt, add, remove, template_id):
+        rearr = REARRANGE_JS % {'hier_delim': self.prot_form.hier_delim}
+
+        if add:
+            elt.append(
                 E.button('+', **{
                     "id": template_id + "_btn_add",
                     "class": template_id + "_btn_add",
@@ -236,8 +243,8 @@ class HtmlFormTable(HtmlColumnTable):
                 }),
             )
 
-        if self.can_remove:
-            td.append(
+        if remove:
+            elt.append(
                 E.button('-', **{
                     "id": template_id + "_btn_remove",
                     "class": template_id + "_btn_remove",
@@ -245,20 +252,39 @@ class HtmlFormTable(HtmlColumnTable):
                 }),
             )
 
-        # Remove scriptinin Add scriptinden once calismasi lazim ki add'deki
-        # clone cagrisi remove'un event handler'ini da alsin.
-        rearr = REARRANGE_JS % {'hier_delim': self.prot_form.hier_delim}
-
-        if self.can_add:
-            # FIXME: Need to globalize this.
-            td.append(E.script(
+        # Remove script must run before add script because the clone call in add
+        # must get the event handle from remove.
+        if add:
+            elt.append(E.script(
                 CAN_ADD_JS % {"field_name": template_id, 'rearr': rearr},
                 type="text/javascript"))
 
-        if self.can_remove:
-            td.append(E.script(
+        if remove:
+            elt.append(E.script(
                 CAN_REMOVE_JS % {"field_name": template_id, 'rearr': rearr},
                 type="text/javascript"))
 
-        parent.write(td)
+    def extend_table(self, ctx, cls, parent, name, **kwargs):
+        if not self.can_add:
+            return
 
+        # FIXME: just fix me.
+        if issubclass(cls, Array):
+            cls = next(iter(cls._type_info.values()))
+            return self._gen_row(ctx, cls, [None], parent, name)
+
+        if issubclass(cls, ComplexModelBase):
+            if cls.Attributes.max_occurs > 1:
+                return self._gen_row(ctx, cls, [None], parent, name,
+                                                       add=True, array_index=-1)
+            else:
+                return self._gen_row(ctx, cls, None, parent, name,
+                                                       add=True, array_index=-1)
+
+        else:
+            if cls.Attributes.max_occurs > 1:
+                return self.model_base_to_parent(ctx, cls, None, parent, name,
+                                        from_arr=True, add=True, array_index=-1)
+            else:
+                return self.model_base_to_parent(ctx, cls, None, parent, name,
+                                                       add=True, array_index=-1)
