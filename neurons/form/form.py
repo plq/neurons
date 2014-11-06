@@ -153,7 +153,7 @@ class HtmlWidget(HtmlBase):
             logger.warning("%r claims not to support %r. You have been warned.",
                            cls, t)
 
-    def _gen_input_hidden(self, cls, inst, parent, name):
+    def _gen_input_hidden(self, cls, inst, parent, name, **kwargs):
         val = self.to_unicode(cls, inst)
         parent.write(E.input(type="hidden", value=val, name=name))
 
@@ -164,7 +164,7 @@ class HtmlWidget(HtmlBase):
     def _gen_input_elt_id(self, name):
         return self.selsafe(name) + '_input'
 
-    def _gen_input_attrs(self, cls, inst, name, cls_attrs):
+    def _gen_input_attrs(self, cls, inst, name, cls_attrs, **kwargs):
         elt_attrs = {
             'id': self._gen_input_elt_id(name),
             'name': name,
@@ -186,8 +186,8 @@ class HtmlWidget(HtmlBase):
 
         return elt_attrs
 
-    def _gen_input(self, cls, inst, name, cls_attrs):
-        elt_attrs = self._gen_input_attrs(cls, inst, name, cls_attrs)
+    def _gen_input(self, cls, inst, name, cls_attrs, **kwargs):
+        elt_attrs = self._gen_input_attrs(cls, inst, name, cls_attrs, **kwargs)
 
         if cls_attrs.min_occurs == 1 and cls_attrs.nullable == False:
             elt = html.fromstring('<input required>')
@@ -199,10 +199,10 @@ class HtmlWidget(HtmlBase):
 
         return elt
 
-    def _gen_input_unicode(self, cls, inst, name, **_):
+    def _gen_input_unicode(self, cls, inst, name, **kwargs):
         cls_attrs = get_cls_attrs(self, cls)
 
-        elt = self._gen_input(cls, inst, name, cls_attrs)
+        elt = self._gen_input(cls, inst, name, cls_attrs, **kwargs)
         elt.attrib['type'] = 'text'
 
         if cls_attrs.max_len < Unicode.Attributes.max_len:
@@ -289,12 +289,12 @@ class HtmlForm(HtmlWidget):
                                                                  name, **kwargs)
 
     def unicode_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        cls_attrs, elt = self._gen_input_unicode(cls, inst, name)
+        cls_attrs, elt = self._gen_input_unicode(cls, inst, name, **kwargs)
         parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt))
 
     def decimal_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = get_cls_attrs(self, cls)
-        elt = self._gen_input(cls, inst, name, cls_attrs)
+        elt = self._gen_input(cls, inst, name, cls_attrs, **kwargs)
         elt.attrib['type'] = 'number'
 
         if D(cls.Attributes.fraction_digits).is_infinite():
@@ -308,7 +308,7 @@ class HtmlForm(HtmlWidget):
 
     def boolean_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = get_cls_attrs(self, cls)
-        elt = self._gen_input(cls, inst, name, cls_attrs)
+        elt = self._gen_input(cls, inst, name, cls_attrs, **kwargs)
         elt.attrib.update({'type': 'checkbox', 'value': 'true'})
 
         if bool(inst):
@@ -320,7 +320,7 @@ class HtmlForm(HtmlWidget):
         ctx.protocol.assets.extend([('jquery',), ('jquery-ui', 'datepicker')])
 
         cls_attrs = get_cls_attrs(self, cls)
-        elt = self._gen_input(cls, inst, name, cls_attrs)
+        elt = self._gen_input(cls, inst, name, cls_attrs, **kwargs)
         elt.attrib['type'] = 'text'
 
         if cls_attrs.format is None:
@@ -351,7 +351,7 @@ class HtmlForm(HtmlWidget):
                                                         ('jquery-timepicker',)])
 
         cls_attrs = get_cls_attrs(self, cls)
-        elt = self._gen_input(cls, inst, name, cls_attrs)
+        elt = self._gen_input(cls, inst, name, cls_attrs, **kwargs)
         elt.attrib['type'] = 'text'
 
         if cls_attrs.format is None:
@@ -382,7 +382,7 @@ class HtmlForm(HtmlWidget):
                                                         ('jquery-timepicker',)])
 
         cls_attrs = get_cls_attrs(self, cls)
-        elt = self._gen_input(cls, None, name, cls_attrs)
+        elt = self._gen_input(cls, None, name, cls_attrs, **kwargs)
         elt.attrib['type'] = 'text'
 
         if cls_attrs.format is None:
@@ -414,7 +414,7 @@ class HtmlForm(HtmlWidget):
 
     def integer_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = get_cls_attrs(self, cls)
-        elt = self._gen_input(cls, inst, name, cls_attrs)
+        elt = self._gen_input(cls, inst, name, cls_attrs, **kwargs)
         elt.attrib['type'] = 'number'
 
         self._apply_number_constraints(cls_attrs, elt)
@@ -424,7 +424,7 @@ class HtmlForm(HtmlWidget):
     # TODO: finish this
     def duration_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = get_cls_attrs(self, cls)
-        elt = self._gen_input(cls, inst, name, cls_attrs)
+        elt = self._gen_input(cls, inst, name, cls_attrs, **kwargs)
 
         parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt))
 
@@ -603,7 +603,6 @@ class HtmlForm(HtmlWidget):
         if inst is None:
             inst = []
 
-        import ipdb; ipdb.set_trace()
         for i, subval in enumerate(inst):
             new_key = '%s[%09d]' % (key, i)
             with parent.element('div', {"class": key}):
@@ -654,9 +653,10 @@ class PasswordWidget(HtmlWidget):
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         self._check_supported_types(cls)
 
-        cls_attrs, elt = self._gen_input_unicode(cls, inst, name)
+        cls_attrs, elt = self._gen_input_unicode(cls, inst, name, **kwargs)
         elt.attrib['type'] = 'password'
         parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt))
+
 
 class ComplexRenderWidget(HtmlWidget):
     supported_types = (ComplexModelBase,)
@@ -698,18 +698,18 @@ class HrefWidget(ComplexRenderWidget):
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         fti, id_str, text_str = self._prep_inst(cls, inst)
 
-        a_kwargs = {}
+        attrib = {}
         if id_str is not None:
             tn = cls.get_type_name()
             tn_url = camel_case_to_uscore(tn)
-            a_kwargs['href'] = tn_url + "?" + urlencode({self.id_field: id_str})
+            attrib['href'] = tn_url + "?" + urlencode({self.id_field: id_str})
 
-        parent.write(E.a(text_str, **a_kwargs))
+        parent.write(E.a(text_str, **attrib))
 
         if self.hidden_fields is not None:
             for key in self.hidden_fields:
                 self._gen_input_hidden(fti[key], getattr(inst, key, None),
-                                      parent, self.hier_delim.join((name, key)))
+                            parent, self.hier_delim.join((name, key)), **kwargs)
 
 
 class ComboBoxWidget(ComplexRenderWidget):
@@ -727,4 +727,4 @@ class ComboBoxWidget(ComplexRenderWidget):
         if self.hidden_fields is not None:
             for key in self.hidden_fields:
                 self._gen_input_hidden(fti[key], getattr(inst, key, None),
-                                      parent, self.hier_delim.join((name, key)))
+                            parent, self.hier_delim.join((name, key)), **kwargs)
