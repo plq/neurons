@@ -34,24 +34,34 @@
 import logging
 logger = logging.getLogger(__name__)
 
+from inspect import isgenerator
+
 from lxml.builder import E
 
-from spyne import ModelBase
+from spyne.util import Break, coroutine
 from spyne.protocol.html import HtmlColumnTable
-from spyne.util.cdict import cdict
 
 from neurons.form import HtmlForm
 
 
 class HtmlFormTable(HtmlColumnTable):
-    def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
+    def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=True,
                        cloth=None, attr_name='spyne_id', root_attr_name='spyne',
-                       cloth_parser=None, can_add=True, can_remove=True):
+                                                              cloth_parser=None,
+                             produce_header=True, table_name_attr='class',
+                            field_name_attr='class', border=0, row_class=None,
+                                cell_class=None, header_cell_class=None,
+                                polymorphic=True, can_add=True, can_remove=True):
 
         super(HtmlFormTable, self).__init__(app=app,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
                 cloth=cloth, attr_name=attr_name, root_attr_name=root_attr_name,
-                                                      cloth_parser=cloth_parser)
+                                                      cloth_parser=cloth_parser,
+
+                produce_header=produce_header, table_name_attr=table_name_attr,
+                field_name_attr=field_name_attr, border=border,
+                row_class=row_class, cell_class=cell_class,
+                header_cell_class=header_cell_class, polymorphic=polymorphic)
 
         self.prot_form = HtmlForm()
         self.can_add = can_add
@@ -66,8 +76,33 @@ class HtmlFormTable(HtmlColumnTable):
             self._root_cloth.append(form)
             self._root_cloth = form
 
-    def model_base_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        self.prot_form.to_parent(ctx, cls, inst, parent, name, **kwargs)
+    @coroutine
+    def model_base_to_parent(self, ctx, cls, inst, parent, name, from_arr=False,
+                                                                      **kwargs):
+        if from_arr:
+            td_attrs = {}
+            if self.field_name_attr:
+                td_attrs[self.field_name_attr] = name
+
+            with parent.element('tr', attrib=td_attrs):
+              with parent.element('td', attrib=td_attrs):
+                ret = self.prot_form.to_parent(ctx, cls, inst, parent, name,
+                                                    from_arr=from_arr, **kwargs)
+        else:
+            ret = self.prot_form.to_parent(ctx, cls, inst, parent, name,
+                                                    from_arr=from_arr, **kwargs)
+
+        if isgenerator(ret):
+            try:
+                while True:
+                    y = (yield)
+                    ret.send(y)
+
+            except Break as b:
+                try:
+                    ret.throw(b)
+                except StopIteration:
+                    pass
 
     def extend_header_row(self, ctx, cls, parent, name, **kwargs):
         if self.can_add or self.can_remove:

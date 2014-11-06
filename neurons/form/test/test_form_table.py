@@ -43,7 +43,7 @@ from neurons.form.const import T_TEST
 
 from spyne.util.test import show
 from spyne import Application, NullServer, ServiceBase, rpc, ComplexModel, \
-    Integer, Array
+    Integer, Array, Unicode
 from lxml import etree, html
 
 
@@ -78,19 +78,15 @@ def _test_type(cls, inst):
 
 class TestForm(unittest.TestCase):
     def test_simple_array(self):
-        class SomeObject(ComplexModel):
-            _type_info = [
-                ('ints', Array(Integer)),
-            ]
-
-        v = SomeObject(ints=range(5))
-        elt = _test_type(SomeObject, v)[0]
+        v = range(5)
+        elt = _test_type(Array(Integer), v)[0]
 
         assert elt.xpath('table/tbody/tr/td/div/input/@value') == \
                                                        ['0', '1', '2', '3', '4']
         assert elt.xpath('table/tbody/tr/td/button/text()') == ['+', '-'] * 5
         for i, name in enumerate(elt.xpath('div/div/input/@name')):
             assert re.match(r'ints\[0*%d\]' % i, name)
+
 
 if __name__ == '__main__':
     unittest.main()
