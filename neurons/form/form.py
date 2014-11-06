@@ -36,11 +36,11 @@ from __future__ import print_function
 import logging
 logger = logging.getLogger(__name__)
 
-from collections import deque, namedtuple
+from collections import namedtuple
 from inspect import isgenerator
 from decimal import Decimal as D
 
-from lxml import etree, html
+from lxml import html
 from lxml.builder import E
 
 from spyne import ComplexModelBase, Unicode, Decimal, Boolean, Date, Time, \

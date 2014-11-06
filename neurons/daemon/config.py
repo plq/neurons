@@ -151,7 +151,6 @@ class HttpApplication(ComplexModel):
         raise ValueError(self.app)
 
 
-
 class StaticFileServer(HttpApplication):
     path = String
     list_contents = Boolean(default=False)
