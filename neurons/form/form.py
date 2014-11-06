@@ -161,13 +161,21 @@ class HtmlWidget(HtmlBase):
         return E.label(self.trc(cls, ctx.locale, name),
                                                   **{'for': input.attrib['id']})
 
-    def _gen_input_elt_id(self, name):
-        return self.selsafe(name) + '_input'
+    def _gen_input_elt_id(self, name, array_index):
+        if array_index is None:
+            return "%s_input" % (self.selsafe(name),)
+        return "%s_%d_input" % (self.selsafe(name), array_index)
 
-    def _gen_input_attrs(self, cls, inst, name, cls_attrs, **kwargs):
+    def _gen_input_name(self, name, array_index):
+        if array_index is None:
+            return name
+        return "%s[%d]" % (name, array_index)
+
+    def _gen_input_attrs(self, cls, inst, name, cls_attrs, array_index=None,
+                                                                      **kwargs):
         elt_attrs = {
-            'id': self._gen_input_elt_id(name),
-            'name': name,
+            'id': self._gen_input_elt_id(name, array_index),
+            'name': self._gen_input_name(name, array_index),
             'class': camel_case_to_uscore(cls.get_type_name()),
             'type': 'text',
         }

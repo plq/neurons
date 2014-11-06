@@ -43,25 +43,117 @@ from spyne.protocol.html import HtmlColumnTable
 
 from neurons.form import HtmlForm
 
+CAN_ADD_JS = """$(function() {
+    var add = function(event) {
+        var td = $(this).parent();
+        var tr = td.parent();
+        var f = orig_row.clone(true);
+        if (tr.attr('null-widget')) {
+            tr.remove();
+        }
+        f.appendTo(table.parent());
+        rearrange();
+
+        event.preventDefault();
+        return false;
+    };
+
+    var remove = function (e) {
+        var own = $(".%(field_name)s_btn_add");
+        var td = $(this).parent();
+        var tr = td.parent();
+        if (own.length > 1){
+            tr.remove();
+        }
+        else {
+            tr.remove();
+            var f = null_widget.clone(true);
+            f.appendTo(table);
+        }
+
+        rearrange();
+        e.preventDefault();
+        return false;
+    };
+
+    var rearrange = function() {
+        table.children('tr').each(function() {
+            var idx = $(this).index();
+            $(this).children('td[_main]').each(function() {
+                var td = $(this);
+                var name_str = td.attr('_main') + '[' + zerofill(idx, 9) + '].' + td.attr('_sub')
+                $(this).children('[name]').attr('name', name_str);
+            });
+        });
+    }
+
+    $(".%(field_name)s_btn_remove").click(remove);
+    $(".%(field_name)s_btn_add").click(add);
+
+    var row = $(".%(field_name)s_btn_add").parent().parent()
+    var table = row.parent();
+    var orig_row = row.clone(true);
+    for (var children = row.children(), i=0, l=children.length-1; i < l; ++i) {
+        $(children[i]).children().remove();
+    }
+    row.attr('null-widget', true);
+    var null_widget = row.clone(true);
+});"""
+
+REARRANGE_JS = """
+var rearrange = function() {
+    table.children('tr').each(function() {
+        var idx = $(this).index();
+        $(this).children('td[_main]').each(function() {
+            var td = $(this);
+            var name_str = td.attr('_main') + '[' + zerofill(idx, 9) + ']%(hier_delim)s' + td.attr('_sub')
+            $(this).children('[name]').attr('name', name_str);
+        });
+    });
+}"""
+
+CAN_REMOVE_JS = """$(function() {
+    var field_name = "." + "%(field_name)s";
+
+    var cikar = function (event) {
+        var td = $(this).parent();
+        var tr = td.parent();
+        var table = tr.parent();
+
+        if (table.children().length > 1) {
+            tr.remove();
+        }
+        else {
+            tr.children().val("");
+        }
+
+        %(rearr)s
+        rearrange();
+
+        event.preventDefault();
+        return false;
+    }
+    $(".%(field_name)s_btn_remove").click(cikar);
+});"""
+
 
 class HtmlFormTable(HtmlColumnTable):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=True,
-                       cloth=None, attr_name='spyne_id', root_attr_name='spyne',
-                                                              cloth_parser=None,
-                             produce_header=True, table_name_attr='class',
-                            field_name_attr='class', border=0, row_class=None,
-                                cell_class=None, header_cell_class=None,
-                                polymorphic=True, can_add=True, can_remove=True):
+        cloth=None, attr_name='spyne_id', root_attr_name='spyne',
+        cloth_parser=None, produce_header=True, table_name_attr='class',
+        field_name_attr='class', border=0, row_class=None, cell_class=None,
+        header_cell_class=None, polymorphic=True,
+        can_add=True, can_remove=True):
 
         super(HtmlFormTable, self).__init__(app=app,
-                     ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
-                cloth=cloth, attr_name=attr_name, root_attr_name=root_attr_name,
-                                                      cloth_parser=cloth_parser,
+            ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
+            cloth=cloth, attr_name=attr_name, root_attr_name=root_attr_name,
+            cloth_parser=cloth_parser,
 
-                produce_header=produce_header, table_name_attr=table_name_attr,
-                field_name_attr=field_name_attr, border=border,
-                row_class=row_class, cell_class=cell_class,
-                header_cell_class=header_cell_class, polymorphic=polymorphic)
+            produce_header=produce_header, table_name_attr=table_name_attr,
+            field_name_attr=field_name_attr, border=border,
+            row_class=row_class, cell_class=cell_class,
+            header_cell_class=header_cell_class, polymorphic=polymorphic)
 
         self.prot_form = HtmlForm()
         self.can_add = can_add
@@ -78,33 +170,95 @@ class HtmlFormTable(HtmlColumnTable):
 
     @coroutine
     def model_base_to_parent(self, ctx, cls, inst, parent, name, from_arr=False,
-                                                                      **kwargs):
+                             **kwargs):
         if from_arr:
             td_attrs = {}
             if self.field_name_attr:
                 td_attrs[self.field_name_attr] = name
 
             with parent.element('tr', attrib=td_attrs):
-              with parent.element('td', attrib=td_attrs):
-                ret = self.prot_form.to_parent(ctx, cls, inst, parent, name,
-                                                    from_arr=from_arr, **kwargs)
+                with parent.element('td', attrib=td_attrs):
+                    ret = self.prot_form.to_parent(ctx, cls, inst, parent, name,
+                                                   from_arr=from_arr, **kwargs)
+                    if isgenerator(ret):
+                        try:
+                            while True:
+                                y = (yield)
+                                ret.send(y)
+
+                        except Break as b:
+                            try:
+                                ret.throw(b)
+                            except StopIteration:
+                                pass
+
+                self.extend_data_row(ctx, cls, inst, parent, name, **kwargs)
+
         else:
             ret = self.prot_form.to_parent(ctx, cls, inst, parent, name,
-                                                    from_arr=from_arr, **kwargs)
+                                           from_arr=from_arr, **kwargs)
 
-        if isgenerator(ret):
-            try:
-                while True:
-                    y = (yield)
-                    ret.send(y)
-
-            except Break as b:
+            if isgenerator(ret):
                 try:
-                    ret.throw(b)
-                except StopIteration:
-                    pass
+                    while True:
+                        y = (yield)
+                        ret.send(y)
+
+                except Break as b:
+                    try:
+                        ret.throw(b)
+                    except StopIteration:
+                        pass
 
     def extend_header_row(self, ctx, cls, parent, name, **kwargs):
         if self.can_add or self.can_remove:
             parent.write(E.td())
+
+    def extend_data_row(self, ctx, cls, inst, parent, name, array_index=None,
+                        **kwargs):
+
+        if array_index is None:
+            return
+
+        template_id = "%s_%d_row_template" % (
+        self.prot_form.selsafe(name), array_index)
+        if not (self.can_remove or self.can_add):
+            return
+
+        td = E.td(style='white-space: nowrap;')
+
+        if self.can_add:
+            td.append(
+                E.button('+', **{
+                    "id": template_id + "_btn_add",
+                    "class": template_id + "_btn_add",
+                    'type': 'button'
+                }),
+            )
+
+        if self.can_remove:
+            td.append(
+                E.button('-', **{
+                    "id": template_id + "_btn_remove",
+                    "class": template_id + "_btn_remove",
+                    'type': 'button'
+                }),
+            )
+
+        # Remove scriptinin Add scriptinden once calismasi lazim ki add'deki
+        # clone cagrisi remove'un event handler'ini da alsin.
+        rearr = REARRANGE_JS % {'hier_delim': self.prot_form.hier_delim}
+
+        if self.can_add:
+            # FIXME: Need to globalize this.
+            td.append(E.script(
+                CAN_ADD_JS % {"field_name": template_id, 'rearr': rearr},
+                type="text/javascript"))
+
+        if self.can_remove:
+            td.append(E.script(
+                CAN_REMOVE_JS % {"field_name": template_id, 'rearr': rearr},
+                type="text/javascript"))
+
+        parent.write(td)
 
