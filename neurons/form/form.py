@@ -449,7 +449,7 @@ class HtmlForm(HtmlWidget):
         for k, v in fti.items():
             subattr = get_cls_attrs(self, v)
             tab = subattr.tab
-            if tab is not None:
+            if tab is not None and not subattr.exc:
                 tabs[id(tab)] = tab
 
         for i, tab in enumerate(sorted(tabs.values(),
