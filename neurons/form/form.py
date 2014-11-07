@@ -51,6 +51,7 @@ from spyne.util import coroutine, Break
 from spyne.util.cdict import cdict
 from spyne.util.six.moves.urllib.parse import urlencode
 
+
 SOME_COUNTER = 0
 
 
