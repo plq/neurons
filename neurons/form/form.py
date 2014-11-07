@@ -683,7 +683,6 @@ class ComplexRenderWidget(HtmlWidget):
         self.text_field = text_field
         self.hidden_fields = hidden_fields
         self.type = type
-        self.hier_delim = '.'  # FIXME: get this from parent prot
         super(HtmlWidget, self).__init__()
 
     def _prep_inst(self, cls, inst):
