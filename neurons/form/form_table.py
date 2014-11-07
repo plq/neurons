@@ -161,6 +161,7 @@ class HtmlFormTable(HtmlColumnTable):
         self.prot_form = HtmlForm()
         self.can_add = can_add
         self.can_remove = can_remove
+        self.use_global_null_handler = False
 
     def _init_cloth(self, *args, **kwargs):
         super(HtmlFormTable, self)._init_cloth(*args, **kwargs)

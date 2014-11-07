@@ -109,6 +109,14 @@ class TestForm(unittest.TestCase):
         for i, name in enumerate(elt.xpath('div/div/input/@name')):
             assert re.match(r'ints\[0*%d\]' % i, name)
 
+    def test_unicode_null(self):
+        v = None
+        elt = _test_type(Unicode, v).xpath('form/div/input')[0]
+
+        assert elt.attrib['type'] == 'text'
+        assert elt.attrib['name'] == 'string'
+        assert not ('value' in elt.attrib)
+
 
 if __name__ == '__main__':
     unittest.main()
