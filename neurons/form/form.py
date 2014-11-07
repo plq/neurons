@@ -163,21 +163,20 @@ class HtmlWidget(HtmlBase):
         return E.label(self.trc(cls, ctx.locale, name),
                                                   **{'for': input.attrib['id']})
 
-    def _gen_input_elt_id(self, name, array_index):
+    def _gen_input_elt_id(self, name, array_index=None):
         if array_index is None:
             return "%s_input" % (self.selsafe(name),)
         return "%s_%d_input" % (self.selsafe(name), array_index)
 
-    def _gen_input_name(self, name, array_index):
+    def _gen_input_name(self, name, array_index=None):
         if array_index is None:
             return name
         return "%s[%d]" % (name, array_index)
 
-    def _gen_input_attrs(self, cls, inst, name, cls_attrs, array_index=None,
-                                                                      **kwargs):
+    def _gen_input_attrs_novalue(self, cls, name, cls_attrs, **kwargs):
         elt_attrs = {
-            'id': self._gen_input_elt_id(name, array_index),
-            'name': self._gen_input_name(name, array_index),
+            'id': self._gen_input_elt_id(name),
+            'name': self._gen_input_name(name),
             'class': camel_case_to_uscore(cls.get_type_name()),
             'type': 'text',
         }
@@ -740,10 +739,17 @@ class ComboBoxWidget(ComplexRenderWidget):
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         if self.type is not None:
             cls = self.type
+
+        attr = get_cls_attrs(self, cls)
         fti, id_str, text_str = self._prep_inst(cls, inst)
+
         if id_str is None:
             id_str = ""
-        parent.write(E.select(E.option(text_str, value=id_str, selected='')))
+
+        parent.write(E.select(
+            E.option(text_str, value=id_str, selected=''),
+            **self._gen_input_attrs_novalue(cls, name, attr, **kwargs)
+        ))
 
         if self.hidden_fields is not None:
             for key in self.hidden_fields:
