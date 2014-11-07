@@ -293,6 +293,13 @@ class HtmlForm(HtmlWidget):
             self._root_cloth.append(form)
             self._root_cloth = form
 
+        self.on_before_exit(form, self._cb_form_close)
+
+    def _cb_form_close(self, ctx, parent):
+        parent.write(E.p(
+            E.button("Submit", type="submit", **{'class': "btn btn-default"}),
+                                              **{'class': "text-center"}))
+
     def subserialize(self, ctx, cls, inst, parent, name=None, **kwargs):
         ctx.protocol.assets = []
         return super(HtmlForm, self).subserialize(ctx, cls, inst, parent,
