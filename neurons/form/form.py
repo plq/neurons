@@ -296,8 +296,9 @@ class HtmlForm(HtmlWidget):
 
     def _cb_form_close(self, ctx, parent):
         parent.write(E.p(
-            E.button("Submit", type="submit", **{'class': "btn btn-default"}),
-                                              **{'class': "text-center"}))
+            E.input(value="Submit", type="submit",
+                                        **{'class': "btn btn-default"}),
+                                                    **{'class': "text-center"}))
 
     def subserialize(self, ctx, cls, inst, parent, name=None, **kwargs):
         ctx.protocol.assets = []
@@ -387,7 +388,8 @@ class HtmlForm(HtmlWidget):
                                                              format=data_format)
         else:
             value = self.to_string(cls, inst)
-            code.append("$('#%(field_name)s').timepicker('setDate', '%(value)s');")
+            code.append(
+                     "$('#%(field_name)s').timepicker('setDate', '%(value)s');")
             script = _format_js(code, field_name=elt.attrib['id'], value=value,
                                                              format=data_format)
 
@@ -422,7 +424,8 @@ class HtmlForm(HtmlWidget):
                                                              format=data_format)
         else:
             value = self.to_string(cls, inst)
-            code.append("$('#%(field_name)s').datetimepicker('setDate', '%(value)s');")
+            code.append(
+                "$('#%(field_name)s').datetimepicker('setDate', '%(value)s');")
             script = _format_js(code, field_name=elt.attrib['id'],
                                                 format=data_format, value=value)
 
@@ -482,6 +485,7 @@ class HtmlForm(HtmlWidget):
 
         with parent.element('fieldset'):
             parent.write(E.legend(cls.get_type_name()))
+
             for k, v in sorted(fti.items(), key=_Tform_key(self)):
                 subattr = get_cls_attrs(self, v)
                 if subattr.exc:
@@ -508,7 +512,8 @@ class HtmlForm(HtmlWidget):
                         tabview_id = 'tabview' + str(SOME_COUNTER)
                         SOME_COUNTER += 1
 
-                        tabview_ctx = parent.element('div', attrib={'id': tabview_id})
+                        tabview_ctx = parent.element('div',
+                                                     attrib={'id': tabview_id})
                         tabview_ctx.__enter__()
 
                         parent.write(self._gen_tab_headers(ctx, fti))
@@ -565,7 +570,7 @@ class HtmlForm(HtmlWidget):
                 print("exiting tabview close")
                 tabview_ctx.__exit__(None, None, None)
                 parent.write(E.script(
-                    '$(function() { $( "#%s" ).tabs();});' % tabview_id,
+                    '$(function(){ $( "#%s" ).tabs(); });' % tabview_id,
                     type="text/javascript"
                 ))
 
