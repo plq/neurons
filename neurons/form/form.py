@@ -115,7 +115,7 @@ $(function() {
     };
 
     var del = function(event) {
-        if($('#%(field_name)s_container').find('.%(field_name)s').length >1){
+        if($('#%(field_name)s_container').find('.%(field_name)s').length > 1){
             $(this).parent().remove();
         }
         else{
@@ -144,7 +144,7 @@ class HtmlWidget(HtmlBase):
 
     @staticmethod
     def selsafe(s):
-        return s.replace('[', '').replace(']','').replace('.', '__')
+        return s.replace('[', '').replace(']', '').replace('.', '__')
 
     @classmethod
     def _check_supported_types(cls, t):
