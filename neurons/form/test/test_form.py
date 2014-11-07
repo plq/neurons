@@ -108,6 +108,13 @@ class TestFormPrimitive(unittest.TestCase):
         assert elt.attrib['name'] == 'string'
         assert elt.attrib['value'] == v
 
+    def test_unicode_null(self):
+        v = None
+        elt = _test_type(Unicode, v).xpath('div/input')[0]
+        assert elt.attrib['type'] == 'text'
+        assert elt.attrib['name'] == 'string'
+        assert not ('value' in elt.attrib)
+
     def test_unicode_password(self):
         elt = _test_type(Unicode(prot=PasswordWidget()), None).xpath('div/input')[0]
         assert elt.attrib['type'] == 'password'
