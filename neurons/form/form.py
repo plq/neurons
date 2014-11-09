@@ -131,22 +131,20 @@ $(function() {
 });""" % {"field_name": key}, type="text/javascript"))
 
 
-def _format_js(lines, **kwargs):
-    for i, line in enumerate(lines):
-        lines[i] = lines[i] % kwargs
-
-    return E.script("""
-$(function(){
-\t%s
-});""" % '\n\t'.join(lines), type="text/javascript")
-
-
 WRAP_FORWARD = type("WRAP_FORWARD", (object,), {})
 WRAP_REVERSED = type("WRAP_REVERSED", (object,), {})
 
 
 class HtmlWidget(HtmlBase):
     supported_types = None
+
+    @staticmethod
+    def _format_js(lines, **kwargs):
+        for i, line in enumerate(lines):
+            lines[i] = lines[i] % kwargs
+
+        return E.script("$(function(){\n\t%s\n});" % '\n\t'.join(lines),
+                                                        type="text/javascript")
 
     @staticmethod
     def selsafe(s):
@@ -187,7 +185,7 @@ class HtmlWidget(HtmlBase):
 
         return retval
 
-    def _gen_input_elt_id(self, name, array_index=None):
+    def _gen_input_elt_id(self, name, array_index=None, **kwargs):
         if array_index is None:
             return "%s_input" % (self.selsafe(name),)
         return "%s_%d_input" % (self.selsafe(name), array_index)
@@ -199,7 +197,7 @@ class HtmlWidget(HtmlBase):
 
     def _gen_input_attrs_novalue(self, cls, name, cls_attrs, **kwargs):
         elt_attrs = {
-            'id': self._gen_input_elt_id(name),
+            'id': self._gen_input_elt_id(name, **kwargs),
             'name': self._gen_input_name(name),
             'class': camel_case_to_uscore(cls.get_type_name()),
             'type': 'text',
@@ -215,7 +213,7 @@ class HtmlWidget(HtmlBase):
         return elt_attrs
 
     def _gen_input_attrs(self, cls, inst, name, cls_attrs, **kwargs):
-        elt_attrs = self._gen_input_attrs_novalue(cls, name, cls_attrs)
+        elt_attrs = self._gen_input_attrs_novalue(cls, name, cls_attrs, **kwargs)
 
         if not (inst is None and isinstance(inst, type)):
             val = self.to_unicode(cls, inst)
@@ -380,12 +378,12 @@ class HtmlForm(HtmlWidget):
         ]
 
         if inst is None:
-            script = _format_js(code, field_name=elt.attrib['id'],
+            script = self._format_js(code, field_name=elt.attrib['id'],
                                                              format=data_format)
         else:
             value = self.to_string(cls, inst)
             code.append("$('#%(field_name)s').datepicker('setDate', '%(value)s');")
-            script = _format_js(code, field_name=elt.attrib['id'], value=value,
+            script = self._format_js(code, field_name=elt.attrib['id'], value=value,
                                                              format=data_format)
 
         div = self._gen_label(ctx, cls, name, elt, **kwargs)
@@ -413,13 +411,13 @@ class HtmlForm(HtmlWidget):
         ]
 
         if inst is None:
-            script = _format_js(code, field_name=elt.attrib['id'],
+            script = self._format_js(code, field_name=elt.attrib['id'],
                                                              format=data_format)
         else:
             value = self.to_string(cls, inst)
             code.append(
                      "$('#%(field_name)s').timepicker('setDate', '%(value)s');")
-            script = _format_js(code, field_name=elt.attrib['id'], value=value,
+            script = self._format_js(code, field_name=elt.attrib['id'], value=value,
                                                              format=data_format)
 
         div = self._gen_label(ctx, cls, name, elt, **kwargs)
@@ -451,13 +449,13 @@ class HtmlForm(HtmlWidget):
         ]
 
         if inst is None:
-            script = _format_js(code, field_name=elt.attrib['id'],
+            script = self._format_js(code, field_name=elt.attrib['id'],
                                                              format=data_format)
         else:
             value = self.to_string(cls, inst)
             code.append(
                 "$('#%(field_name)s').datetimepicker('setDate', '%(value)s');")
-            script = _format_js(code, field_name=elt.attrib['id'],
+            script = self._format_js(code, field_name=elt.attrib['id'],
                                                 format=data_format, value=value)
 
         div = self._gen_label(ctx, cls, name, elt, **kwargs)
