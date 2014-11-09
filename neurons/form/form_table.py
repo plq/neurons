@@ -139,7 +139,7 @@ CAN_REMOVE_JS = """$(function() {
 class HtmlFormTable(HtmlColumnTable):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=True,
         cloth=None, attr_name='spyne_id', root_attr_name='spyne',
-        polymorphic=True, hier_delim='.',
+        polymorphic=True, doctype=None, hier_delim='.',
         cloth_parser=None, produce_header=True, table_name_attr='class',
         field_name_attr='class', border=0, row_class=None, cell_class=None,
         header_cell_class=None,
@@ -147,7 +147,7 @@ class HtmlFormTable(HtmlColumnTable):
 
         super(HtmlFormTable, self).__init__(app=app,
             ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
-            polymorphic=polymorphic, hier_delim=hier_delim,
+            polymorphic=polymorphic, hier_delim=hier_delim, doctype=doctype,
             cloth=cloth, attr_name=attr_name, root_attr_name=root_attr_name,
             cloth_parser=cloth_parser,
 
