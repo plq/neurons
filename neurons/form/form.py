@@ -99,6 +99,7 @@ def camel_case_to_uscore_gen(string):
         else:
             yield s
 
+
 camel_case_to_uscore = lambda s: ''.join(camel_case_to_uscore_gen(s))
 
 

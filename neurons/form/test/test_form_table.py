@@ -76,7 +76,7 @@ def _test_type(cls, inst):
     return elt
 
 
-class TestForm(unittest.TestCase):
+class TestFormTable(unittest.TestCase):
     def test_simple_array(self):
         v = range(5)
         elt = _test_type(Array(Integer), v)[0]
