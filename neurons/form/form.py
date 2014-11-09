@@ -140,10 +140,11 @@ class HtmlWidget(HtmlBase):
 
     @staticmethod
     def _format_js(lines, **kwargs):
+        js = []
         for i, line in enumerate(lines):
-            lines[i] = lines[i] % kwargs
+            js.append(lines[i] % kwargs)
 
-        return E.script("$(function(){\n\t%s\n});" % '\n\t'.join(lines),
+        return E.script("$(function(){\n\t%s\n});" % '\n\t'.join(js),
                                                         type="text/javascript")
 
     @staticmethod
