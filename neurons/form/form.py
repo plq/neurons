@@ -140,6 +140,10 @@ $(function(){
 });""" % '\n\t'.join(lines), type="text/javascript")
 
 
+WRAP_FORWARD = type("WRAP_FORWARD", (object,), {})
+WRAP_REVERSED = type("WRAP_REVERSED", (object,), {})
+
+
 class HtmlWidget(HtmlBase):
     supported_types = None
 
@@ -160,9 +164,27 @@ class HtmlWidget(HtmlBase):
             val = ""
         parent.write(E.input(type="hidden", value=val, name=name))
 
-    def _gen_label(self, ctx, cls, name, input):
-        return E.label(self.trc(cls, ctx.locale, name),
+    def _gen_label(self, ctx, cls, name, input, no_label=False,
+                                             wrap_label=WRAP_FORWARD, **kwargs):
+        retval = input
+
+        attrib = {'class': 'label-input-wrapper'}
+        if no_label and wrap_label is not None:
+            retval = E.div(retval, **attrib)
+
+        else:
+            retval = E.label(self.trc(cls, ctx.locale, name),
                                                   **{'for': input.attrib['id']})
+            if wrap_label is WRAP_FORWARD:
+                retval = E.div(retval, input, **attrib)
+            elif wrap_label is WRAP_REVERSED:
+                retval = E.div(input, retval, **attrib)
+            elif wrap_label is None:
+                pass
+            else:
+                raise ValueError(wrap_label)
+
+        return retval
 
     def _gen_input_elt_id(self, name, array_index=None):
         if array_index is None:
@@ -247,11 +269,6 @@ _jstag = lambda src: E.script(src=src, type="text/javascript")
 _csstag = lambda src: E.link(href=src, type="text/css", rel="stylesheet")
 
 
-def _idiv(*args, **kwargs):
-    kwargs['class'] = 'label-input-wrapper'
-    return E.div(*args, **kwargs)
-
-
 class HtmlForm(HtmlWidget):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
                        cloth=None, attr_name='spyne_id', root_attr_name='spyne',
@@ -314,7 +331,7 @@ class HtmlForm(HtmlWidget):
 
     def unicode_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs, elt = self._gen_input_unicode(cls, inst, name, **kwargs)
-        parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt))
+        parent.write(self._gen_label(ctx, cls, name, elt, **kwargs))
 
     def decimal_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = get_cls_attrs(self, cls)
@@ -328,7 +345,7 @@ class HtmlForm(HtmlWidget):
 
         self._apply_number_constraints(cls_attrs, elt)
 
-        parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt))
+        parent.write(self._gen_label(ctx, cls, name, elt, **kwargs))
 
     def boolean_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = get_cls_attrs(self, cls)
@@ -338,7 +355,9 @@ class HtmlForm(HtmlWidget):
         if bool(inst):
             elt.attrib['checked'] = ''
 
-        parent.write(_idiv(elt, self._gen_label(ctx, cls, name, elt)))
+        div = self._gen_label(ctx, cls, name, elt,
+                                             wrap_label=WRAP_REVERSED, **kwargs)
+        parent.write(div)
 
     def date_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         ctx.protocol.assets.extend([('jquery',), ('jquery-ui', 'datepicker')])
@@ -368,7 +387,9 @@ class HtmlForm(HtmlWidget):
             script = _format_js(code, field_name=elt.attrib['id'], value=value,
                                                              format=data_format)
 
-        parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt, script))
+        div = self._gen_label(ctx, cls, name, elt, **kwargs)
+        div.append(script)
+        parent.write(div)
 
     def time_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         ctx.protocol.assets.extend([('jquery',), ('jquery-ui', 'datepicker'),
@@ -400,7 +421,9 @@ class HtmlForm(HtmlWidget):
             script = _format_js(code, field_name=elt.attrib['id'], value=value,
                                                              format=data_format)
 
-        parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt, script))
+        div = self._gen_label(ctx, cls, name, elt, **kwargs)
+        div.append(script)
+        parent.write(div)
 
     def datetime_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         ctx.protocol.assets.extend([('jquery',), ('jquery-ui', 'datepicker'),
@@ -436,7 +459,9 @@ class HtmlForm(HtmlWidget):
             script = _format_js(code, field_name=elt.attrib['id'],
                                                 format=data_format, value=value)
 
-        parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt, script))
+        div = self._gen_label(ctx, cls, name, elt, **kwargs)
+        div.append(script)
+        parent.write(div)
 
     def integer_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = get_cls_attrs(self, cls)
@@ -445,14 +470,14 @@ class HtmlForm(HtmlWidget):
 
         self._apply_number_constraints(cls_attrs, elt)
 
-        parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt))
+        parent.write(self._gen_label(ctx, cls, name, elt, **kwargs))
 
     # TODO: finish this
     def duration_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = get_cls_attrs(self, cls)
         elt = self._gen_input(cls, inst, name, cls_attrs, **kwargs)
 
-        parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt))
+        parent.write(self._gen_label(ctx, cls, name, elt, **kwargs))
 
     def array_type_to_parent(self, ctx, cls, inst, parent, name=None, **kwargs):
         v = next(iter(cls._type_info.values()))
@@ -684,7 +709,7 @@ class PasswordWidget(HtmlWidget):
 
         cls_attrs, elt = self._gen_input_unicode(cls, inst, name, **kwargs)
         elt.attrib['type'] = 'password'
-        parent.write(_idiv(self._gen_label(ctx, cls, name, elt), elt))
+        parent.write(self._gen_label(ctx, cls, name, elt, **kwargs))
 
 
 class ComplexRenderWidget(HtmlWidget):

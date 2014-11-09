@@ -183,7 +183,7 @@ class HtmlFormTable(HtmlColumnTable):
             with parent.element('tr', attrib=td_attrs):
                 with parent.element('td', attrib=td_attrs):
                     ret = self.prot_form.to_parent(ctx, cls, inst, parent, name,
-                                                   from_arr=from_arr, **kwargs)
+                                     from_arr=from_arr, no_label=True, **kwargs)
                     if isgenerator(ret):
                         try:
                             while True:
@@ -200,7 +200,7 @@ class HtmlFormTable(HtmlColumnTable):
 
         else:
             ret = self.prot_form.to_parent(ctx, cls, inst, parent, name,
-                                           from_arr=from_arr, **kwargs)
+                                     from_arr=from_arr, no_label=True, **kwargs)
 
             if isgenerator(ret):
                 try:
