@@ -36,6 +36,8 @@ from __future__ import print_function
 import logging
 logger = logging.getLogger(__name__)
 
+import re
+
 from collections import namedtuple
 from inspect import isgenerator
 from decimal import Decimal as D
@@ -197,10 +199,15 @@ class HtmlWidget(HtmlBase):
         return "%s[%d]" % (name, array_index)
 
     def _gen_input_attrs_novalue(self, cls, name, cls_attrs, **kwargs):
+        elt_class = ' '.join([
+            camel_case_to_uscore(cls.get_type_name()),
+            name.rsplit(self.hier_delim, 1)[-1],
+            re.sub(r'\[[0-9]+\]', '', name).replace(self.hier_delim, '__'),
+        ])
         elt_attrs = {
             'id': self._gen_input_elt_id(name, **kwargs),
             'name': self._gen_input_name(name),
-            'class': camel_case_to_uscore(cls.get_type_name()),
+            'class': elt_class,
             'type': 'text',
         }
 
