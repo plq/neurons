@@ -31,6 +31,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+from __future__ import print_function
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -45,6 +47,7 @@ from spyne.protocol.html import HtmlColumnTable
 from neurons.form import HtmlForm
 from neurons.form import HtmlWidget
 
+SOME_COUNTER = [0]
 
 class HtmlFormTable(HtmlColumnTable, HtmlWidget):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=True,
@@ -143,7 +146,7 @@ class HtmlFormTable(HtmlColumnTable, HtmlWidget):
         parent.write(td)
 
     def _gen_buttons(self, elt, name, add, remove):
-        name = self.selsafe(name)
+        name = "%s-%d" % (self.selsafe(name), SOME_COUNTER[0])
 
         if add:
             elt.append(
@@ -191,8 +194,11 @@ class HtmlFormTable(HtmlColumnTable, HtmlWidget):
 
         rearr = REARRANGE_JS % {'hier_delim': self.prot_form.hier_delim}
 
-        parent.write(self._format_js(ADD_JS,
-                                          name=self.selsafe(name), rearr=rearr))
+        name = '%s-%d' % (self.selsafe(name), SOME_COUNTER[0])
+
+        SOME_COUNTER[0] += 1
+
+        parent.write(self._format_js(ADD_JS, name=name, rearr=rearr))
 
 
 ADD_JS = ["""
@@ -238,7 +244,8 @@ var rearrange = function() {
 
 $(".%(name)s_btn_remove").click(remove);
 var btn_add = $(".%(name)s_btn_add");
-    btn_add.click(add);
+btn_add.off("click");
+btn_add.click(add);
 
 var row = btn_add.parent().parent();
 var table = row.parent();
