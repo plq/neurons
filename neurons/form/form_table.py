@@ -82,11 +82,11 @@ CAN_ADD_JS = """$(function() {
             var idx = $(this).index();
             $(this).children('td[_main]').each(function() {
                 var td = $(this);
-                var name_str = td.attr('_main') + '[' + zerofill(idx, 9) + '].' + td.attr('_sub')
+                var name_str = td.attr('_main') + '[' + zerofill(idx, 9) + '].' + td.attr('_sub');
                 $(this).children('[name]').attr('name', name_str);
             });
         });
-    }
+    };
 
     $(".%(field_name)s_btn_remove").click(remove);
     $(".%(field_name)s_btn_add").click(add);
@@ -114,9 +114,7 @@ var rearrange = function() {
 }"""
 
 CAN_REMOVE_JS = """$(function() {
-    var field_name = "." + "%(field_name)s";
-
-    var cikar = function (event) {
+    var remove = function (event) {
         var td = $(this).parent();
         var tr = td.parent();
         var table = tr.parent();
@@ -133,8 +131,8 @@ CAN_REMOVE_JS = """$(function() {
 
         event.preventDefault();
         return false;
-    }
-    $(".%(field_name)s_btn_remove").click(cikar);
+    };
+    $(".%(field_name)s_btn_remove").click(remove);
 });"""
 
 
