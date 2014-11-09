@@ -37,5 +37,5 @@ from pkg_resources import resource_filename
 
 _ROOT = __name__
 
-T_TEST = abspath(resource_filename(_ROOT, 'test.xhtml'))
+T_TEST = abspath(resource_filename(_ROOT, 'test.html'))
 assert isfile(T_TEST)
