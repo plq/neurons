@@ -55,7 +55,7 @@ def _test_type(cls, inst):
         def some_call(ctx):
             return inst
 
-    prot = HtmlFormTable(cloth=T_TEST)
+    prot = HtmlFormTable(cloth=T_TEST, doctype='<!DOCTYPE html>')
     app = Application([SomeService], 'some_ns', out_protocol=prot)
 
     null = NullServer(app, ostr=True)
