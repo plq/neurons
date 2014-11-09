@@ -76,6 +76,9 @@ class StorageInfo(ComplexModel):
 class Relational(StorageInfo):
     conn_str = Unicode
     pool_size = UnsignedInteger
+    max_overflow = UnsignedInteger
+    pool_recycle = UnsignedInteger
+    pool_timeout = UnsignedInteger
     sync_pool = Boolean
     async_pool = Boolean
 
@@ -421,6 +424,9 @@ class Daemon(ComplexModel):
                     name="sql_main",
                     backend="sqlalchemy",
                     pool_size=10,
+                    pool_recycle=3600,
+                    pool_timeout=30,
+                    max_overflow=3,
                     conn_str='postgres://postgres:@localhost:5432/%s_%s' %
                                                (daemon_name, getpass.getuser()),
                     sync_pool=True,
