@@ -216,7 +216,7 @@ class HtmlFormTable(HtmlColumnTable):
 
     def extend_header_row(self, ctx, cls, parent, name, **kwargs):
         if self.can_add or self.can_remove:
-            parent.write(E.td())
+            parent.write(E.th())
 
     def extend_data_row(self, ctx, cls, inst, parent, name, array_index=None,
                         add=False, **kwargs):
