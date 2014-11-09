@@ -323,7 +323,8 @@ class HtmlForm(HtmlWidget):
             self._root_cloth.append(form)
             self._root_cloth = form
 
-        self.on_before_exit(form, self._cb_form_close)
+        self.event_manager.add_listener(("before_exit", form),
+                                                            self._cb_form_close)
 
     def _cb_form_close(self, ctx, parent):
         parent.write(E.p(
