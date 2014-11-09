@@ -781,9 +781,10 @@ class ComboBoxWidget(ComplexRenderWidget):
         if id_str is None:
             id_str = ""
 
+        sub_name = self.hier_delim.join((name, self.id_field))
         parent.write(E.select(
             E.option(text_str, value=id_str, selected=''),
-            **self._gen_input_attrs_novalue(cls, name, attr, **kwargs)
+            **self._gen_input_attrs_novalue(cls, sub_name, attr, **kwargs)
         ))
 
         if self.hidden_fields is not None:
