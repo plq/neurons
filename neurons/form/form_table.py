@@ -47,7 +47,9 @@ from spyne.protocol.html import HtmlColumnTable
 from neurons.form import HtmlForm
 from neurons.form import HtmlWidget
 
+
 SOME_COUNTER = [0]
+
 
 class HtmlFormTable(HtmlColumnTable, HtmlWidget):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=True,
