@@ -730,7 +730,7 @@ class PasswordWidget(HtmlWidget):
 class ComplexRenderWidget(HtmlWidget):
     supported_types = (ComplexModelBase,)
 
-    def __init__(self, id_field, text_field, hidden_fields=None, type=None):
+    def __init__(self, id_field, text_field, type=None, hidden_fields=None):
         self.id_field = id_field
         self.text_field = text_field
         self.hidden_fields = hidden_fields
@@ -797,10 +797,11 @@ class HrefWidget(ComplexRenderWidget):
 
 class ComboBoxWidget(ComplexRenderWidget):
     def __init__(self, id_field, text_field, hidden_fields=None, type=None,
-                                                                  others=False):
+                                            others=False, others_order_by=None):
         super(ComboBoxWidget, self).__init__(id_field=id_field,
                   text_field=text_field, hidden_fields=hidden_fields, type=type)
         self.others = others
+        self.others_order_by = others_order_by
 
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         if self.type is not None:
@@ -820,7 +821,14 @@ class ComboBoxWidget(ComplexRenderWidget):
 
                 # FIXME: this blocks the reactor
                 with closing(ctx.app.config.stores['sql_main'].itself.Session()) as session:
-                    for o in session.query(cls.__orig__ or cls).all():
+                    q = session.query(cls.__orig__ or cls)
+                    if self.others_order_by is not None:
+                        if isinstance(self.others_order_by, (list, tuple)):
+                            q = q.order_by(*self.others_order_by)
+                        else:
+                            q = q.order_by(self.others_order_by)
+
+                    for o in q:
                         id_str, text_str = self._prep_inst(cls, o, fti)
 
                         elt = E.option(text_str, value=id_str)
