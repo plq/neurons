@@ -727,6 +727,36 @@ class PasswordWidget(HtmlWidget):
         parent.write(self._gen_label(ctx, cls, name, elt, **kwargs))
 
 
+class HrefWidget(HtmlWidget):
+    supported_types = (Unicode, Decimal)
+
+    def __init__(self, href, hidden_input=True):
+        super(HrefWidget, self).__init__()
+
+        self.href = href
+        self.hidden_input = hidden_input
+
+    def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        self._check_supported_types(cls)
+
+        id_str = self.to_unicode(cls, inst)
+        if id_str is None:
+            id_str = ''
+
+        try:
+            href = self.href.format(inst)
+        except:
+            href = self.href
+
+        elt = E.a(id_str)
+        if href is not None:
+            elt.attrib['href'] = href
+
+        parent.write(elt)
+        if self.hidden_input:
+            self._gen_input_hidden(cls, inst, parent, name, **kwargs)
+
+
 class ComplexRenderWidget(HtmlWidget):
     supported_types = (ComplexModelBase,)
 
@@ -779,7 +809,7 @@ class ComplexRenderWidget(HtmlWidget):
         self._write_hidden_fields(ctx, cls, inst, parent, name, fti, **kwargs)
 
 
-class HrefWidget(ComplexRenderWidget):
+class ComplexHrefWidget(ComplexRenderWidget):
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         fti = cls.get_flat_type_info(cls)
         id_str, text_str = self._prep_inst(cls, inst, fti)
