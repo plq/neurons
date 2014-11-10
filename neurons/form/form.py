@@ -233,13 +233,34 @@ class HtmlWidget(HtmlBase):
     def _gen_input(self, cls, inst, name, cls_attrs, **kwargs):
         elt_attrs = self._gen_input_attrs(cls, inst, name, cls_attrs, **kwargs)
 
-        if cls_attrs.min_occurs == 1 and cls_attrs.nullable == False:
-            elt = html.fromstring('<input required>')
-            del elt_attrs['required']
-            elt.attrib.update(elt_attrs)
+        tag = 'input'
+        values = cls_attrs.values
+        if values is not None and len(values) > 0:
+            tag = 'select'
+            if 'value' in elt_attrs:
+                del elt_attrs['value']
+            if 'type' in elt_attrs:
+                del elt_attrs['type']
 
+        if cls_attrs.min_occurs == 1 and cls_attrs.nullable == False:
+            elt = html.fromstring('<%s required>' % tag)
+            elt.attrib.update(elt_attrs)
         else:
-            elt = E.input(**elt_attrs)
+            elt = E(tag, **elt_attrs)
+
+        if values is not None:
+            inststr = self.to_unicode(cls, inst)
+
+            for v in cls_attrs.values:
+                valstr = self.to_unicode(cls, v)
+                if valstr is None:
+                    valstr = ""
+
+                attrib = dict(value=valstr)
+                if valstr == inststr:
+                    attrib['selected'] = ''
+
+                elt.append(E.option(valstr, **attrib))
 
         return elt
 

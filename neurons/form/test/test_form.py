@@ -36,21 +36,23 @@ from __future__ import absolute_import, print_function
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
+import re
 import unittest
 
 from decimal import Decimal as D
 from datetime import date, time, datetime
-import re
 
+from lxml import etree, html
+
+from spyne import Application, NullServer, Unicode, ServiceBase, rpc, Decimal, \
+    Boolean, Date, Time, DateTime, Integer, ComplexModel, Array, Double
+from spyne.util.test import show
+
+from neurons.form.test import strip_ns
 from neurons.form import HtmlForm, PasswordWidget, Tab, HrefWidget, \
     ComboBoxWidget
 from neurons.form.const import T_TEST
 from neurons.form.form import Fieldset
-from neurons.form.test import strip_ns
-from spyne import Application, NullServer, Unicode, ServiceBase, rpc, Decimal, \
-    Boolean, Date, Time, DateTime, Integer, ComplexModel, Array, Double
-from lxml import etree, html
-from spyne.util.test import show
 
 
 def _test_type(cls, inst):
@@ -74,8 +76,8 @@ def _test_type(cls, inst):
         raise
 
     show(elt, stdout=False)
-    elt = elt.xpath('//*[@spyne]')[0][0] # get the form tag inside the body tag.
-    elt = strip_ns(elt) # get rid of namespaces to simplify xpaths in tests
+    elt = elt.xpath('//*[@spyne]')[0][0]  # get the form tag inside the body tag
+    elt = strip_ns(elt)  # get rid of namespaces to simplify xpaths in tests
 
     print(etree.tostring(elt, pretty_print=True))
 
@@ -114,6 +116,24 @@ class TestFormPrimitive(unittest.TestCase):
         assert elt.attrib['type'] == 'text'
         assert elt.attrib['name'] == 'string'
         assert not ('value' in elt.attrib)
+
+    def test_unicode_values(self):
+        v = 'a'
+        cls = Unicode(type_name="tn", values=list('abcd'))
+        assert not cls.get_type_name() is Unicode.Empty
+        elt = _test_type(cls, v).xpath('div/select')[0]
+        assert elt.tag == 'select'
+        assert elt.xpath("option/@value") == list('abcd')
+        assert elt.xpath("option[@selected]/text()") == [v]
+
+    def test_integer_values(self):
+        v = 3
+        cls = Integer(type_name="tn", values=list(range(5)))
+        assert not cls.get_type_name() is Unicode.Empty
+        elt = _test_type(cls, v).xpath('div/select')[0]
+        assert elt.tag == 'select'
+        assert elt.xpath("option/@value") == [str(vvv) for vvv in range(5)]
+        assert elt.xpath("option[@selected]/text()") == [str(v)]
 
     def test_unicode_password(self):
         elt = _test_type(Unicode(prot=PasswordWidget()), None).xpath('div/input')[0]
