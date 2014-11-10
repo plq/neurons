@@ -50,7 +50,7 @@ from spyne.util.test import show
 
 from neurons.form.test import strip_ns
 from neurons.form import HtmlForm, PasswordWidget, Tab, HrefWidget, \
-    ComboBoxWidget
+    ComboBoxWidget, ComplexHrefWidget
 from neurons.form.const import T_TEST
 from neurons.form.form import Fieldset
 
@@ -286,7 +286,7 @@ class TestHrefWidget(object):
     def test_simple(self):
         class SomeObject(ComplexModel):
             class Attributes(ComplexModel.Attributes):
-                prot = HrefWidget('i', 's')
+                prot = ComplexHrefWidget('i', 's')
 
             _type_info = [
                 ('i', Integer),
