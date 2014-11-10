@@ -730,10 +730,8 @@ class ComplexRenderWidget(HtmlWidget):
         self.type = type
         super(HtmlWidget, self).__init__()
 
-    def _prep_inst(self, cls, inst):
+    def _prep_inst(self, cls, inst, fti):
         self._check_supported_types(cls)
-
-        fti = cls.get_flat_type_info(cls)
 
         id_name = id_type = id_str = None
         if self.id_field is not None:
@@ -752,12 +750,16 @@ class ComplexRenderWidget(HtmlWidget):
             text_val = getattr(inst, text_name)
             text_str = self.to_unicode(text_type, text_val)
 
-        return fti, id_str, text_str
+        if id_str is None:
+            id_str = ""
+
+        return id_str, text_str
 
 
 class HrefWidget(ComplexRenderWidget):
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        fti, id_str, text_str = self._prep_inst(cls, inst)
+        fti = cls.get_flat_type_info(cls)
+        id_str, text_str = self._prep_inst(cls, inst, fti)
 
         attrib = {}
         if id_str is not None:
@@ -785,16 +787,30 @@ class ComboBoxWidget(ComplexRenderWidget):
             cls = self.type
 
         attr = get_cls_attrs(self, cls)
-        fti, id_str, text_str = self._prep_inst(cls, inst)
-
-        if id_str is None:
-            id_str = ""
+        fti = cls.get_flat_type_info(cls)
+        v_id_str, v_text_str = self._prep_inst(cls, inst, fti)
 
         sub_name = self.hier_delim.join((name, self.id_field))
-        parent.write(E.select(
-            E.option(text_str, value=id_str, selected=''),
-            **self._gen_input_attrs_novalue(cls, sub_name, attr, **kwargs)
-        ))
+        attrib = self._gen_input_attrs_novalue(cls, sub_name, attr, **kwargs)
+        with parent.element("select", attrib=attrib):
+            if self.others:
+                from contextlib import closing
+                if attr.min_occurs == 0:
+                    parent.write(E.option())
+
+                # FIXME: this blocks the reactor
+                with closing(ctx.app.config.stores['sql_main'].itself.Session()) as session:
+                    for o in session.query(cls.__orig__ or cls).all():
+                        id_str, text_str = self._prep_inst(cls, o, fti)
+
+                        elt = E.option(text_str, value=id_str)
+                        if id_str == v_id_str:
+                            elt.attrib['selected'] = ""
+
+                        parent.write(elt)
+            else:
+                parent.write(E.option(v_text_str, value=v_id_str, selected=''))
+
 
         if self.hidden_fields is not None:
             for key in self.hidden_fields:
