@@ -759,6 +759,8 @@ class ComplexRenderWidget(HtmlWidget):
 
         if id_str is None:
             id_str = ""
+        if text_str is None:
+            text_str = ""
 
         return id_str, text_str
 
