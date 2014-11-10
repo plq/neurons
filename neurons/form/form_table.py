@@ -93,7 +93,7 @@ class HtmlFormTable(HtmlColumnTable, HtmlWidget):
             if self.field_name_attr:
                 td_attrs[self.field_name_attr] = name
 
-            with parent.element('tr', attrib=td_attrs):
+            with parent.element('tr'):
                 with parent.element('td', attrib=td_attrs):
                     ret = self.prot_form.to_parent(ctx, cls, inst, parent, name,
                                      from_arr=from_arr, no_label=True, **kwargs)
@@ -194,13 +194,11 @@ class HtmlFormTable(HtmlColumnTable, HtmlWidget):
                 self.model_base_to_parent(ctx, cls, None, parent, name,
                                          add=True, remove=False, array_index=-1)
 
-        rearr = REARRANGE_JS % {'hier_delim': self.prot_form.hier_delim}
-
         name = '%s-%d' % (self.selsafe(name), SOME_COUNTER[0])
 
         SOME_COUNTER[0] += 1
 
-        parent.write(self._format_js(ADD_JS, name=name, rearr=rearr))
+        parent.write(self._format_js(ADD_JS, name=name))
 
 
 ADD_JS = ["""
@@ -236,10 +234,12 @@ var remove = function (e) {
 var rearrange = function() {
     table.children('tr').each(function() {
         var idx = $(this).index();
-        $(this).children('td[_main]').each(function() {
-            var td = $(this);
-            var name_str = td.attr('_main') + '[' + zerofill(idx, 9) + '].' + td.attr('_sub');
-            $(this).children('[name]').attr('name', name_str);
+        $(this).find('[name]').each(function() {
+            var elt = $(this);
+            var name_str = elt.attr('name').replace("[-1]",
+                                                  "[" + zerofill(idx, 9) + "]");
+            elt.attr('name', name_str);
+            console.log(elt + " name set to " + name_str);
         });
     });
 };
@@ -259,15 +259,3 @@ for (var children = row.children(), i=0, l=children.length-1; i < l; ++i) {
 
 row.attr('null-widget', true);
 var null_widget = row.clone(true);"""]
-
-REARRANGE_JS = """
-var rearrange = function() {
-    table.children('tr').each(function() {
-        var idx = $(this).index();
-        $(this).children('td[_main]').each(function() {
-            var td = $(this);
-            var name_str = td.attr('_main') + '[' + zerofill(idx, 9) + ']%(hier_delim)s' + td.attr('_sub')
-            $(this).children('[name]').attr('name', name_str);
-        });
-    });
-}"""
