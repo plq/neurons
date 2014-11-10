@@ -324,7 +324,14 @@ class HtmlForm(HtmlWidget):
             self._root_cloth = form
 
         self.event_manager.add_listener(("before_exit", form),
-                                                            self._cb_form_close)
+                                                     self._cb_form_close)
+        self.event_manager.add_listener(("before_entry", form),
+                                                     self._cb_form_before_entry)
+
+    def _cb_form_before_entry(self, ctx, parent, attrib):
+        if hasattr(ctx.protocol, 'form_action'):
+            attrib['action'] = ctx.protocol.form_action
+            print("Set form action to", attrib['action'])
 
     def _cb_form_close(self, ctx, parent):
         parent.write(E.p(
