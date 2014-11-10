@@ -764,6 +764,20 @@ class ComplexRenderWidget(HtmlWidget):
 
         return id_str, text_str
 
+    def _write_hidden_fields(self, ctx, cls, inst, parent, name, fti, **kwargs):
+        if self.hidden_fields is not None:
+            for key in self.hidden_fields:
+                self._gen_input_hidden(fti[key], getattr(inst, key, None),
+                            parent, self.hier_delim.join((name, key)), **kwargs)
+
+    def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        fti = cls.get_flat_type_info(cls)
+        id_str, text_str = self._prep_inst(cls, inst, fti)
+
+        parent.write(text_str)
+
+        self._write_hidden_fields(ctx, cls, inst, parent, name, fti, **kwargs)
+
 
 class HrefWidget(ComplexRenderWidget):
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
@@ -778,10 +792,7 @@ class HrefWidget(ComplexRenderWidget):
 
         parent.write(E.a(text_str, **attrib))
 
-        if self.hidden_fields is not None:
-            for key in self.hidden_fields:
-                self._gen_input_hidden(fti[key], getattr(inst, key, None),
-                            parent, self.hier_delim.join((name, key)), **kwargs)
+        self._write_hidden_fields(ctx, cls, inst, parent, name, fti, **kwargs)
 
 
 class ComboBoxWidget(ComplexRenderWidget):
@@ -820,8 +831,4 @@ class ComboBoxWidget(ComplexRenderWidget):
             else:
                 parent.write(E.option(v_text_str, value=v_id_str, selected=''))
 
-
-        if self.hidden_fields is not None:
-            for key in self.hidden_fields:
-                self._gen_input_hidden(fti[key], getattr(inst, key, None),
-                            parent, self.hier_delim.join((name, key)), **kwargs)
+        self._write_hidden_fields(ctx, cls, inst, parent, name, fti, **kwargs)
