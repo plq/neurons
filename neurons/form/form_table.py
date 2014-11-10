@@ -221,7 +221,6 @@ var add = function(event) {
 };
 
 var remove = function (e) {
-    var own = $(".%(name)s_btn_remove");
     var td = $(this).parent();
     var tr = td.parent();
     tr.remove();
