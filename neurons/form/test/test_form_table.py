@@ -98,10 +98,10 @@ class TestFormTable(unittest.TestCase):
         elt = _test_type(Array(SomeObject), v)[0]
 
         assert elt.xpath(
-            'table/tbody/tr/td/div/input[@class="integer"]/@value') == \
+            'table/tbody/tr/td/div/input[contains(@class, "integer")]/@value') == \
                                                            [str(o.i) for o in v]
         assert elt.xpath(
-            'table/tbody/tr/td/div/input[@class="string"]/@value') == \
+            'table/tbody/tr/td/div/input[contains(@class, "string")]/@value') == \
                                                            [str(o.s) for o in v]
 
 
