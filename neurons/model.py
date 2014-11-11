@@ -31,6 +31,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+from contextlib import closing
+
 from spyne import TTableModel
 from spyne.util.sqlalchemy import get_pk_columns
 
@@ -38,21 +40,19 @@ TableModel = TTableModel()
 
 
 def respawn(cls, ctx=None):
-    if ctx is not None and ctx.in_object is not None and len(ctx.in_object) > 0 \
-                       and ctx.in_object[0] is not None \
-                       and ctx.app is not None and hasattr(ctx.app, 'main'):
+    has_db = ctx.app is not None and 'sql_main' in ctx.app.config.stores
 
+    if ctx is not None and ctx.in_object is not None and len(ctx.in_object) > 0 \
+                       and ctx.in_object[0] is not None and has_db:
         in_object = ctx.in_object[0]
 
         filters = {}
         for k,v in get_pk_columns(cls):
             filters[k] = getattr(in_object, k)
 
-        from arskom.web import DalBase
-
-        session = DalBase(ctx).session
-        retval = session.query(cls).with_polymorphic('*').filter_by(**filters).one()
-        return retval
+        db = ctx.app.config.stores['sql_main'].itself
+        with closing(db.Session()) as session:
+            return session.query(cls).with_polymorphic('*').filter_by(**filters).one()
 
 
 TableModel.__respawn__ = classmethod(respawn)
