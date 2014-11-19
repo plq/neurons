@@ -41,6 +41,7 @@ import re
 from collections import namedtuple
 from inspect import isgenerator
 from decimal import Decimal as D
+from spyne.util.oset import oset
 
 from lxml import html
 from lxml.builder import E
@@ -199,11 +200,11 @@ class HtmlWidget(HtmlBase):
         return "%s[%d]" % (name, array_index)
 
     def _gen_input_attrs_novalue(self, cls, name, cls_attrs, **kwargs):
-        elt_class = ' '.join([
+        elt_class = ' '.join(oset([
             camel_case_to_uscore(cls.get_type_name()),
             name.rsplit(self.hier_delim, 1)[-1],
             re.sub(r'\[[0-9]+\]', '', name).replace(self.hier_delim, '__'),
-        ])
+        ]))
         elt_attrs = {
             'id': self._gen_input_elt_id(name, **kwargs),
             'name': self._gen_input_name(name),
@@ -214,6 +215,9 @@ class HtmlWidget(HtmlBase):
         if getattr(cls_attrs, 'pattern', None) is not None:
             elt_attrs['pattern'] = cls_attrs.pattern
 
+        if cls_attrs.write is False:
+            elt_attrs['readonly'] = ""
+
         # FIXME: handle min_occurs > 1
         if cls_attrs.min_occurs == 1 and cls_attrs.nullable == False:
             elt_attrs['required'] = ''
@@ -223,7 +227,12 @@ class HtmlWidget(HtmlBase):
     def _gen_input_attrs(self, cls, inst, name, cls_attrs, **kwargs):
         elt_attrs = self._gen_input_attrs_novalue(cls, name, cls_attrs, **kwargs)
 
-        if not (inst is None and isinstance(inst, type)):
+        if inst is None or isinstance(inst, type):
+            # FIXME: this must be done the other way around
+            if 'readonly' in elt_attrs and cls_attrs.allow_write_for_null:
+                del elt_attrs['readonly']
+
+        else:
             val = self.to_unicode(cls, inst)
             if val is not None:
                 elt_attrs['value'] = val
@@ -248,32 +257,49 @@ class HtmlWidget(HtmlBase):
         else:
             elt = E(tag, **elt_attrs)
 
-        if values is not None:
+        if values is not None and len(values) > 0:
             inststr = self.to_unicode(cls, inst)
+            if cls_attrs.write is False and inststr is not None:
+                elt.append(E.option(inststr, value=inststr))
+            else:
+                # FIXME: cache this!
+                for v in cls_attrs.values:
+                    valstr = self.to_unicode(cls, v)
+                    if valstr is None:
+                        valstr = ""
 
-            for v in cls_attrs.values:
-                valstr = self.to_unicode(cls, v)
-                if valstr is None:
-                    valstr = ""
+                    attrib = dict(value=valstr)
+                    if valstr == inststr:
+                        attrib['selected'] = ''
 
-                attrib = dict(value=valstr)
-                if valstr == inststr:
-                    attrib['selected'] = ''
-
-                elt.append(E.option(valstr, **attrib))
+                    elt.append(E.option(valstr, **attrib))
 
         return elt
 
     def _gen_input_unicode(self, cls, inst, name, **kwargs):
         cls_attrs = get_cls_attrs(self, cls)
 
-        elt = self._gen_input(cls, inst, name, cls_attrs, **kwargs)
-        elt.attrib['type'] = 'text'
+        if cls_attrs.max_len >= D('inf'):
+            tag = 'textarea'
 
-        if cls_attrs.max_len < Unicode.Attributes.max_len:
-            elt.attrib['maxlength'] = str(int(cls_attrs.max_len))
-        if cls_attrs.min_len > Unicode.Attributes.min_len:
-            elt.attrib['minlength'] = str(int(cls_attrs.min_len))
+            elt_attrs = self._gen_input_attrs_novalue(cls, name, cls_attrs)
+            if cls_attrs.min_occurs == 1 and cls_attrs.nullable == False:
+                elt = html.fromstring('<%s required>' % tag)
+                elt.attrib.update(elt_attrs)
+            else:
+                elt = E(tag, **elt_attrs)
+
+            if not (inst is None and isinstance(inst, type)):
+                elt.text = self.to_unicode(cls, inst)
+
+        else:
+            elt = self._gen_input(cls, inst, name, cls_attrs, **kwargs)
+            elt.attrib['type'] = 'text'
+
+            if cls_attrs.max_len < Unicode.Attributes.max_len:
+                elt.attrib['maxlength'] = str(int(cls_attrs.max_len))
+            if cls_attrs.min_len > Unicode.Attributes.min_len:
+                elt.attrib['minlength'] = str(int(cls_attrs.min_len))
 
         return cls_attrs, elt
 
@@ -864,29 +890,37 @@ class ComboBoxWidget(ComplexRenderWidget):
 
         sub_name = self.hier_delim.join((name, self.id_field))
         attrib = self._gen_input_attrs_novalue(cls, sub_name, attr, **kwargs)
+
+        # FIXME: this must be done the other way around
+        if v_id_str == "" and 'readonly' in attrib and attr.allow_write_for_null:
+            del attrib['readonly']
+
         with parent.element("select", attrib=attrib):
             if self.others:
                 from contextlib import closing
                 if attr.min_occurs == 0:
                     parent.write(E.option())
+                if attr.write is False and v_id_str != "":
+                    elt = E.option(v_text_str, value=v_id_str, selected="")
+                    parent.write(elt)
+                else:
+                    # FIXME: this blocks the reactor
+                    with closing(ctx.app.config.stores['sql_main'].itself.Session()) as session:
+                        q = session.query(cls.__orig__ or cls)
+                        if self.others_order_by is not None:
+                            if isinstance(self.others_order_by, (list, tuple)):
+                                q = q.order_by(*self.others_order_by)
+                            else:
+                                q = q.order_by(self.others_order_by)
 
-                # FIXME: this blocks the reactor
-                with closing(ctx.app.config.stores['sql_main'].itself.Session()) as session:
-                    q = session.query(cls.__orig__ or cls)
-                    if self.others_order_by is not None:
-                        if isinstance(self.others_order_by, (list, tuple)):
-                            q = q.order_by(*self.others_order_by)
-                        else:
-                            q = q.order_by(self.others_order_by)
+                        for o in q:
+                            id_str, text_str = self._prep_inst(cls, o, fti)
 
-                    for o in q:
-                        id_str, text_str = self._prep_inst(cls, o, fti)
+                            elt = E.option(text_str, value=id_str)
+                            if id_str == v_id_str:
+                                elt.attrib['selected'] = ""
 
-                        elt = E.option(text_str, value=id_str)
-                        if id_str == v_id_str:
-                            elt.attrib['selected'] = ""
-
-                        parent.write(elt)
+                            parent.write(elt)
             else:
                 parent.write(E.option(v_text_str, value=v_id_str, selected=''))
 

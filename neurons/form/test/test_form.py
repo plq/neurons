@@ -105,21 +105,28 @@ def _test_type_no_root_cloth(cls, inst):
 class TestFormPrimitive(unittest.TestCase):
     def test_unicode(self):
         v = 'foo'
-        elt = _test_type(Unicode, v).xpath('div/input')[0]
+        elt = _test_type(Unicode(100, type_name="tn"), v).xpath('div/input')[0]
         assert elt.attrib['type'] == 'text'
         assert elt.attrib['name'] == 'string'
         assert elt.attrib['value'] == v
 
+    def test_unicode_boundless(self):
+        v = 'foo'
+        elt = _test_type(Unicode, v).xpath('div/textarea')[0]
+        assert elt.tag == 'textarea'
+        assert elt.text == v
+        assert elt.attrib['name'] == 'string'
+
     def test_unicode_null(self):
         v = None
-        elt = _test_type(Unicode, v).xpath('div/input')[0]
+        elt = _test_type(Unicode(100, type_name="tn"), v).xpath('div/input')[0]
         assert elt.attrib['type'] == 'text'
         assert elt.attrib['name'] == 'string'
         assert not ('value' in elt.attrib)
 
     def test_unicode_values(self):
         v = 'a'
-        cls = Unicode(type_name="tn", values=list('abcd'))
+        cls = Unicode(100, type_name="tn", values=list('abcd'))
         assert not cls.get_type_name() is Unicode.Empty
         elt = _test_type(cls, v).xpath('div/select')[0]
         assert elt.tag == 'select'
@@ -282,7 +289,16 @@ class TestFormComplex(unittest.TestCase):
             assert re.match(r'ints\[0*%d\]' % i, name)
 
 
-class TestHrefWidget(object):
+class TestSimpleHrefWidget(object):
+    def test_simple(self):
+        v = Integer(prot=HrefWidget(href="/some_href?id={}"))
+        elt = _test_type(v, 5)
+
+        assert elt.xpath('a/text()') == ['Arthur']
+        assert elt.xpath('a/@href') == ['some_object?i=42']
+
+
+class TestComplexHrefWidget(object):
     def test_simple(self):
         class SomeObject(ComplexModel):
             class Attributes(ComplexModel.Attributes):
