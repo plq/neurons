@@ -53,7 +53,7 @@ def _inner_main(config, init, bootstrap):
         return retval
 
     items = init(config)
-    if hasattr(items, 'items'): # if it's a dict
+    if hasattr(items, 'items'):  # if it's a dict
         items = items.items()
 
     for k, v in items:
