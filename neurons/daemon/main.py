@@ -57,7 +57,7 @@ def _inner_main(config, init, bootstrap):
         items = items.items()
 
     for k, v in items:
-        if not (k in config.services and config.services[k].disabled):
+        if not k in config.services or not config.services[k].disabled:
             try:
                 v(config)
             except ServiceDisabled:
