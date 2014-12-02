@@ -204,7 +204,10 @@ class HttpListener(Listener):
             if isinstance(subapp, HttpApplication):
                 assert subapp.url is not None, subapp.app
                 if hasattr(subapp, 'app'):
-                    assert subapp.app is not None, subapp.url
+                    if subapp.app is None:
+                        logger.warning("No subapp '%s' found in app '%s': "
+                                       "Invalid key.", subapp.url, self.name)
+                        continue
                 subapps.append(subapp)
             else:
                 subapps.append(HttpApplication(subapp, url=url))
@@ -553,7 +556,11 @@ class Daemon(ComplexModel):
 
     def apply_storage(self):
         for store in self._stores or []:
-            store.apply()
+            try:
+                store.apply()
+            except Exception as e:
+                logger.exception(e)
+                raise
 
     @classmethod
     def parse_config(cls, daemon_name, argv=None):

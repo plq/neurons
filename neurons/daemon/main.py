@@ -61,7 +61,7 @@ def _inner_main(config, init, bootstrap):
             try:
                 v(config)
             except ServiceDisabled:
-                pass
+                logger.info("Service '%s' is disabled.", k)
 
 
 def main(daemon_name, argv, init, bootstrap=None, cls=Daemon):
