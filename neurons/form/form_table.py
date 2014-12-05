@@ -173,17 +173,17 @@ class HtmlFormTable(HtmlColumnTable, HtmlWidget):
         # FIXME: just fix me.
         if issubclass(cls, Array):
             cls = next(iter(cls._type_info.values()))
-            self._gen_row(ctx, cls, [None], parent, name)
+            self._gen_row(ctx, cls, [cls()], parent, name)
 
         # even though there are calls to coroutines here, as the passed objects
         # are empty, it's not possible to have push data. so there's no need to
         # check the returned generators.
         if issubclass(cls, ComplexModelBase):
             if cls.Attributes.max_occurs > 1:
-                self._gen_row(ctx, cls, [None], parent, name,
+                self._gen_row(ctx, cls, [cls()], parent, name,
                                          add=True, remove=False, array_index=-1)
             else:
-                self._gen_row(ctx, cls, None, parent, name,
+                self._gen_row(ctx, cls, cls(), parent, name,
                                          add=True, remove=False, array_index=-1)
 
         else:
