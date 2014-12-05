@@ -262,7 +262,7 @@ class HtmlWidget(HtmlBase):
             if cls_attrs.write is False and inststr is not None:
                 elt.append(E.option(inststr, value=inststr))
             else:
-                if cls_attrs.nullable:
+                if cls_attrs.nullable or cls_attrs.min_occurs == 0:
                     elt.append(E.option("", {'value':''}))
 
                 # FIXME: cache this!
