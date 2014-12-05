@@ -272,7 +272,7 @@ class HtmlWidget(HtmlBase):
                         valstr = ""
 
                     attrib = dict(value=valstr)
-                    if valstr == inststr:
+                    if inst == v:
                         attrib['selected'] = ''
 
                     elt.append(E.option(valstr, **attrib))
