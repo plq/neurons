@@ -537,7 +537,8 @@ class Daemon(ComplexModel):
         # It's best to know this in advance or you'll have to deal with daemons
         # that work perfectly well in development environments but won't boot
         # in production ones, solely because of fork()ingw.
-        assert for_testing or not ('twisted' in sys.modules)
+        assert for_testing or not ('twisted' in sys.modules), \
+                                                "Twisted is already imported!"
 
         self.sanitize()
         if self.daemonize:
