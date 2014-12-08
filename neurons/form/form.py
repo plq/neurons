@@ -811,6 +811,18 @@ class ComplexRenderWidget(HtmlWidget):
     supported_types = (ComplexModelBase,)
 
     def __init__(self, id_field, text_field, type=None, hidden_fields=None):
+        """A widget that renders complex objects as links.
+
+        :param id_field: The name of the field containing the unique identifier
+            of the object.
+        :param text_field: The name of the field containing a human readable
+            string that represents the object.
+        :param type: If not `None`, overrides the object type being rendered.
+            Useful for e.g. combining multiple fields to one field.
+        :param hidden_fields: A sequence of field names that will be rendered as
+            hidden <input> tags.
+        """
+
         self.id_field = id_field
         self.text_field = text_field
         self.hidden_fields = hidden_fields
@@ -860,6 +872,28 @@ class ComplexRenderWidget(HtmlWidget):
 
 
 class ComplexHrefWidget(ComplexRenderWidget):
+    def __init__(self, id_field, text_field, type=None, hidden_fields=None,
+                                                             empty_widget=None):
+        """Widget that renders complex objects as links. Hidden fields are
+        skipped then the given instance has the value of `id_field` is `None`.
+
+        Please see :class:`ComplexRenderWidget` docstring for more info.
+
+        :param empty_widget: The widget to be used when the value of the
+            instance to be rendered is `None`.
+        """
+        super(ComplexHrefWidget, self).__init__(id_field, text_field,
+                                         type=type, hidden_fields=hidden_fields)
+
+        self.empty_widget = self.empty_widget
+
+        if isclass(empty_widget):
+            assert issubclass(empty_widget, ComplexRenderWidget), "I don't know" \
+                         "how to instantiate a non-ComplexRenderWidget-subclass"
+
+            self.empty_widget = empty_widget(self.id_field, self.text_field,
+                                   others=True, others_order_by=self.text_field)
+
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         fti = cls.get_flat_type_info(cls)
         id_str, text_str = self._prep_inst(cls, inst, fti)
@@ -878,6 +912,20 @@ class ComplexHrefWidget(ComplexRenderWidget):
 class ComboBoxWidget(ComplexRenderWidget):
     def __init__(self, id_field, text_field, hidden_fields=None, type=None,
                                             others=False, others_order_by=None):
+        """Widget that renders complex objects as comboboxes.
+
+        Please see :class:`ComplexRenderWidget` docstring for more info.
+
+        :param others: When `True` fetches all values from the corresponding
+            persistence backend entity and adds them as options.
+
+        :param others_order_by: When not `None`, requests an ordered result set
+            from the database order by the field name(s) given in this field.
+            If given as a string, it's treated as one argument whereas given
+            as a list or a tuple of strings, it's treated as multiple field
+            names.
+        """
+
         super(ComboBoxWidget, self).__init__(id_field=id_field,
                   text_field=text_field, hidden_fields=hidden_fields, type=type)
         self.others = others
