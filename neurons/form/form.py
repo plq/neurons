@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 import re
 
 from collections import namedtuple
-from inspect import isgenerator
+from inspect import isgenerator, isclass
 from decimal import Decimal as D
 from spyne.util.oset import oset
 
@@ -885,8 +885,7 @@ class ComplexHrefWidget(ComplexRenderWidget):
         super(ComplexHrefWidget, self).__init__(id_field, text_field,
                                          type=type, hidden_fields=hidden_fields)
 
-        self.empty_widget = self.empty_widget
-
+        self.empty_widget = empty_widget
         if isclass(empty_widget):
             assert issubclass(empty_widget, ComplexRenderWidget), "I don't know" \
                          "how to instantiate a non-ComplexRenderWidget-subclass"
@@ -899,14 +898,18 @@ class ComplexHrefWidget(ComplexRenderWidget):
         id_str, text_str = self._prep_inst(cls, inst, fti)
 
         attrib = {}
-        if id_str is not None:
+
+        if id_str != "":
             tn = cls.get_type_name()
             tn_url = camel_case_to_uscore(tn)
             attrib['href'] = tn_url + "?" + urlencode({self.id_field: id_str})
+            parent.write(E.a(text_str, **attrib))
 
-        parent.write(E.a(text_str, **attrib))
+            self._write_hidden_fields(ctx, cls, inst, parent, name, fti, **kwargs)
 
-        self._write_hidden_fields(ctx, cls, inst, parent, name, fti, **kwargs)
+        elif self.empty_widget is not None:
+            self.empty_widget \
+                .to_parent(ctx, cls, inst, parent, name, **kwargs)
 
 
 class ComboBoxWidget(ComplexRenderWidget):
