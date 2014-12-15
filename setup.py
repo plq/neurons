@@ -44,8 +44,9 @@ except OSError:
 ### testing stuff
 
 install_reqs = (
-    'spyne', 'msgpack-python', 'pycrypto', 'SQLAlchemy', 'werkzeug', 'lxml>=3.4.1',
-    'Twisted>=14.0')
+    'spyne', 'msgpack-python', 'pycrypto', 'SQLAlchemy', 'werkzeug',
+    'lxml>=3.4.1', 'Twisted>=14.0', 'pyyaml',
+)
 
 test_reqs = install_reqs + ('pytest', 'tox')
 
