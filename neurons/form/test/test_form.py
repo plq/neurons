@@ -139,7 +139,7 @@ class TestFormPrimitive(unittest.TestCase):
         assert not cls.get_type_name() is Unicode.Empty
         elt = _test_type(cls, v).xpath('div/select')[0]
         assert elt.tag == 'select'
-        assert elt.xpath("option/@value") == [str(vvv) for vvv in range(5)]
+        assert elt.xpath("option/@value") == ['']+[str(vvv) for vvv in range(5)]
         assert elt.xpath("option[@selected]/text()") == [str(v)]
 
     def test_unicode_password(self):
