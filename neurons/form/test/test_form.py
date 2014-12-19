@@ -45,7 +45,8 @@ from datetime import date, time, datetime
 from lxml import etree, html
 
 from spyne import Application, NullServer, Unicode, ServiceBase, rpc, Decimal, \
-    Boolean, Date, Time, DateTime, Integer, ComplexModel, Array, Double
+    Boolean, Date, Time, DateTime, Integer, ComplexModel, Array, Double, \
+    Mandatory as M
 from spyne.util.test import show
 
 from neurons.form.test import strip_ns
@@ -140,6 +141,15 @@ class TestFormPrimitive(unittest.TestCase):
         elt = _test_type(cls, v).xpath('div/select')[0]
         assert elt.tag == 'select'
         assert elt.xpath("option/@value") == ['']+[str(vvv) for vvv in range(5)]
+        assert elt.xpath("option[@selected]/text()") == [str(v)]
+
+    def test_integer_values_mandatory_field(self):
+        v = 3
+        cls = M(Integer(type_name="tn", values=list(range(5))))
+        assert not cls.get_type_name() is Unicode.Empty
+        elt = _test_type(cls, v).xpath('div/select')[0]
+        assert elt.tag == 'select'
+        assert elt.xpath("option/@value") == [str(vvv) for vvv in range(5)]
         assert elt.xpath("option[@selected]/text()") == [str(v)]
 
     def test_unicode_password(self):
