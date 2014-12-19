@@ -201,6 +201,12 @@ class TestFormPrimitive(unittest.TestCase):
         assert elt.attrib['type'] == "hidden"
         assert elt.attrib['value'] == "5"
 
+    def test_hidden_input_pa(self):
+        elt = _test_type(Unicode(pa={HtmlForm:dict(hidden=True)}), "punk") \
+                                                              .xpath('input')[0]
+        assert elt.attrib['type'] == "hidden"
+        assert elt.attrib['value'] == "punk"
+
     def test_hidden_input_none(self):
         elt = _test_type(Integer(hidden=True), None).xpath('input')[0]
         assert elt.attrib['type'] == "hidden"
