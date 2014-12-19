@@ -161,11 +161,21 @@ class HtmlWidget(HtmlBase):
             logger.warning("%r claims not to support %r. You have been warned.",
                            cls, t)
 
+    def _check_hidden(self, f):
+        def _ch(ctx, cls, inst, parent, name, **kwargs):
+            cls_attrs = get_cls_attrs(self, cls)
+            if cls_attrs.hidden:
+                self._gen_input_hidden(cls, inst, parent, name)
+            else:
+                f(ctx, cls, inst, parent, name, **kwargs)
+        return _ch
+
     def _gen_input_hidden(self, cls, inst, parent, name, **kwargs):
         val = self.to_unicode(cls, inst)
-        if val is None:
-            val = ""
-        parent.write(E.input(type="hidden", value=val, name=name))
+        elt = E.input(type="hidden", name=name)
+        if val is not None:
+            elt.attrib['value'] = val
+        parent.write(elt)
 
     def _gen_label(self, ctx, cls, name, input, no_label=False,
                                              wrap_label=WRAP_FORWARD, **kwargs):
@@ -339,15 +349,15 @@ class HtmlForm(HtmlWidget):
                                                           hier_delim=hier_delim)
 
         self.serialization_handlers = cdict({
-            Date: self.date_to_parent,
-            Time: self.time_to_parent,
+            Date: self._check_hidden(self.date_to_parent),
+            Time: self._check_hidden(self.time_to_parent),
             Array: self.array_type_to_parent,
-            Integer: self.integer_to_parent,
-            Unicode: self.unicode_to_parent,
-            Decimal: self.decimal_to_parent,
-            Boolean: self.boolean_to_parent,
-            Duration: self.duration_to_parent,
-            DateTime: self.datetime_to_parent,
+            Integer: self._check_hidden(self.integer_to_parent),
+            Unicode: self._check_hidden(self.unicode_to_parent),
+            Decimal: self._check_hidden(self.decimal_to_parent),
+            Boolean: self._check_hidden(self.boolean_to_parent),
+            Duration: self._check_hidden(self.duration_to_parent),
+            DateTime: self._check_hidden(self.datetime_to_parent),
             ComplexModelBase: self.complex_model_to_parent,
         })
 

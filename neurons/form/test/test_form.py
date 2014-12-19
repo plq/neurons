@@ -196,6 +196,16 @@ class TestFormPrimitive(unittest.TestCase):
         elt = _test_type(Integer, None).xpath('div/input')[0]
         assert not 'value' in elt.attrib
 
+    def test_hidden_input(self):
+        elt = _test_type(Integer(hidden=True), 5).xpath('input')[0]
+        assert elt.attrib['type'] == "hidden"
+        assert elt.attrib['value'] == "5"
+
+    def test_hidden_input_none(self):
+        elt = _test_type(Integer(hidden=True), None).xpath('input')[0]
+        assert elt.attrib['type'] == "hidden"
+        assert not 'value' in elt.attrib
+
 
 class TestFormComplex(unittest.TestCase):
     # all complex objects serialize to forms with fieldsets. that's why we
