@@ -839,7 +839,7 @@ class ComplexRenderWidget(HtmlWidget):
 
         text_name = self.text_field
         text_type = fti[text_name]
-        text_str = "[Unknown]"
+        text_str = "[NULL]"
 
         if inst is not None:
             if id_name is not None:
