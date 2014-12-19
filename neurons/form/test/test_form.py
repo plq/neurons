@@ -230,6 +230,18 @@ class TestFormComplex(unittest.TestCase):
         assert elt.xpath('div/input/@value') == ['42', 'Arthur']
         assert elt.xpath('div/input/@name') == ['i', 's']
 
+    def test_no_fieldset(self):
+        class SomeObject(ComplexModel):
+            _type_info = [
+                ('i', Integer),
+                ('s', Unicode(64)),
+            ]
+        SomeObject = SomeObject.customize(no_fieldset=True)
+        v = SomeObject(i=42, s="Arthur")
+        elt = _test_type(SomeObject, v)
+        assert elt.xpath('div/input/@value') == ['42', 'Arthur']
+        assert elt.xpath('div/input/@name') == ['i', 's']
+
     def test_nested(self):
         class InnerObject(ComplexModel):
             _type_info = [

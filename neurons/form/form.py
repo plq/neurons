@@ -578,7 +578,7 @@ class HtmlForm(HtmlWidget):
         return retval
 
     @coroutine
-    def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+    def _render_complex(self, ctx, cls, inst, parent, name, in_fset, **kwargs):
         global SOME_COUNTER
 
         fti = cls.get_flat_type_info(cls)
@@ -590,96 +590,111 @@ class HtmlForm(HtmlWidget):
         if name == cls.get_type_name():
             name = ''
 
-        with parent.element('fieldset'):
+        if in_fset:
             parent.write(E.legend(cls.get_type_name()))
 
-            for k, v in sorted(fti.items(), key=_Tform_key(self)):
-                subattr = get_cls_attrs(self, v)
-                if subattr.exc:
-                    logger.debug("Excluding %s", k)
-                    continue
+        for k, v in sorted(fti.items(), key=_Tform_key(self)):
+            subattr = get_cls_attrs(self, v)
+            if subattr.exc:
+                logger.debug("Excluding %s", k)
+                continue
 
-                logger.debug("Generating form element for %s", k)
-                subinst = getattr(inst, k, None)
+            logger.debug("Generating form element for %s", k)
+            subinst = getattr(inst, k, None)
 
-                tab = subattr.tab
-                if not (tab is prev_tab):
-                    if fset_ctx is not None:
-                        fset_ctx.__exit__(None, None, None)
-                        print("exiting fset tab ", prev_fset)
+            tab = subattr.tab
+            if not (tab is prev_tab):
+                if fset_ctx is not None:
+                    fset_ctx.__exit__(None, None, None)
+                    print("exiting fset tab ", prev_fset)
 
-                    fset_ctx = prev_fset = None
+                fset_ctx = prev_fset = None
 
-                    if tab_ctx is not None:
-                        tab_ctx.__exit__(None, None, None)
-                        print("exiting tab", prev_tab)
+                if tab_ctx is not None:
+                    tab_ctx.__exit__(None, None, None)
+                    print("exiting tab", prev_tab)
 
-                    if prev_tab is None:
-                        print("entering tabview")
-                        tabview_id = 'tabview' + str(SOME_COUNTER)
-                        SOME_COUNTER += 1
+                if prev_tab is None:
+                    print("entering tabview")
+                    tabview_id = 'tabview' + str(SOME_COUNTER)
+                    SOME_COUNTER += 1
 
-                        tabview_ctx = parent.element('div',
-                                                     attrib={'id': tabview_id})
-                        tabview_ctx.__enter__()
+                    tabview_ctx = parent.element('div',
+                                                 attrib={'id': tabview_id})
+                    tabview_ctx.__enter__()
 
-                        parent.write(self._gen_tab_headers(ctx, fti))
+                    parent.write(self._gen_tab_headers(ctx, fti))
 
-                    print("entering tab", tab)
+                print("entering tab", tab)
 
-                    attrib = {'id': tab.htmlid}
-                    attrib.update(tab.attrib)
-                    tab_ctx = parent.element('div', attrib)
-                    tab_ctx.__enter__()
+                attrib = {'id': tab.htmlid}
+                attrib.update(tab.attrib)
+                tab_ctx = parent.element('div', attrib)
+                tab_ctx.__enter__()
 
-                    prev_tab = tab
+                prev_tab = tab
 
-                fset = subattr.fieldset
-                if not (fset is prev_fset):
-                    if fset_ctx is not None:
-                        fset_ctx.__exit__(None, None, None)
-                        print("exiting fset norm", prev_fset)
+            fset = subattr.fieldset
+            if not (fset is prev_fset):
+                if fset_ctx is not None:
+                    fset_ctx.__exit__(None, None, None)
+                    print("exiting fset norm", prev_fset)
 
-                    print("entering fset", fset)
-                    fset_ctx = parent.element(fset.tag, fset.attrib)
-                    fset_ctx.__enter__()
+                print("entering fset", fset)
+                fset_ctx = parent.element(fset.tag, fset.attrib)
+                fset_ctx.__enter__()
 
-                    parent.write(E.legend(self.trd(fset.legend, ctx.locale, k)))
-                    prev_fset = fset
+                parent.write(E.legend(self.trd(fset.legend, ctx.locale, k)))
+                prev_fset = fset
 
-                if name is not None and len(name) > 0:
-                    child_key = self.hier_delim.join((name, k))
-                else:
-                    child_key = k
+            if name is not None and len(name) > 0:
+                child_key = self.hier_delim.join((name, k))
+            else:
+                child_key = k
 
-                ret = self.to_parent(ctx, v, subinst, parent, child_key, **kwargs)
-                if isgenerator(ret):
+            ret = self.to_parent(ctx, v, subinst, parent, child_key, **kwargs)
+            if isgenerator(ret):
+                try:
+                    while True:
+                        y = (yield)
+                        ret.send(y)
+
+                except Break as b:
                     try:
-                        while True:
-                            y = (yield)
-                            ret.send(y)
+                        ret.throw(b)
+                    except StopIteration:
+                        pass
 
-                    except Break as b:
-                        try:
-                            ret.throw(b)
-                        except StopIteration:
-                            pass
+        if fset_ctx is not None:
+            fset_ctx.__exit__(None, None, None)
+            print("exiting fset close", fset)
 
-            if fset_ctx is not None:
-                fset_ctx.__exit__(None, None, None)
-                print("exiting fset close", fset)
+        if tab_ctx is not None:
+            tab_ctx.__exit__(None, None, None)
+            print("exiting tab close", tab)
 
-            if tab_ctx is not None:
-                tab_ctx.__exit__(None, None, None)
-                print("exiting tab close", tab)
+        if tabview_ctx is not None:
+            print("exiting tabview close")
+            tabview_ctx.__exit__(None, None, None)
+            parent.write(E.script(
+                '$(function(){ $( "#%s" ).tabs(); });' % tabview_id,
+                type="text/javascript"
+            ))
 
-            if tabview_ctx is not None:
-                print("exiting tabview close")
-                tabview_ctx.__exit__(None, None, None)
-                parent.write(E.script(
-                    '$(function(){ $( "#%s" ).tabs(); });' % tabview_id,
-                    type="text/javascript"
-                ))
+    def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls_attr = get_cls_attrs(self, inst)
+
+        if cls_attr.fieldset is False or cls_attr.no_fieldset:
+            return self._render_complex(ctx, cls, inst, parent, name, False,
+                                                                       **kwargs)
+        if cls_attr.fieldset or cls_attr.no_fieldset is False:
+            with parent.element('fieldset'):
+                return self._render_complex(ctx, cls, inst, parent, name, False,
+                                                                       **kwargs)
+
+        with parent.element('fieldset'):
+            return self._render_complex(ctx, cls, inst, parent, name, True,
+                                                                       **kwargs)
 
     @coroutine
     def _push_to_parent(self, ctx, cls, inst, parent, name, parent_inst=None,
