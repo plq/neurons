@@ -92,16 +92,16 @@ class TestFormTable(unittest.TestCase):
 
         class SomeObject(ComplexModel):
             i = Integer
-            s = Unicode
+            s = Unicode(64)
 
         v = [SomeObject(i=i, s=s) for i, s in enumerate(v)]
         elt = _test_type(Array(SomeObject), v)[0]
 
         assert elt.xpath(
-            'table/tbody/tr/td/div/input[contains(@class, "integer")]/@value') == \
+            'table/tbody/tr/td/div/input[contains(@class, "i ")]/@value') == \
                                                            [str(o.i) for o in v]
         assert elt.xpath(
-            'table/tbody/tr/td/div/input[contains(@class, "string")]/@value') == \
+            'table/tbody/tr/td/div/input[contains(@class, "s ")]/@value') == \
                                                            [str(o.s) for o in v]
 
 
@@ -111,10 +111,9 @@ class TestFormTable(unittest.TestCase):
 
     def test_unicode_null(self):
         v = None
-        elt = _test_type(Unicode, v).xpath('form/div/input')[0]
+        elt = _test_type(Unicode(64), v).xpath('form/div/input')[0]
 
         assert elt.attrib['type'] == 'text'
-        assert elt.attrib['name'] == 'string'
         assert not ('value' in elt.attrib)
 
 

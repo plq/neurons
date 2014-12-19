@@ -108,7 +108,6 @@ class TestFormPrimitive(unittest.TestCase):
         v = 'foo'
         elt = _test_type(Unicode(100, type_name="tn"), v).xpath('div/input')[0]
         assert elt.attrib['type'] == 'text'
-        assert elt.attrib['name'] == 'string'
         assert elt.attrib['value'] == v
 
     def test_unicode_boundless(self):
@@ -116,13 +115,11 @@ class TestFormPrimitive(unittest.TestCase):
         elt = _test_type(Unicode, v).xpath('div/textarea')[0]
         assert elt.tag == 'textarea'
         assert elt.text == v
-        assert elt.attrib['name'] == 'string'
 
     def test_unicode_null(self):
         v = None
         elt = _test_type(Unicode(100, type_name="tn"), v).xpath('div/input')[0]
         assert elt.attrib['type'] == 'text'
-        assert elt.attrib['name'] == 'string'
         assert not ('value' in elt.attrib)
 
     def test_unicode_values(self):
@@ -131,7 +128,7 @@ class TestFormPrimitive(unittest.TestCase):
         assert not cls.get_type_name() is Unicode.Empty
         elt = _test_type(cls, v).xpath('div/select')[0]
         assert elt.tag == 'select'
-        assert elt.xpath("option/@value") == list('abcd')
+        assert elt.xpath("option/@value") == [''] + list('abcd')
         assert elt.xpath("option[@selected]/text()") == [v]
 
     def test_integer_values(self):
@@ -153,7 +150,8 @@ class TestFormPrimitive(unittest.TestCase):
         assert elt.xpath("option[@selected]/text()") == [str(v)]
 
     def test_unicode_password(self):
-        elt = _test_type(Unicode(prot=PasswordWidget()), None).xpath('div/input')[0]
+        elt = _test_type(Unicode(64, prot=PasswordWidget()), None)
+        elt = elt.xpath('div/input')[0]
         assert elt.attrib['type'] == 'password'
 
     def test_decimal(self):
@@ -208,7 +206,7 @@ class TestFormComplex(unittest.TestCase):
         class SomeObject(ComplexModel):
             _type_info = [
                 ('i', Integer),
-                ('s', Unicode),
+                ('s', Unicode(64)),
             ]
 
         v = SomeObject(i=42, s="Arthur")
@@ -219,7 +217,7 @@ class TestFormComplex(unittest.TestCase):
     def test_nested(self):
         class InnerObject(ComplexModel):
             _type_info = [
-                ('s', Unicode),
+                ('s', Unicode(64)),
             ]
         class OuterObject(ComplexModel):
             _type_info = [
@@ -242,11 +240,11 @@ class TestFormComplex(unittest.TestCase):
         class SomeObject(ComplexModel):
             _type_info = [
                 ('i0', Integer),
-                ('s0', Unicode),
+                ('s0', Unicode(64)),
                 ('i1', Integer(fieldset=fset_one)),
-                ('s1', Unicode(fieldset=fset_one)),
+                ('s1', Unicode(64, fieldset=fset_one)),
                 ('i2', Integer(fieldset=fset_two)),
-                ('s2', Unicode(fieldset=fset_two)),
+                ('s2', Unicode(64, fieldset=fset_two)),
             ]
 
         v = SomeObject(
@@ -304,8 +302,8 @@ class TestSimpleHrefWidget(object):
         v = Integer(prot=HrefWidget(href="/some_href?id={}"))
         elt = _test_type(v, 5)
 
-        assert elt.xpath('a/text()') == ['Arthur']
-        assert elt.xpath('a/@href') == ['some_object?i=42']
+        assert elt.xpath('a/text()') == ['5']
+        assert elt.xpath('a/@href') == ['/some_href?id=5']
 
 
 class TestComplexHrefWidget(object):
