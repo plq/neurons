@@ -47,12 +47,13 @@ from lxml import html
 from lxml.builder import E
 
 from spyne import ComplexModelBase, Unicode, Decimal, Boolean, Date, Time, \
-    DateTime, Integer, Duration, PushBase, Array
+    DateTime, Integer, Duration, PushBase, Array, MethodContext
 from spyne.protocol import get_cls_attrs
 from spyne.protocol.html import HtmlBase
 from spyne.util import coroutine, Break
 from spyne.util.cdict import cdict
 from spyne.util.six.moves.urllib.parse import urlencode
+from spyne.server.http import HttpTransportContext
 
 
 SOME_COUNTER = 0
@@ -392,9 +393,14 @@ class HtmlForm(HtmlWidget):
                                                      self._cb_form_before_entry)
 
     def _cb_form_before_entry(self, ctx, parent, attrib):
+        assert isinstance(ctx, MethodContext)
+        assert isinstance(ctx.transport, HttpTransportContext)
+
         if hasattr(ctx.protocol, 'form_action'):
             attrib['action'] = ctx.protocol.form_action
             print("Set form action to", attrib['action'])
+        else:
+            attrib['action'] = ctx.transport.get_path()
 
     def _cb_form_close(self, ctx, parent):
         parent.write(E.p(
@@ -623,7 +629,7 @@ class HtmlForm(HtmlWidget):
                     SOME_COUNTER += 1
 
                     tabview_ctx = parent.element('div',
-                                                 attrib={'id': tabview_id})
+                                                      attrib={'id': tabview_id})
                     tabview_ctx.__enter__()
 
                     parent.write(self._gen_tab_headers(ctx, fti))
