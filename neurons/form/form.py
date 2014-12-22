@@ -228,7 +228,7 @@ class HtmlWidget(HtmlBase):
         if getattr(cls_attrs, 'pattern', None) is not None:
             elt_attrs['pattern'] = cls_attrs.pattern
 
-        if cls_attrs.write is False:
+        if cls_attrs.write is False or cls_attrs.primary_key:
             elt_attrs['readonly'] = ""
 
         # FIXME: handle min_occurs > 1
