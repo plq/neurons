@@ -682,7 +682,7 @@ class HtmlForm(HtmlWidget):
             ))
 
     def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        cls_attr = get_cls_attrs(self, inst)
+        cls_attr = get_cls_attrs(self, cls)
 
         if cls_attr.fieldset is False or cls_attr.no_fieldset:
             return self._render_complex(ctx, cls, inst, parent, name, False,
