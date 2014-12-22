@@ -177,7 +177,10 @@ class HtmlWidget(HtmlBase):
             elt.attrib['value'] = val
         parent.write(elt)
 
-    def _gen_label(self, ctx, cls, name, input, no_label=False,
+    def _gen_label_for(self, ctx, cls, name, input_id, **kwargs):
+        return E.label(self.trc(cls, ctx.locale, name), **{'for': input_id})
+
+    def _wrap_with_label(self, ctx, cls, name, input, no_label=False,
                                              wrap_label=WRAP_FORWARD, **kwargs):
         retval = input
 
@@ -406,7 +409,7 @@ class HtmlForm(HtmlWidget):
 
     def unicode_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs, elt = self._gen_input_unicode(cls, inst, name, **kwargs)
-        parent.write(self._gen_label(ctx, cls, name, elt, **kwargs))
+        parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
 
     def decimal_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = get_cls_attrs(self, cls)
@@ -420,7 +423,7 @@ class HtmlForm(HtmlWidget):
 
         self._apply_number_constraints(cls_attrs, elt)
 
-        parent.write(self._gen_label(ctx, cls, name, elt, **kwargs))
+        parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
 
     def boolean_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = get_cls_attrs(self, cls)
@@ -430,7 +433,7 @@ class HtmlForm(HtmlWidget):
         if bool(inst):
             elt.attrib['checked'] = ''
 
-        div = self._gen_label(ctx, cls, name, elt,
+        div = self._wrap_with_label(ctx, cls, name, elt,
                                              wrap_label=WRAP_REVERSED, **kwargs)
         parent.write(div)
 
@@ -462,7 +465,7 @@ class HtmlForm(HtmlWidget):
             script = self._format_js(code, field_name=elt.attrib['id'], value=value,
                                                              format=data_format)
 
-        div = self._gen_label(ctx, cls, name, elt, **kwargs)
+        div = self._wrap_with_label(ctx, cls, name, elt, **kwargs)
         div.append(script)
         parent.write(div)
 
@@ -496,7 +499,7 @@ class HtmlForm(HtmlWidget):
             script = self._format_js(code, field_name=elt.attrib['id'], value=value,
                                                              format=data_format)
 
-        div = self._gen_label(ctx, cls, name, elt, **kwargs)
+        div = self._wrap_with_label(ctx, cls, name, elt, **kwargs)
         div.append(script)
         parent.write(div)
 
@@ -534,7 +537,7 @@ class HtmlForm(HtmlWidget):
             script = self._format_js(code, field_name=elt.attrib['id'],
                                                 format=data_format, value=value)
 
-        div = self._gen_label(ctx, cls, name, elt, **kwargs)
+        div = self._wrap_with_label(ctx, cls, name, elt, **kwargs)
         div.append(script)
         parent.write(div)
 
@@ -545,14 +548,14 @@ class HtmlForm(HtmlWidget):
 
         self._apply_number_constraints(cls_attrs, elt)
 
-        parent.write(self._gen_label(ctx, cls, name, elt, **kwargs))
+        parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
 
     # TODO: finish this
     def duration_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = get_cls_attrs(self, cls)
         elt = self._gen_input(cls, inst, name, cls_attrs, **kwargs)
 
-        parent.write(self._gen_label(ctx, cls, name, elt, **kwargs))
+        parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
 
     def array_type_to_parent(self, ctx, cls, inst, parent, name=None, **kwargs):
         v = next(iter(cls._type_info.values()))
@@ -799,7 +802,7 @@ class PasswordWidget(HtmlWidget):
 
         cls_attrs, elt = self._gen_input_unicode(cls, inst, name, **kwargs)
         elt.attrib['type'] = 'password'
-        parent.write(self._gen_label(ctx, cls, name, elt, **kwargs))
+        parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
 
 
 class HrefWidget(HtmlWidget):
@@ -835,7 +838,8 @@ class HrefWidget(HtmlWidget):
 class ComplexRenderWidget(HtmlWidget):
     supported_types = (ComplexModelBase,)
 
-    def __init__(self, id_field, text_field, type=None, hidden_fields=None):
+    def __init__(self, id_field, text_field, type=None, hidden_fields=None,
+                                                                    label=True):
         """A widget that renders complex objects as links.
 
         :param id_field: The name of the field containing the unique identifier
@@ -846,12 +850,15 @@ class ComplexRenderWidget(HtmlWidget):
             Useful for e.g. combining multiple fields to one field.
         :param hidden_fields: A sequence of field names that will be rendered as
             hidden <input> tags.
+        :param label: If ``True``, a ``<label>`` tag is generated for the
+            relevant widget id.
         """
 
         self.id_field = id_field
         self.text_field = text_field
         self.hidden_fields = hidden_fields
         self.type = type
+        self.label = label
         super(HtmlWidget, self).__init__()
 
     def _prep_inst(self, cls, inst, fti):
@@ -898,7 +905,7 @@ class ComplexRenderWidget(HtmlWidget):
 
 class ComplexHrefWidget(ComplexRenderWidget):
     def __init__(self, id_field, text_field, type=None, hidden_fields=None,
-                                                             empty_widget=None):
+                                                 empty_widget=None, label=True):
         """Widget that renders complex objects as links. Hidden fields are
         skipped then the given instance has the value of `id_field` is `None`.
 
@@ -908,7 +915,7 @@ class ComplexHrefWidget(ComplexRenderWidget):
             instance to be rendered is `None`.
         """
         super(ComplexHrefWidget, self).__init__(id_field, text_field,
-                                         type=type, hidden_fields=hidden_fields)
+                            type=type, hidden_fields=hidden_fields, label=label)
 
         self.empty_widget = empty_widget
         if isclass(empty_widget):
@@ -938,8 +945,8 @@ class ComplexHrefWidget(ComplexRenderWidget):
 
 
 class ComboBoxWidget(ComplexRenderWidget):
-    def __init__(self, id_field, text_field, hidden_fields=None, type=None,
-                                            others=False, others_order_by=None):
+    def __init__(self, id_field, text_field, hidden_fields=None, label=True,
+                                 type=None, others=False, others_order_by=None):
         """Widget that renders complex objects as comboboxes.
 
         Please see :class:`ComplexRenderWidget` docstring for more info.
@@ -955,16 +962,13 @@ class ComboBoxWidget(ComplexRenderWidget):
         """
 
         super(ComboBoxWidget, self).__init__(id_field=id_field,
-                  text_field=text_field, hidden_fields=hidden_fields, type=type)
+                             text_field=text_field, hidden_fields=hidden_fields,
+                                                         label=label, type=type)
         self.others = others
         self.others_order_by = others_order_by
 
-    def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        if self.type is not None:
-            cls = self.type
-
+    def _write_select(self, ctx, cls, inst, parent, name, fti, **kwargs):
         attr = get_cls_attrs(self, cls)
-        fti = cls.get_flat_type_info(cls)
         v_id_str, v_text_str = self._prep_inst(cls, inst, fti)
 
         sub_name = self.hier_delim.join((name, self.id_field))
@@ -1002,5 +1006,22 @@ class ComboBoxWidget(ComplexRenderWidget):
                             parent.write(elt)
             else:
                 parent.write(E.option(v_text_str, value=v_id_str, selected=''))
+
+    def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        if self.type is not None:
+            cls = self.type
+
+        fti = cls.get_flat_type_info(cls)
+
+        if self.label:
+            elt_id = self._gen_input_elt_id(name, **kwargs)
+            label = self._gen_label_for(ctx, cls, name, elt_id)
+            # this part should be consistent with what _wrap_with_label does
+            with parent.element('div', attrib={'class': 'label-input-wrapper'}):
+                parent.write(label)
+                self._write_select(ctx, cls, inst, parent, name, fti, **kwargs)
+
+        else:
+            self._write_select(ctx, cls, inst, parent, name, fti, **kwargs)
 
         self._write_hidden_fields(ctx, cls, inst, parent, name, fti, **kwargs)

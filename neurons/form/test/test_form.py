@@ -353,10 +353,27 @@ class TestComplexHrefWidget(object):
 
 
 class TestComboBoxWidget(object):
-    def test_simple(self):
+    def test_simple_label(self):
         class SomeObject(ComplexModel):
             class Attributes(ComplexModel.Attributes):
                 prot = ComboBoxWidget('i', 's')
+
+            _type_info = [
+                ('i', Integer),
+                ('s', Unicode),
+            ]
+
+        v = SomeObject(i=42, s="Arthur")
+        elt = _test_type(SomeObject, v)
+
+        assert elt.xpath('div/label/text()') == ['SomeObject']
+        assert elt.xpath('div/select/option/text()') == ['Arthur']
+        assert elt.xpath('div/select/option/@value') == ['42']
+
+    def test_simple_nolabel(self):
+        class SomeObject(ComplexModel):
+            class Attributes(ComplexModel.Attributes):
+                prot = ComboBoxWidget('i', 's', label=False)
 
             _type_info = [
                 ('i', Integer),
