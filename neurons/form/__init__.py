@@ -44,3 +44,7 @@ from neurons.form.form import ComboBoxWidget
 from neurons.form.form import ComplexHrefWidget
 
 from neurons.form.form_table import HtmlFormTable
+
+def tou(name):
+    if name is not None:
+        return name.encode('utf8')
