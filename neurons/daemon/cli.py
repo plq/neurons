@@ -34,7 +34,9 @@
 import argparse
 import os.path
 
+from gettext import gettext
 from decimal import Decimal as D
+
 from spyne import Boolean, Unicode, Integer, Decimal, ComplexModelBase, Array
 from spyne.protocol import get_cls_attrs
 from spyne.util import six
@@ -45,6 +47,28 @@ ARGTYPE_MAP = cdict({
     Integer: int,
     Decimal: D,
 })
+
+static_overrides = set()
+
+
+class ArgumentParser(argparse.ArgumentParser):
+    def parse_args(self, args=None, namespace=None):
+        args, argv = self.parse_known_args(args, namespace)
+
+        if len(argv) > 0:
+            newargv = []
+            for a in argv:
+                if a.startswith("--assets-"):
+                    static_overrides.add(a)
+                else:
+                    newargv.append(a)
+            argv = newargv
+
+        if len(argv) > 0:
+            msg = gettext('unrecognized arguments: %s')
+            self.error(msg % ' '.join(argv))
+
+        return args
 
 
 def Tmust_exist(test_func):
@@ -106,7 +130,7 @@ def _is_array_of_complexes(cls):
 
 def spyne_to_argparse(cls):
     fti = cls.get_flat_type_info(cls)
-    parser = argparse.ArgumentParser(description=cls.__doc__)
+    parser = ArgumentParser(description=cls.__doc__)
 
     parser.add_argument('-c', '--config-file', type=os.path.abspath,
                         help="An alternative config file.")
