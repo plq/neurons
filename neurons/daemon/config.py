@@ -386,7 +386,6 @@ class Daemon(ComplexModel):
 
         ('logger_dest', String(help="The path to the log file. The server won't"
              " daemonize without this. Converted to an absolute path if not.")),
-        ('logger_level', String(help="The logging level.")),
 
         ('log_rpc', Boolean(help="Log raw rpc data.")),
         ('log_queries', Boolean(help="Log sql queries.")),
