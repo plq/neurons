@@ -376,10 +376,12 @@ class Daemon(ComplexModel):
         ('gid', Unicode(help="The daemon group. You need to start the server as"
                              " a priviledged user for this to work.")),
 
-        ('log_file', String(help="The path to the log file. The server won't "
-              "daemonize without this. Converted to an absolute path if not.")),
         ('pid_file', String(help="The path to a text file that contains the pid"
-                                  "of the daemonized process.")),
+                                 "of the daemonized process.")),
+
+        ('logger_dest', String(help="The path to the log file. The server won't"
+             " daemonize without this. Converted to an absolute path if not.")),
+        ('logger_level', String(help="The logging level.")),
 
         ('log_rpc', Boolean(help="Log raw rpc data.")),
         ('log_queries', Boolean(help="Log sql queries.")),
@@ -511,17 +513,17 @@ class Daemon(ComplexModel):
                 Logger(record.name).emit(LOGLEVEL_TWISTED_MAP[record.levelno],
                                          log_text=self.format(record))
 
-        if self.log_file is not None:
+        if self.logger_dest is not None:
             from twisted.python.logfile import DailyLogFile
 
-            self.log_file = abspath(self.log_file)
-            if access(dirname(self.log_file), os.R_OK | os.W_OK):
-                log_dest = DailyLogFile.fromFullPath(self.log_file)
+            self.logger_dest = abspath(self.logger_dest)
+            if access(dirname(self.logger_dest), os.R_OK | os.W_OK):
+                log_dest = DailyLogFile.fromFullPath(self.logger_dest)
 
             else:
                 Logger().warn("%r is not accessible. We need rwx on it to "
-                               "rotate logs." % dirname(self.log_file))
-                log_dest = open(self.log_file, 'wb+')
+                               "rotate logs." % dirname(self.logger_dest))
+                log_dest = open(self.logger_dest, 'wb+')
 
             formatter = logging.Formatter(self.LOGGING_PROD_FORMAT)
 
@@ -572,8 +574,8 @@ class Daemon(ComplexModel):
             logging.getLogger('sqlalchemy').setLevel(logging.DEBUG)
 
     def sanitize(self):
-        if self.log_file is not None:
-            self.log_file = abspath(self.log_file)
+        if self.logger_dest is not None:
+            self.logger_dest = abspath(self.logger_dest)
         if self.pid_file is not None:
             self.pid_file = abspath(self.pid_file)
 
@@ -593,7 +595,7 @@ class Daemon(ComplexModel):
 
         self.sanitize()
         if self.daemonize:
-            assert self.log_file
+            assert self.logger_dest
             daemonize()
 
         self.apply_logging()
