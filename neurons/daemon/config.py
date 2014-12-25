@@ -393,6 +393,9 @@ class Daemon(ComplexModel):
         ('log_results', Boolean(help="Log query results in addition to queries"
                                      "themselves.")),
 
+        ('main_store', Unicode(help="The name of the store for binding "
+                                    "neurons.TableModel's metadata to.")),
+
         ('bootstrap', Boolean(help="Bootstrap the application. Create schema, "
                                    "insert initial data, etc.", no_config=True)),
 
@@ -494,6 +497,7 @@ class Daemon(ComplexModel):
                     async_pool=True,
                 ),
             ],
+            main_store='sql_main',
             _loggers=[
                 Logger(path='.', level='DEBUG', format=cls.LOGGING_DEVEL_FORMAT),
             ],
@@ -620,6 +624,12 @@ class Daemon(ComplexModel):
             except Exception as e:
                 logger.exception(e)
                 raise
+
+            if self.main_store == store.name:
+                engine = store.itself.engine
+
+                import neurons
+                neurons.TableModel.Attributes.sqla_metadata.bind = engine
 
     @classmethod
     def parse_config(cls, daemon_name, argv=None):
