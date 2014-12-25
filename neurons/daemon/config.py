@@ -58,7 +58,7 @@ from spyne.util.dictdoc import yaml_loads, get_object_as_yaml
 
 from neurons.daemon.daemonize import daemonize
 from neurons.daemon.store import SqlDataStore
-from neurons.daemon.cli import spyne_to_argparse, static_overrides
+from neurons.daemon.cli import spyne_to_argparse, config_overrides
 
 STATIC_DESC_ROOT = "Directory that contains static files for the root url."
 STATIC_DESC_URL = "Directory that contains static files for the url '%s'."
@@ -71,27 +71,6 @@ class _SetStaticPathAction(Action):
 
     def __call__(self, parser, namespace, values, option_string=None):
         self.const.path = abspath(values[0])
-
-
-def _scan_static(obj):
-    if isinstance(obj, HttpListener):
-        for subapp in obj._subapps:
-            if isinstance(subapp, StaticFileServer):
-                yield obj, obj.name, subapp.url
-
-    else:
-        for k, c in obj.__class__._type_info.items():
-            v = getattr(obj, k, None)
-
-            if isinstance(v, HttpListener):
-                for subobj, subapp_name, subpath in _scan_static(v):
-                    subpath = '/'.join([v.path, subpath])
-                    yield subobj, subapp_name, re.sub(r'[/-]+', subpath, '-')
-
-            elif issubclass(c, Array) or ComplexModel.Attributes.min_occurs > 1:
-                for subv in v:
-                    for subobj, subapp_name, subpath in _scan_static(subv):
-                        yield subobj, subapp_name, subpath
 
 
 def _apply_custom_attributes(cls):
@@ -147,6 +126,19 @@ class Listener(Service):
     port = UnsignedInteger16
     disabled = Boolean
     unix_socket = Unicode
+
+    def check_overrides(self):
+        for a in config_overrides:
+            if a.startswith('--host-%s' % self.name):
+                _, host = a.split('=', 1)
+                self.host = host
+                logger.debug(
+                    "Overriding port for service '%s', url '%s' to '%s'" % (
+                                                  self.name, obj.url, obj.path))
+
+            if a.startswith('--port-%s' % self.name):
+                _, port = a.split('=', 1)
+                self.port = int(port)
 
 
 class SslListener(Listener):
@@ -224,7 +216,7 @@ class HttpListener(Listener):
             suburl = re.sub(r'[\.-/]+', obj.url, '-')
             key = '--assets-%s-%s=' % (self.name, suburl)
 
-        for a in static_overrides:
+        for a in config_overrides:
             if a.startswith(key):
                 _, dest = a.split('=', 1)
                 obj.path = abspath(dest)
@@ -251,6 +243,8 @@ class HttpListener(Listener):
     def gen_site(self):
         from twisted.web.server import Site
         from twisted.web.resource import Resource
+
+        self.check_overrides()
 
         subapps = []
         for url, subapp in self.subapps.items():
@@ -626,6 +620,14 @@ class Daemon(ComplexModel):
         retval = cls.get_default(daemon_name)
         file_name = abspath('%s.yaml' % daemon_name)
 
+        argv_parser = spyne_to_argparse(cls)
+        cli = {}
+        if argv is not None and len(argv) > 1:
+            cli = dict(argv_parser.parse_args(argv[1:]).__dict__.items())
+            if cli['config_file'] is not None:
+                file_name = abspath(cli['config_file'])
+                del cli['config_file']
+
         exists = isfile(file_name) and os.access(file_name, os.R_OK)
         if exists:
             retval = yaml_loads(open(file_name).read(), cls, validator='soft',
@@ -634,26 +636,6 @@ class Daemon(ComplexModel):
             if not access(dirname(file_name), os.R_OK | os.W_OK):
                 raise Exception("File %r can't be created in %r" %
                                                 (file_name, dirname(file_name)))
-
-        argv_parser = spyne_to_argparse(cls)
-        print(list(_scan_static(retval)))
-
-        for obj, appname, path in _scan_static(retval):
-            if path == '':
-                argv_parser.add_argument('--assets-%s' % appname,
-                                        action=_SetStaticPathAction,
-                                        const=obj, help=STATIC_DESC_ROOT)
-            else:
-                argv_parser.add_argument('--assets-%s-%s' % (appname, path),
-                                        action=_SetStaticPathAction,
-                                        const=obj, help=STATIC_DESC_URL % path)
-
-        cli = {}
-        if argv is not None and len(argv) > 1:
-            cli = dict(argv_parser.parse_args(argv[1:]).__dict__.items())
-            if cli['config_file'] is not None:
-                file_name = cli['config_file']
-                del cli['config_file']
 
         for k, v in cli.items():
             if not v in (None, False):

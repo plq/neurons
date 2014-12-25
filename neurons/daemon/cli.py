@@ -48,7 +48,7 @@ ARGTYPE_MAP = cdict({
     Decimal: D,
 })
 
-static_overrides = set()
+config_overrides = set()
 
 
 class ArgumentParser(argparse.ArgumentParser):
@@ -59,7 +59,13 @@ class ArgumentParser(argparse.ArgumentParser):
             newargv = []
             for a in argv:
                 if a.startswith("--assets-"):
-                    static_overrides.add(a)
+                    opt, val = a.split("=", 2)
+                    val = os.path.abspath(val)
+                    config_overrides.add('='.join([opt, val]))
+
+                elif a.startswith("--host-") or a.startswith("--port-"):
+                    config_overrides.add(a)
+
                 else:
                     newargv.append(a)
             argv = newargv
