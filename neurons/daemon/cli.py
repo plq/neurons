@@ -159,7 +159,8 @@ def spyne_to_argparse(cls):
             continue
 
         elif issubclass(v, Boolean):
-            kwargs['action'] = "store_true"
+            kwargs['action'] = "store_const"
+            kwargs['const'] = True
 
         elif issubclass(v, Unicode):
             if len(v.Attributes.values) > 0:
