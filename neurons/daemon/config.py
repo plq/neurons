@@ -132,13 +132,18 @@ class Listener(Service):
             if a.startswith('--host-%s' % self.name):
                 _, host = a.split('=', 1)
                 self.host = host
-                logger.debug(
-                    "Overriding port for service '%s', url '%s' to '%s'" % (
-                                                  self.name, obj.url, obj.path))
+                logger.debug("Overriding host for service '%s' to '%s'",
+                             self.name, self.host)
+
+                continue
 
             if a.startswith('--port-%s' % self.name):
                 _, port = a.split('=', 1)
                 self.port = int(port)
+                logger.debug("Overriding port for service '%s' to '%s'",
+                             self.name, self.port)
+
+                continue
 
 
 class SslListener(Listener):
