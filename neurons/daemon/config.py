@@ -603,7 +603,7 @@ class Daemon(ComplexModel):
 
         self.sanitize()
         if self.daemonize:
-            assert self.logger_dest
+            assert self.logger_dest, "Refusing to start without any log output."
             daemonize()
 
         self.apply_logging()
