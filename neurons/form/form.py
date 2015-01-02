@@ -499,7 +499,7 @@ class HtmlForm(HtmlWidget):
             script = self._format_js(code, field_name=elt.attrib['id'],
                                                              format=data_format)
         else:
-            value = self.to_string(cls, inst)
+            value = self.to_unicode(cls, inst)
             code.append(
                      "$('#%(field_name)s').timepicker('setDate', '%(value)s');")
             script = self._format_js(code, field_name=elt.attrib['id'], value=value,
@@ -537,7 +537,7 @@ class HtmlForm(HtmlWidget):
             script = self._format_js(code, field_name=elt.attrib['id'],
                                                              format=data_format)
         else:
-            value = self.to_string(cls, inst)
+            value = self.to_unicode(cls, inst)
             code.append(
                 "$('#%(field_name)s').datetimepicker('setDate', '%(value)s');")
             script = self._format_js(code, field_name=elt.attrib['id'],
