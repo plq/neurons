@@ -524,9 +524,19 @@ class Daemon(ComplexModel):
         if self.logger_dest is not None:
             from twisted.python.logfile import DailyLogFile
 
+            class DailyLogWithLeadingZero(DailyLogFile):
+                def suffix(self, tupledate):
+                    try:
+                        return '_'.join(("%02d" % i for i in tupledate))
+                    except:
+                        # try taking a float unixtime
+                        return '_'.join(("%02d" % i for i in
+                                                        self.toDate(tupledate)))
+
             self.logger_dest = abspath(self.logger_dest)
             if access(dirname(self.logger_dest), os.R_OK | os.W_OK):
-                log_dest = DailyLogFile.fromFullPath(self.logger_dest)
+                log_dest = DailyLogWithLeadingZero \
+                                                 .fromFullPath(self.logger_dest)
 
             else:
                 Logger().warn("%r is not accessible. We need rwx on it to "
