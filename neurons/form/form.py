@@ -232,9 +232,13 @@ class HtmlWidget(HtmlBase):
         if cls_attrs.write is False or cls_attrs.primary_key:
             elt_attrs['readonly'] = ""
 
-        # FIXME: handle min_occurs > 1
-        if cls_attrs.min_occurs == 1 and cls_attrs.nullable == False:
-            elt_attrs['required'] = ''
+        # Required bool means, in HTML context, a checkbox that needs to be
+        # checked, which is not what we mean here at all.
+        if not issubclass(cls, Boolean):
+            # We used OR here because html forms send empty values anyway. So a
+            # missing value is sent as null as well.
+            if cls_attrs.min_occurs >= 1 or cls_attrs.nullable == False:
+                elt_attrs['required'] = ''
 
         return elt_attrs
 
