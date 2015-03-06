@@ -384,6 +384,7 @@ class HtmlForm(HtmlWidget):
 
     def _init_cloth(self, *args, **kwargs):
         super(HtmlForm, self)._init_cloth(*args, **kwargs)
+
         form = E.form(method='POST', enctype="multipart/form-data")
         if self._root_cloth is None:
             self._cloth = self._root_cloth = form
