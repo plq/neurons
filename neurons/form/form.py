@@ -592,7 +592,7 @@ class HtmlForm(HtmlWidget):
         if in_fset:
             parent.write(E.legend(cls.get_type_name()))
 
-        for k, v in sorted(fti.items(), key=self.field_key):
+        for k, v in self.sort_fields(items=fti.items()):
             subattr = self.get_cls_attrs(v)
             if subattr.exc:
                 logger.debug("Excluding %s", k)
