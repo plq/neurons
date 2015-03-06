@@ -928,6 +928,8 @@ class ComplexHrefWidget(ComplexRenderWidget):
                             type=type, hidden_fields=hidden_fields, label=label)
 
         self.empty_widget = empty_widget
+        self.url = url
+
         if isclass(empty_widget):
             assert issubclass(empty_widget, ComplexRenderWidget), "I don't know" \
                          "how to instantiate a non-ComplexRenderWidget-subclass"
@@ -942,8 +944,10 @@ class ComplexHrefWidget(ComplexRenderWidget):
         attrib = {}
 
         if id_str != "":
-            tn = cls.get_type_name()
-            tn_url = camel_case_to_uscore(tn)
+            tn_url = self.url
+            if tn_url is None:
+                tn = cls.get_type_name()
+                tn_url = camel_case_to_uscore(tn)
             attrib['href'] = tn_url + "?" + urlencode({self.id_field: id_str})
             parent.write(E.a(text_str, **attrib))
 
