@@ -69,7 +69,6 @@ class Fieldset(namedtuple('Fieldset', 'legend tag attrib index htmlid')):
         return super(Fieldset, cls).__new__(cls, legend, tag, attrib, index,
                                                                          htmlid)
 
-
 class Tab(namedtuple('Tab', 'legend attrib index htmlid')):
     def __new__(cls, legend=None, attrib={}, index=None, htmlid=None):
         global SOME_COUNTER
@@ -368,6 +367,15 @@ class HtmlForm(HtmlWidget):
         self.asset_paths.update(asset_paths)
         self.use_global_null_handler = False
 
+    def _form_key(self, sort_key):
+        k, v = sort_key
+        attrs = self.get_cls_attrs(v)
+        return None if attrs.tab is None else \
+                                (attrs.tab.index, attrs.tab.htmlid), \
+               None if attrs.fieldset is None else \
+                                (attrs.fieldset.index, attrs.fieldset.htmlid), \
+               attrs.order, k
+
     def _init_cloth(self, *args, **kwargs):
         super(HtmlForm, self)._init_cloth(*args, **kwargs)
 
@@ -592,7 +600,8 @@ class HtmlForm(HtmlWidget):
         if in_fset:
             parent.write(E.legend(cls.get_type_name()))
 
-        for k, v in self.sort_fields(items=fti.items()):
+        for k, v in sorted(self.sort_fields(items=fti.items()),
+                                                            key=self._form_key):
             subattr = self.get_cls_attrs(v)
             if subattr.exc:
                 logger.debug("Excluding %s", k)
