@@ -848,7 +848,7 @@ class HrefWidget(HtmlWidget):
 class ComplexRenderWidget(HtmlWidget):
     supported_types = (ComplexModelBase,)
 
-    def __init__(self, id_field, text_field, type=None, hidden_fields=None,
+    def __init__(self, text_field, type=None, hidden_fields=None,
                                                                     label=True):
         """A widget that renders complex objects as links.
 
@@ -864,7 +864,7 @@ class ComplexRenderWidget(HtmlWidget):
             relevant widget id.
         """
 
-        self.id_field = id_field
+        self.id_field = None
         self.text_field = text_field
         self.hidden_fields = hidden_fields
         self.type = type
@@ -906,7 +906,7 @@ class ComplexRenderWidget(HtmlWidget):
 
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         fti = cls.get_flat_type_info(cls)
-        id_str, text_str = self._prep_inst(cls, inst, fti)
+        _, text_str = self._prep_inst(cls, inst, fti)
 
         parent.write(text_str)
 
@@ -915,7 +915,7 @@ class ComplexRenderWidget(HtmlWidget):
 
 class ComplexHrefWidget(ComplexRenderWidget):
     def __init__(self, id_field, text_field, type=None, hidden_fields=None,
-                                                 empty_widget=None, label=True):
+                                       empty_widget=None, label=True, url=None):
         """Widget that renders complex objects as links. Hidden fields are
         skipped then the given instance has the value of `id_field` is `None`.
 
