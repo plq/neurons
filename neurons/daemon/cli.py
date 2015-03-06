@@ -38,7 +38,7 @@ from gettext import gettext
 from decimal import Decimal as D
 
 from spyne import Boolean, Unicode, Integer, Decimal, ComplexModelBase, Array
-from spyne.protocol import get_cls_attrs
+from spyne.protocol import ProtocolBase
 from spyne.util import six
 from spyne.util.cdict import cdict
 
@@ -134,6 +134,8 @@ def _is_array_of_complexes(cls):
     return False
 
 
+_some_prot = ProtocolBase()
+
 def spyne_to_argparse(cls):
     fti = cls.get_flat_type_info(cls)
     parser = ArgumentParser(description=cls.__doc__)
@@ -142,7 +144,7 @@ def spyne_to_argparse(cls):
                         help="An alternative config file.")
 
     for k, v in sorted(fti.items(), key=lambda i: i[0]):
-        attrs = get_cls_attrs(None, v)
+        attrs = _some_prot.get_cls_attrs(v)
         if attrs.no_cli:
             continue
 

@@ -51,7 +51,7 @@ from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
     UnsignedInteger, UnsignedInteger16, Array, String, Application, \
     ComplexModelBase
 
-from spyne.protocol import get_cls_attrs
+from spyne.protocol import ProtocolBase
 from spyne.protocol.yaml import YamlDocument
 
 from spyne.util.dictdoc import yaml_loads, get_object_as_yaml
@@ -63,6 +63,7 @@ from neurons.daemon.cli import spyne_to_argparse, config_overrides
 STATIC_DESC_ROOT = "Directory that contains static files for the root url."
 STATIC_DESC_URL = "Directory that contains static files for the url '%s'."
 
+_some_prot = ProtocolBase()
 
 class _SetStaticPathAction(Action):
     def __init__(self, option_strings, dest, const=None, help=None):
@@ -76,7 +77,7 @@ class _SetStaticPathAction(Action):
 def _apply_custom_attributes(cls):
     fti = cls.get_flat_type_info(cls)
     for k, v in sorted(fti.items(), key=lambda i: i[0]):
-        attrs = get_cls_attrs(None, v)
+        attrs = _some_prot.get_cls_attrs(v)
         if attrs.no_config == True:
             v.Attributes.prot_attrs={YamlDocument: dict(exc=True)}
 

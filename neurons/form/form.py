@@ -48,7 +48,6 @@ from lxml.builder import E
 
 from spyne import ComplexModelBase, Unicode, Decimal, Boolean, Date, Time, \
     DateTime, Integer, Duration, PushBase, Array, MethodContext
-from spyne.protocol import get_cls_attrs
 from spyne.protocol.html import HtmlBase
 from spyne.util import coroutine, Break
 from spyne.util.cdict import cdict
@@ -79,19 +78,6 @@ class Tab(namedtuple('Tab', 'legend attrib index htmlid')):
             SOME_COUNTER += 1
 
         return super(Tab, cls).__new__(cls, legend, attrib, index, htmlid)
-
-
-def _Tform_key(prot):
-    def _form_key(sort_key):
-        k, v = sort_key
-        attrs = get_cls_attrs(prot, v)
-        return None if attrs.tab is None else \
-                                (attrs.tab.index, attrs.tab.htmlid), \
-               None if attrs.fieldset is None else \
-                                (attrs.fieldset.index, attrs.fieldset.htmlid), \
-               attrs.order, k
-
-    return _form_key
 
 
 def camel_case_to_uscore_gen(string):
@@ -164,7 +150,7 @@ class HtmlWidget(HtmlBase):
 
     def _check_hidden(self, f):
         def _ch(ctx, cls, inst, parent, name, **kwargs):
-            cls_attrs = get_cls_attrs(self, cls)
+            cls_attrs = self.get_cls_attrs(cls)
             if cls_attrs.hidden:
                 self._gen_input_hidden(cls, inst, parent, name)
             else:
@@ -298,7 +284,7 @@ class HtmlWidget(HtmlBase):
         return elt
 
     def _gen_input_unicode(self, cls, inst, name, **kwargs):
-        cls_attrs = get_cls_attrs(self, cls)
+        cls_attrs = self.get_cls_attrs(cls)
 
         if cls_attrs.max_len >= D('inf'):
             tag = 'textarea'
@@ -422,7 +408,7 @@ class HtmlForm(HtmlWidget):
         parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
 
     def decimal_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        cls_attrs = get_cls_attrs(self, cls)
+        cls_attrs = self.get_cls_attrs(cls)
         elt = self._gen_input(cls, inst, name, cls_attrs, **kwargs)
         elt.attrib['type'] = 'number'
 
@@ -436,7 +422,7 @@ class HtmlForm(HtmlWidget):
         parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
 
     def boolean_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        cls_attrs = get_cls_attrs(self, cls)
+        cls_attrs = self.get_cls_attrs(cls)
         elt = self._gen_input(cls, inst, name, cls_attrs, **kwargs)
         elt.attrib.update({'type': 'checkbox', 'value': 'true'})
 
@@ -450,7 +436,7 @@ class HtmlForm(HtmlWidget):
     def date_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         ctx.protocol.assets.extend([('jquery',), ('jquery-ui', 'datepicker')])
 
-        cls_attrs = get_cls_attrs(self, cls)
+        cls_attrs = self.get_cls_attrs(cls)
         elt = self._gen_input(cls, inst, name, cls_attrs, **kwargs)
         elt.attrib['type'] = 'text'
 
@@ -483,7 +469,7 @@ class HtmlForm(HtmlWidget):
         ctx.protocol.assets.extend([('jquery',), ('jquery-ui', 'datepicker'),
                                                         ('jquery-timepicker',)])
 
-        cls_attrs = get_cls_attrs(self, cls)
+        cls_attrs = self.get_cls_attrs(cls)
         elt = self._gen_input(cls, inst, name, cls_attrs, **kwargs)
         elt.attrib['type'] = 'text'
 
@@ -517,7 +503,7 @@ class HtmlForm(HtmlWidget):
         ctx.protocol.assets.extend([('jquery',), ('jquery-ui', 'datepicker'),
                                                         ('jquery-timepicker',)])
 
-        cls_attrs = get_cls_attrs(self, cls)
+        cls_attrs = self.get_cls_attrs(cls)
         elt = self._gen_input(cls, None, name, cls_attrs, **kwargs)
         elt.attrib['type'] = 'text'
 
@@ -552,7 +538,7 @@ class HtmlForm(HtmlWidget):
         parent.write(div)
 
     def integer_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        cls_attrs = get_cls_attrs(self, cls)
+        cls_attrs = self.get_cls_attrs(cls)
         elt = self._gen_input(cls, inst, name, cls_attrs, **kwargs)
         elt.attrib['type'] = 'number'
 
@@ -562,7 +548,7 @@ class HtmlForm(HtmlWidget):
 
     # TODO: finish this
     def duration_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        cls_attrs = get_cls_attrs(self, cls)
+        cls_attrs = self.get_cls_attrs(cls)
         elt = self._gen_input(cls, inst, name, cls_attrs, **kwargs)
 
         parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
@@ -576,7 +562,7 @@ class HtmlForm(HtmlWidget):
 
         tabs = {}
         for k, v in fti.items():
-            subattr = get_cls_attrs(self, v)
+            subattr = self.get_cls_attrs(v)
             tab = subattr.tab
             if tab is not None and not subattr.exc:
                 tabs[id(tab)] = tab
@@ -606,8 +592,8 @@ class HtmlForm(HtmlWidget):
         if in_fset:
             parent.write(E.legend(cls.get_type_name()))
 
-        for k, v in sorted(fti.items(), key=_Tform_key(self)):
-            subattr = get_cls_attrs(self, v)
+        for k, v in sorted(fti.items(), key=self.field_key):
+            subattr = self.get_cls_attrs(v)
             if subattr.exc:
                 logger.debug("Excluding %s", k)
                 continue
@@ -695,7 +681,7 @@ class HtmlForm(HtmlWidget):
             ))
 
     def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        cls_attr = get_cls_attrs(self, cls)
+        cls_attr = self.get_cls_attrs(cls)
 
         if cls_attr.fieldset is False or cls_attr.no_fieldset:
             return self._render_complex(ctx, cls, inst, parent, name, False,
@@ -715,7 +701,7 @@ class HtmlForm(HtmlWidget):
                         **kwargs):
         i = -1
         key = self.selsafe(name)
-        attr = get_cls_attrs(self, cls)
+        attr = self.get_cls_attrs(cls)
         while True:
             with parent.element('div', {"class": key}):
                 sv = (yield)
@@ -754,7 +740,7 @@ class HtmlForm(HtmlWidget):
                         label_attrs=None, parent_key=None, no_label=False,
                         **kwargs):
         key = self.selsafe(name)
-        attr = get_cls_attrs(self, cls)
+        attr = self.get_cls_attrs(cls)
 
         if inst is None:
             inst = []
@@ -848,14 +834,14 @@ class HrefWidget(HtmlWidget):
 class ComplexRenderWidget(HtmlWidget):
     supported_types = (ComplexModelBase,)
 
-    def __init__(self, text_field, type=None, hidden_fields=None,
+    def __init__(self, text_field, id_field=None, type=None, hidden_fields=None,
                                                                     label=True):
         """A widget that renders complex objects as links.
 
-        :param id_field: The name of the field containing the unique identifier
-            of the object.
         :param text_field: The name of the field containing a human readable
             string that represents the object.
+        :param id_field: The name of the field containing the unique identifier
+            of the object.
         :param type: If not `None`, overrides the object type being rendered.
             Useful for e.g. combining multiple fields to one field.
         :param hidden_fields: A sequence of field names that will be rendered as
@@ -864,7 +850,7 @@ class ComplexRenderWidget(HtmlWidget):
             relevant widget id.
         """
 
-        self.id_field = None
+        self.id_field = id_field
         self.text_field = text_field
         self.hidden_fields = hidden_fields
         self.type = type
@@ -914,7 +900,7 @@ class ComplexRenderWidget(HtmlWidget):
 
 
 class ComplexHrefWidget(ComplexRenderWidget):
-    def __init__(self, id_field, text_field, type=None, hidden_fields=None,
+    def __init__(self, text_field, id_field, type=None, hidden_fields=None,
                                        empty_widget=None, label=True, url=None):
         """Widget that renders complex objects as links. Hidden fields are
         skipped then the given instance has the value of `id_field` is `None`.
@@ -924,7 +910,7 @@ class ComplexHrefWidget(ComplexRenderWidget):
         :param empty_widget: The widget to be used when the value of the
             instance to be rendered is `None`.
         """
-        super(ComplexHrefWidget, self).__init__(id_field, text_field,
+        super(ComplexHrefWidget, self).__init__(text_field, id_field,
                             type=type, hidden_fields=hidden_fields, label=label)
 
         self.empty_widget = empty_widget
@@ -959,7 +945,7 @@ class ComplexHrefWidget(ComplexRenderWidget):
 
 
 class ComboBoxWidget(ComplexRenderWidget):
-    def __init__(self, id_field, text_field, hidden_fields=None, label=True,
+    def __init__(self, text_field, id_field, hidden_fields=None, label=True,
                                  type=None, others=False, others_order_by=None):
         """Widget that renders complex objects as comboboxes.
 
@@ -982,7 +968,7 @@ class ComboBoxWidget(ComplexRenderWidget):
         self.others_order_by = others_order_by
 
     def _write_select(self, ctx, cls, inst, parent, name, fti, **kwargs):
-        attr = get_cls_attrs(self, cls)
+        attr = self.get_cls_attrs(cls)
         v_id_str, v_text_str = self._prep_inst(cls, inst, fti)
 
         sub_name = self.hier_delim.join((name, self.id_field))
