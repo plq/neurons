@@ -89,12 +89,12 @@ class StorageInfo(ComplexModel):
 
 class Relational(StorageInfo):
     conn_str = Unicode
-    pool_size = UnsignedInteger
-    max_overflow = UnsignedInteger
-    pool_recycle = UnsignedInteger
-    pool_timeout = UnsignedInteger
-    sync_pool = Boolean
-    async_pool = Boolean
+    pool_size = UnsignedInteger(default=10)
+    max_overflow = UnsignedInteger(default=3)
+    pool_recycle = UnsignedInteger(default=3600)
+    pool_timeout = UnsignedInteger(default=30)
+    sync_pool = Boolean(default=True)
+    async_pool = Boolean(default=True)
 
     def __init__(self, *args, **kwargs):
         super(Relational, self).__init__(*args, **kwargs)
