@@ -406,8 +406,13 @@ class HtmlForm(HtmlWidget):
                                         **{'class': "btn btn-default"}),
                                                     **{'class': "text-center"}))
 
-    def subserialize(self, ctx, cls, inst, parent, name=None, **kwargs):
-        ctx.protocol.assets = []
+    def subserialize(self, ctx, cls, inst, parent, name='', **kwargs):
+        if not hasattr(ctx.protocol, 'assets'):
+            ctx.protocol.assets = []
+
+        if not any([isinstance(p, HtmlForm) for p in ctx.protocol.prot_stack]):
+            name = ''
+
         return super(HtmlForm, self).subserialize(ctx, cls, inst, parent,
                                                                  name, **kwargs)
 
