@@ -163,8 +163,13 @@ class HtmlWidget(HtmlBase):
             elt.attrib['value'] = val
         parent.write(elt)
 
-    def _gen_label_for(self, ctx, cls, name, input_id, **kwargs):
-        return E.label(self.trc(cls, ctx.locale, name), **{'for': input_id})
+    def _gen_label_for(self, ctx, cls, name, input_id=None, **kwargs):
+        attrib = {}
+
+        if input_id is not None:
+            attrib['for'] = input_id
+
+        return E.label(self.trc(cls, ctx.locale, name), **attrib)
 
     def _wrap_with_label(self, ctx, cls, name, input, no_label=False,
                                              wrap_label=WRAP_FORWARD, **kwargs):
