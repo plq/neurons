@@ -58,7 +58,7 @@ class HtmlFormTable(HtmlColumnTable, HtmlWidget):
         cloth_parser=None, produce_header=True, table_name_attr='class',
         field_name_attr='class', border=0, row_class=None, cell_class=None,
         header_cell_class=None,
-        can_add=True, can_remove=True):
+        can_add=True, can_remove=True, label=False):
 
         super(HtmlFormTable, self).__init__(app=app,
             ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
@@ -75,6 +75,7 @@ class HtmlFormTable(HtmlColumnTable, HtmlWidget):
         self.can_add = can_add
         self.can_remove = can_remove
         self.use_global_null_handler = False
+        self.label = label
 
     def _init_cloth(self, *args, **kwargs):
         super(HtmlFormTable, self)._init_cloth(*args, **kwargs)
@@ -129,6 +130,46 @@ class HtmlFormTable(HtmlColumnTable, HtmlWidget):
                         ret.throw(b)
                     except StopIteration:
                         pass
+
+    # sole reason to override is to generate labels
+    @coroutine
+    def wrap_table(self, ctx, cls, inst, parent, name, gen_rows, **kwargs):
+        # If this is direct child of an array, table is already set up in
+        # array_to_parent.
+        if self.label:
+            div_attrib = {
+                'class': 'label-input-wrapper',
+            }
+            label = self._gen_label_for(ctx, cls, name)
+            with parent.element('div', attrib=div_attrib):
+                parent.write(label)
+                ret = self._gen_table(ctx, cls, inst, parent, name,
+                                                         gen_rows, **kwargs)
+                if isgenerator(ret):
+                    try:
+                        while True:
+                            sv2 = (yield)
+                            ret.send(sv2)
+                    except Break as b:
+                        try:
+                            ret.throw(b)
+                        except StopIteration:
+                            pass
+        else:
+            ret = self._gen_table(ctx, cls, inst, parent, name,
+                                                   self._gen_row, **kwargs)
+
+            if isgenerator(ret):
+                try:
+                    while True:
+                        sv2 = (yield)
+                        ret.send(sv2)
+                except Break as b:
+                    try:
+                        ret.throw(b)
+                    except StopIteration:
+                        pass
+
 
     def extend_header_row(self, ctx, cls, parent, name, **kwargs):
         if self.can_add or self.can_remove:
