@@ -606,7 +606,7 @@ class HtmlForm(HtmlWidget):
         retval = E.ul()
 
         tabs = {}
-        for k, v in fti():
+        for k, v in fti:
             subattr = self.get_cls_attrs(v)
             tab = subattr.tab
             if tab is not None and not subattr.exc:
