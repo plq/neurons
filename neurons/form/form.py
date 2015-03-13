@@ -390,7 +390,7 @@ class HtmlForm(HtmlWidget):
             attrib = dict(method='POST', enctype="multipart/form-data")
             if hasattr(ctx.protocol, 'form_action'):
                 attrib['action'] = ctx.protocol.form_action
-                print("Set form action to", attrib['action'])
+                logger.debug("Set form action to", attrib['action'])
             elif isinstance(ctx.transport, HttpTransportContext):
                 attrib['action'] = ctx.transport.get_path()
 
@@ -650,16 +650,16 @@ class HtmlForm(HtmlWidget):
             if not (tab is prev_tab):
                 if fset_ctx is not None:
                     fset_ctx.__exit__(None, None, None)
-                    print("exiting fset tab ", prev_fset)
+                    logger.debug("exiting fset tab ", prev_fset)
 
                 fset_ctx = prev_fset = None
 
                 if tab_ctx is not None:
                     tab_ctx.__exit__(None, None, None)
-                    print("exiting tab", prev_tab)
+                    logger.debug("exiting tab %r", prev_tab)
 
                 if prev_tab is None:
-                    print("entering tabview")
+                    logger.debug("entering tabview")
                     tabview_id = 'tabview' + str(SOME_COUNTER)
                     SOME_COUNTER += 1
 
@@ -669,7 +669,7 @@ class HtmlForm(HtmlWidget):
 
                     parent.write(self._gen_tab_headers(ctx, fti))
 
-                print("entering tab", tab)
+                logger.debug("entering tab %r", tab)
 
                 attrib = {'id': tab.htmlid}
                 attrib.update(tab.attrib)
@@ -682,9 +682,9 @@ class HtmlForm(HtmlWidget):
             if not (fset is prev_fset):
                 if fset_ctx is not None:
                     fset_ctx.__exit__(None, None, None)
-                    print("exiting fset norm", prev_fset)
+                    logger.debug("exiting fset norm", prev_fset)
 
-                print("entering fset", fset)
+                logger.debug("entering fset", fset)
                 fset_ctx = parent.element(fset.tag, fset.attrib)
                 fset_ctx.__enter__()
 
@@ -711,14 +711,14 @@ class HtmlForm(HtmlWidget):
 
         if fset_ctx is not None:
             fset_ctx.__exit__(None, None, None)
-            print("exiting fset close", fset)
+            logger.debug("exiting fset close %r", fset)
 
         if tab_ctx is not None:
             tab_ctx.__exit__(None, None, None)
-            print("exiting tab close", tab)
+            logger.debug("exiting tab close %r", tab)
 
         if tabview_ctx is not None:
-            print("exiting tabview close")
+            logger.debug("exiting tabview close")
             tabview_ctx.__exit__(None, None, None)
             parent.write(E.script(
                 '$(function(){ $( "#%s" ).tabs(); });' % tabview_id,
