@@ -606,7 +606,7 @@ class HtmlForm(HtmlWidget):
         retval = E.ul()
 
         tabs = {}
-        for k, v in fti.items():
+        for k, v in fti():
             subattr = self.get_cls_attrs(v)
             tab = subattr.tab
             if tab is not None and not subattr.exc:
@@ -625,7 +625,7 @@ class HtmlForm(HtmlWidget):
     def _render_complex(self, ctx, cls, inst, parent, name, in_fset, **kwargs):
         global SOME_COUNTER
 
-        fti = cls.get_flat_type_info(cls)
+        fti = self.sort_fields(cls)
         prev_fset = fset_ctx = fset = None
         prev_tab = tab_ctx = tab = tabview_ctx = None
         tabview_id = None
@@ -637,8 +637,7 @@ class HtmlForm(HtmlWidget):
         if in_fset:
             parent.write(E.legend(cls.get_type_name()))
 
-        for k, v in sorted(self.sort_fields(items=fti.items()),
-                                                            key=self._form_key):
+        for k, v in fti:
             subattr = self.get_cls_attrs(v)
             if subattr.exc:
                 logger.debug("Excluding %s", k)
