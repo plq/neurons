@@ -876,6 +876,34 @@ class HrefWidget(HtmlWidget):
             self._gen_input_hidden(cls, inst, parent, name, **kwargs)
 
 
+class SimpleRenderWidget(HtmlWidget):
+    def __init__(self, label=True, type=None, gen_hidden=False):
+        super(SimpleRenderWidget, self).__init__()
+
+        self.label = label
+        self.type = type
+        self.gen_hidden = gen_hidden
+
+    def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        if self.type is not None:
+            cls = self.type
+
+        text_str = self.to_unicode(cls, inst, **kwargs)
+
+        if self.label:
+            label = self._gen_label_for(ctx, cls, name)
+            # this part should be consistent with what _wrap_with_label does
+            with parent.element('div', attrib={'class': 'label-input-wrapper'}):
+                parent.write(label)
+                parent.write(text_str)
+
+        else:
+            parent.write(text_str)
+
+        if self.gen_hidden:
+            self._gen_input_hidden(cls, inst, parent, name, **kwargs)
+
+
 class ComplexRenderWidget(HtmlWidget):
     supported_types = (ComplexModelBase,)
 
