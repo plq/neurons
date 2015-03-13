@@ -290,7 +290,7 @@ class HtmlWidget(HtmlBase):
     def _gen_input_unicode(self, cls, inst, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
 
-        if cls_attrs.max_len >= D('inf'):
+        if len(cls_attrs.values) == 0 and cls_attrs.max_len >= D('inf'):
             tag = 'textarea'
 
             elt_attrs = self._gen_input_attrs_novalue(cls, name, cls_attrs)
