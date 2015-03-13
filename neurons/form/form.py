@@ -939,7 +939,16 @@ class ComplexRenderWidget(HtmlWidget):
         fti = cls.get_flat_type_info(cls)
         _, text_str = self._prep_inst(cls, inst, fti)
 
-        parent.write(text_str)
+        if self.label:
+            elt_id = self._gen_input_elt_id(name, **kwargs)
+            label = self._gen_label_for(ctx, cls, name, elt_id)
+            # this part should be consistent with what _wrap_with_label does
+            with parent.element('div', attrib={'class': 'label-input-wrapper'}):
+                parent.write(label)
+                parent.write(text_str)
+
+        else:
+            parent.write(text_str)
 
         self._write_hidden_fields(ctx, cls, inst, parent, name, fti, **kwargs)
 
