@@ -890,12 +890,12 @@ class HrefWidget(HtmlWidget):
 
 
 class SimpleRenderWidget(HtmlWidget):
-    def __init__(self, label=True, type=None, gen_hidden=False):
+    def __init__(self, label=True, type=None, hidden=False):
         super(SimpleRenderWidget, self).__init__()
 
         self.label = label
         self.type = type
-        self.gen_hidden = gen_hidden
+        self.hidden = hidden
 
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         if self.type is not None:
@@ -913,7 +913,7 @@ class SimpleRenderWidget(HtmlWidget):
         else:
             parent.write(text_str)
 
-        if self.gen_hidden:
+        if self.hidden:
             self._gen_input_hidden(cls, inst, parent, name, **kwargs)
 
 
