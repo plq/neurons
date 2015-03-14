@@ -247,11 +247,15 @@ class HtmlWidget(HtmlBase):
 
         return elt_attrs
 
-    def _gen_input(self, cls, inst, name, cls_attrs, **kwargs):
+    def _gen_input(self, ctx, cls, inst, name, cls_attrs, **kwargs):
         elt_attrs = self._gen_input_attrs(cls, inst, name, cls_attrs, **kwargs)
 
         tag = 'input'
         values = cls_attrs.values
+        values_dict = cls_attrs.values_dict
+        if values_dict is None:
+            values_dict = {}
+
         if values is not None and len(values) > 0:
             tag = 'select'
             if 'value' in elt_attrs:
@@ -268,7 +272,11 @@ class HtmlWidget(HtmlBase):
         if values is not None and len(values) > 0:
             inststr = self.to_unicode(cls, inst)
             if cls_attrs.write is False and inststr is not None:
-                elt.append(E.option(inststr, value=inststr))
+                inst_label = values_dict.get(inst, inststr)
+                if isinstance(inst_label, dict):
+                    inst_label = self.trd(inst_label, ctx.locale, inststr)
+                elt.append(E.option(inst_label, value=inststr))
+
             else:
                 if cls_attrs.nullable or cls_attrs.min_occurs == 0:
                     elt.append(E.option("", {'value':''}))
@@ -283,11 +291,16 @@ class HtmlWidget(HtmlBase):
                     if inst == v:
                         attrib['selected'] = ''
 
-                    elt.append(E.option(valstr, **attrib))
+                    val_label = values_dict.get(v, valstr)
+                    logger.debug("\tinst %r label %r", inst, val_label)
+                    if isinstance(val_label, dict):
+                        val_label = self.trd(val_label, ctx.locale, inststr)
+
+                    elt.append(E.option(val_label, **attrib))
 
         return elt
 
-    def _gen_input_unicode(self, cls, inst, name, **kwargs):
+    def _gen_input_unicode(self, ctx, cls, inst, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
 
         if len(cls_attrs.values) == 0 and cls_attrs.max_len >= D('inf'):
@@ -304,7 +317,7 @@ class HtmlWidget(HtmlBase):
                 elt.text = self.to_unicode(cls, inst)
 
         else:
-            elt = self._gen_input(cls, inst, name, cls_attrs, **kwargs)
+            elt = self._gen_input(ctx, cls, inst, name, cls_attrs, **kwargs)
             elt.attrib['type'] = 'text'
 
             if cls_attrs.max_len < Unicode.Attributes.max_len:
@@ -390,7 +403,7 @@ class HtmlForm(HtmlWidget):
             attrib = dict(method='POST', enctype="multipart/form-data")
             if hasattr(ctx.protocol, 'form_action'):
                 attrib['action'] = ctx.protocol.form_action
-                logger.debug("Set form action to", attrib['action'])
+                logger.debug("Set form action to '%s'", attrib['action'])
             elif isinstance(ctx.transport, HttpTransportContext):
                 attrib['action'] = ctx.transport.get_path()
 
@@ -449,12 +462,12 @@ class HtmlForm(HtmlWidget):
                                             **{'class': "text-center"}))
 
     def unicode_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        cls_attrs, elt = self._gen_input_unicode(cls, inst, name, **kwargs)
+        cls_attrs, elt = self._gen_input_unicode(ctx, cls, inst, name, **kwargs)
         parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
 
     def decimal_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
-        elt = self._gen_input(cls, inst, name, cls_attrs, **kwargs)
+        elt = self._gen_input(ctx, cls, inst, name, cls_attrs, **kwargs)
         elt.attrib['type'] = 'number'
 
         if D(cls.Attributes.fraction_digits).is_infinite():
@@ -468,7 +481,7 @@ class HtmlForm(HtmlWidget):
 
     def boolean_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
-        elt = self._gen_input(cls, inst, name, cls_attrs, **kwargs)
+        elt = self._gen_input(ctx, cls, inst, name, cls_attrs, **kwargs)
         elt.attrib.update({'type': 'checkbox', 'value': 'true'})
 
         if bool(inst):
@@ -482,7 +495,7 @@ class HtmlForm(HtmlWidget):
         ctx.protocol.assets.extend([('jquery',), ('jquery-ui', 'datepicker')])
 
         cls_attrs = self.get_cls_attrs(cls)
-        elt = self._gen_input(cls, inst, name, cls_attrs, **kwargs)
+        elt = self._gen_input(ctx, cls, inst, name, cls_attrs, **kwargs)
         elt.attrib['type'] = 'text'
 
         if cls_attrs.format is None:
@@ -515,7 +528,7 @@ class HtmlForm(HtmlWidget):
                                                         ('jquery-timepicker',)])
 
         cls_attrs = self.get_cls_attrs(cls)
-        elt = self._gen_input(cls, inst, name, cls_attrs, **kwargs)
+        elt = self._gen_input(ctx, cls, inst, name, cls_attrs, **kwargs)
         elt.attrib['type'] = 'text'
 
         if cls_attrs.format is None:
@@ -549,7 +562,7 @@ class HtmlForm(HtmlWidget):
                                                         ('jquery-timepicker',)])
 
         cls_attrs = self.get_cls_attrs(cls)
-        elt = self._gen_input(cls, None, name, cls_attrs, **kwargs)
+        elt = self._gen_input(ctx, cls, None, name, cls_attrs, **kwargs)
         elt.attrib['type'] = 'text'
 
         if cls_attrs.format is None:
@@ -584,7 +597,7 @@ class HtmlForm(HtmlWidget):
 
     def integer_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
-        elt = self._gen_input(cls, inst, name, cls_attrs, **kwargs)
+        elt = self._gen_input(ctx, cls, inst, name, cls_attrs, **kwargs)
         elt.attrib['type'] = 'number'
 
         self._apply_number_constraints(cls_attrs, elt)
@@ -594,7 +607,7 @@ class HtmlForm(HtmlWidget):
     # TODO: finish this
     def duration_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
-        elt = self._gen_input(cls, inst, name, cls_attrs, **kwargs)
+        elt = self._gen_input(ctx, cls, inst, name, cls_attrs, **kwargs)
 
         parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
 
@@ -841,7 +854,7 @@ class PasswordWidget(HtmlWidget):
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         self._check_supported_types(cls)
 
-        cls_attrs, elt = self._gen_input_unicode(cls, inst, name, **kwargs)
+        cls_attrs, elt = self._gen_input_unicode(ctx, cls, inst, name, **kwargs)
         elt.attrib['type'] = 'password'
         parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
 
