@@ -904,6 +904,13 @@ class SimpleRenderWidget(HtmlWidget):
 
         text_str = self.to_unicode(cls, inst, **kwargs)
 
+        if text_str is None:
+            text_str = ''
+
+        cls_attr = self.get_cls_attrs(cls)
+        if cls_attr.min_occurs == 0:
+            return
+
         if self.label:
             label = self._gen_label_for(ctx, cls, name)
             # this part should be consistent with what _wrap_with_label does
