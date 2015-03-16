@@ -483,7 +483,10 @@ class HtmlForm(HtmlWidget):
     def boolean_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
         elt = self._gen_input(ctx, cls, inst, name, cls_attrs, **kwargs)
-        elt.attrib.update({'type': 'checkbox', 'value': 'true'})
+
+        if 'value' in elt.attrib:
+            del elt.attrib['value']
+        elt.attrib['type'] = 'checkbox'
 
         if bool(inst):
             elt.attrib['checked'] = ''

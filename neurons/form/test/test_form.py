@@ -77,7 +77,7 @@ def _test_type(cls, inst):
         raise
 
     show(elt, stdout=False)
-    elt = elt.xpath('//*[@spyne]')[0][0]  # get the form tag inside the body tag
+    elt = elt.xpath('//form')[0]  # get the form tag inside the body tag
     elt = strip_ns(elt)  # get rid of namespaces to simplify xpaths in tests
 
     print(etree.tostring(elt, pretty_print=True))
@@ -338,7 +338,7 @@ class TestComplexHrefWidget(object):
     def test_simple(self):
         class SomeObject(ComplexModel):
             class Attributes(ComplexModel.Attributes):
-                prot = ComplexHrefWidget('i', 's')
+                prot = ComplexHrefWidget('s', 'i')
 
             _type_info = [
                 ('i', Integer),
@@ -356,7 +356,7 @@ class TestComboBoxWidget(object):
     def test_simple_label(self):
         class SomeObject(ComplexModel):
             class Attributes(ComplexModel.Attributes):
-                prot = ComboBoxWidget('i', 's')
+                prot = ComboBoxWidget('s', 'i')
 
             _type_info = [
                 ('i', Integer),
@@ -373,7 +373,7 @@ class TestComboBoxWidget(object):
     def test_simple_nolabel(self):
         class SomeObject(ComplexModel):
             class Attributes(ComplexModel.Attributes):
-                prot = ComboBoxWidget('i', 's', label=False)
+                prot = ComboBoxWidget('s', 'i', label=False)
 
             _type_info = [
                 ('i', Integer),
