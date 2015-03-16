@@ -143,8 +143,8 @@ class HtmlFormTable(HtmlColumnTable, HtmlWidget):
             label = self._gen_label_for(ctx, cls, name)
             with parent.element('div', attrib=div_attrib):
                 parent.write(label)
-                ret = self._gen_table(ctx, cls, inst, parent, name,
-                                                         gen_rows, **kwargs)
+                ret = self._gen_table(ctx, cls, inst, parent, name, gen_rows,
+                                                                       **kwargs)
                 if isgenerator(ret):
                     try:
                         while True:
