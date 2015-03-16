@@ -399,7 +399,10 @@ class HtmlForm(HtmlWidget):
         # FIXME: what a HUGE swath of copy/paste! I want yield from!
         if not getattr(ctx.protocol, 'in_form', False):
             ctx.protocol.in_form = True
-            name = ''
+
+            if not (len(ctx.protocol.prot_stack) == 1 and \
+                              isinstance(ctx.protocol.prot_stack[0], HtmlForm)):
+                name = ''
 
             attrib = dict(method='POST', enctype="multipart/form-data")
             if hasattr(ctx.protocol, 'form_action'):
