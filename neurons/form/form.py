@@ -640,6 +640,8 @@ class HtmlForm(HtmlWidget):
         global SOME_COUNTER
 
         fti = self.sort_fields(cls)
+        fti.sort(key=self._form_key)
+
         prev_fset = fset_ctx = fset = None
         prev_tab = tab_ctx = tab = tabview_ctx = None
         tabview_id = None
