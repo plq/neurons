@@ -156,8 +156,8 @@ class HtmlFormTable(HtmlColumnTable, HtmlWidget):
                         except StopIteration:
                             pass
         else:
-            ret = self._gen_table(ctx, cls, inst, parent, name,
-                                                   self._gen_row, **kwargs)
+            ret = self._gen_table(ctx, cls, inst, parent, name, gen_rows,
+                                                                       **kwargs)
 
             if isgenerator(ret):
                 try:
