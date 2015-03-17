@@ -1031,7 +1031,7 @@ class ComplexHrefWidget(ComplexRenderWidget):
             assert issubclass(empty_widget, ComplexRenderWidget), "I don't know" \
                          "how to instantiate a non-ComplexRenderWidget-subclass"
 
-            self.empty_widget = empty_widget(self.id_field, self.text_field,
+            self.empty_widget = empty_widget(self.text_field, self.id_field,
                                    others=True, others_order_by=self.text_field)
 
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
