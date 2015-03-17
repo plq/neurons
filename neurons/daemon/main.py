@@ -34,6 +34,8 @@
 import logging
 logger = logging.getLogger(__name__)
 
+import gc, resource
+
 from os.path import isfile
 
 from neurons.daemon.config import Daemon, ServiceDisabled
@@ -79,5 +81,9 @@ def main(daemon_name, argv, init, bootstrap=None, cls=Daemon):
             config.write_config()
 
     from twisted.internet import reactor
-    logger.info("Starting reactor...")
+
+    gc.collect()
+    logger.info("Starting reactor... RSS: %f",
+                   resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000.0)
+
     return reactor.run()
