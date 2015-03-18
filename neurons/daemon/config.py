@@ -189,6 +189,7 @@ class HttpApplication(ComplexModel):
 class StaticFileServer(HttpApplication):
     path = String
     list_contents = Boolean(default=False)
+    disallowed_exts = Array(Unicode, default_factory=tuple)
 
     def __init__(self, *args, **kwargs):
         # We need the default ComplexModelBase ctor and not HttpApplication's
@@ -198,11 +199,22 @@ class StaticFileServer(HttpApplication):
     def gen_resource(self):
         from twisted.web.static import File
         from twisted.web.resource import ForbiddenResource
+        from twisted.python.filepath import InsecurePath
+
+        d_exts = self.disallowed_exts
+        class CheckedFile(File):
+            def child(self, path):
+                retval = File.child(self, path)
+
+                if path.rsplit(".", 1)[-1] in d_exts:
+                    raise InsecurePath("%r is disallowed." % (path,))
+
+                return retval
 
         if self.list_contents:
             return File(abspath(self.path))
 
-        class StaticFile(File):
+        class StaticFile(CheckedFile):
             def directoryListing(self):
                 return ForbiddenResource()
 
