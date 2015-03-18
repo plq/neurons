@@ -354,9 +354,9 @@ class ReferrerTree(reftree.Tree):
         if isinstance(obj, dict):
             for k, v in obj.iteritems():
                 if v is referent:
-                    return " (via its %r key)" % k
+                    return " (via its %r key)" % (k,)
 
         for k in dir(obj) + ['__dict__']:
             if getattr(obj, k, None) is referent:
-                return " (via its %r attribute)" % k
+                return " (via its %r attribute)" % (k,)
         return ""
