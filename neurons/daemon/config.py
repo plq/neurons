@@ -277,8 +277,10 @@ class HttpListener(Listener):
                                        "Invalid key.", subapp.url, self.name)
                         continue
                 subapps.append(subapp)
+
             else:
                 subapps.append(HttpApplication(subapp, url=url))
+
         self._subapps = subapps
 
         root_app = self.subapps.get('', None)
