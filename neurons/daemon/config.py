@@ -530,10 +530,15 @@ class Daemon(ComplexModel):
             logging.CRITICAL: LogLevel.critical,
         }
 
+        loggers = {}
         class TwistedHandler(logging.Handler):
             def emit(self, record):
                 assert isinstance(record, logging.LogRecord)
-                Logger(record.name).emit(LOGLEVEL_TWISTED_MAP[record.levelno],
+                logger = loggers.get(record.name, None)
+                if logger is None:
+                    logger = loggers[record.name] = Logger(record.name)
+
+                logger.emit(LOGLEVEL_TWISTED_MAP[record.levelno],
                                          log_text=self.format(record))
 
         if self.logger_dest is not None:
