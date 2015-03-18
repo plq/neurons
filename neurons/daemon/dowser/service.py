@@ -1,7 +1,7 @@
 # encoding: utf8
 #
 # retrieved from http://www.aminus.net/wiki/Dowser at 2015-03-18
-# this document was placed in public domain
+# this document were placed in public domain by their author
 #
 # This file is part of the Neurons project.
 # Copyright (c), Arskom Ltd. (arskom.com.tr),
@@ -34,54 +34,71 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+import logging
+logger = logging.getLogger(__name__)
+
 import cgi
 import os
 import gc
 import sys
 
-import Image
-import ImageDraw
-
 from types import FrameType, ModuleType
-from spyne import rpc, Unicode, ServiceBase, ByteArray
+from neurons.daemon.dowser.const import ASSETS_DIR
+
+from spyne import rpc, Unicode, ServiceBase, ByteArray, AnyHtml
 from spyne import Integer
-from spyne.protocol.http import HttpPattern
+from spyne.protocol.http import HttpPattern, HttpRpc
 from spyne.util.six import BytesIO
+
+from neurons.daemon.dowser import reftree
+
+
+try:
+    from PIL import Image
+    from PIL import ImageDraw
+
+except ImportError:
+    def Image(*args, **kwargs):
+        raise ImportError("Pillow is required to have dowser work")
+
+    def ImageDraw(*args, **kwargs):
+        raise ImportError("Pillow is required to have dowser work")
 
 
 def get_repr(obj, limit=250):
     return cgi.escape(reftree.get_repr(obj, limit))
 
+
 class _(object): pass
 dictproxy = type(_.__dict__)
 
-method_types = [type(tuple.__le__),                 # 'wrapper_descriptor'
-                type([1].__le__),                   # 'method-wrapper'
-                type(sys.getcheckinterval),         # 'builtin_function_or_method'
-                type(cgi.FieldStorage.getfirst),    # 'instancemethod'
-                ]
 
-
-from pkg_resources import resource_filename
-
-localDir = resource_filename(__name__)
+method_types = [
+    type(tuple.__le__),                 # 'wrapper_descriptor'
+    type([1].__le__),                   # 'method-wrapper'
+    type(sys.getcheckinterval),         # 'builtin_function_or_method'
+    type(cgi.FieldStorage.getfirst),    # 'instancemethod'
+]
 
 
 def template(name, **params):
-    p = {'maincss':"/main.css",
-         'home': "/",
-         }
+    p = {
+        'maincss':"/assets/main.css",
+        'home': "/",
+    }
     p.update(params)
-    return open(os.path.join(localDir, name)).read() % p
+    return open(os.path.join(ASSETS_DIR, name)).read() % p
 
 
-class Root(ServiceBase):
+class DowserServices(ServiceBase):
     period = 5
     maxhistory = 300
     history = {}
     samples = 0
 
-    def tick(self):
+    @classmethod
+    def tick(cls):
+        logger.debug("Dowser tick")
         gc.collect()
         
         typecounts = {}
@@ -94,29 +111,29 @@ class Root(ServiceBase):
         
         for objtype, count in typecounts.iteritems():
             typename = objtype.__module__ + "." + objtype.__name__
-            if typename not in self.history:
-                self.history[typename] = [0] * self.samples
-            self.history[typename].append(count)
+            if typename not in cls.history:
+                cls.history[typename] = [0] * cls.samples
+            cls.history[typename].append(count)
         
-        samples = self.samples + 1
+        samples = cls.samples + 1
         
         # Add dummy entries for any types which no longer exist
-        for typename, hist in self.history.iteritems():
+        for typename, hist in cls.history.iteritems():
             diff = samples - len(hist)
             if diff > 0:
                 hist.extend([0] * diff)
         
         # Truncate history to self.maxhistory
-        if samples > self.maxhistory:
-            for typename, hist in self.history.iteritems():
+        if samples > cls.maxhistory:
+            for typename, hist in cls.history.iteritems():
                 hist.pop(0)
         else:
-            self.samples = samples
+            cls.samples = samples
 
-    @rpc(Integer, _patterns=[HttpPattern('/', verb='GET')], _returns=Unicode)
-    def index(ctx, floor=0):
+    @rpc(Integer(default=0), _patterns=[HttpPattern('/', verb='GET')], _returns=AnyHtml)
+    def index(ctx, floor):
         rows = []
-        typenames = ctx.history.keys()
+        typenames = ctx.descriptor.service_class.history.keys()
         typenames.sort()
         for typename in typenames:
             hist = ctx.descriptor.service_class.history[typename]
@@ -127,9 +144,9 @@ class Root(ServiceBase):
                     '<img class="chart" src="%s" /><br />'
                     'Min: %s Cur: %s Max: %s <a href="%s">TRACE</a></div>' % (
                             cgi.escape(typename),
-                            "chart/%s" % typename,
+                            "/chart?typename=%s" % typename,
                             min(hist), hist[-1], maxhist,
-                            url("trace/%s" % typename),
+                            "/trace?typename=%s" % typename,
                     )
                 )
                 rows.append(row)
@@ -151,25 +168,26 @@ class Root(ServiceBase):
         f = BytesIO()
         im.save(f, "PNG")
         result = f.getvalue()
-        
+
+        ctx.out_protocol = HttpRpc()
         ctx.transport.resp_headers["Content-Type"] = "image/png"
         return [result]
 
-    @rpc(Unicode, Integer, _returns=Unicode)
-    def trace(self, typename, objid=None):
+    @rpc(Unicode, Integer, _returns=AnyHtml)
+    def trace(ctx, typename, objid=None):
         gc.collect()
         
         if objid is None:
-            rows = self.trace_all(typename)
+            rows = DowserServices.trace_all(typename)
         else:
-            rows = self.trace_one(typename, objid)
-    
+            rows = DowserServices.trace_one(typename, objid)
+
         return template("trace.html", output="\n".join(rows),
                         typename=cgi.escape(typename),
                         objid=str(objid or ''))
 
-    @rpc(Unicode, _returns=Unicode)
-    def trace_all(self, typename):
+    @classmethod
+    def trace_all(cls, typename):
         rows = []
         for obj in gc.get_objects():
             objtype = type(obj)
@@ -178,10 +196,11 @@ class Root(ServiceBase):
                             % ReferrerTree(obj).get_repr(obj))
         if not rows:
             rows = ["<h3>The type you requested was not found.</h3>"]
-        return '\n'.join(rows)
+
+        return rows
     
-    @rpc(Unicode, Integer, _returns=Unicode)
-    def trace_one(self, typename, objid):
+    @classmethod
+    def trace_one(cls, typename, objid):
         rows = []
         all_objs = gc.get_objects()
         for obj in all_objs:
@@ -205,7 +224,7 @@ class Root(ServiceBase):
                     rows.append('<div class="refs"><h3>Referrers (Parents)</h3>')
                     rows.append('<p class="desc"><a href="%s">Show the '
                                 'entire tree</a> of reachable objects</p>'
-                                % url("/tree/%s/%s" % (typename, objid)))
+                                % ("/tree?typename=%s&objid=%s" % (typename, objid)))
                     tree = ReferrerTree(obj)
                     tree.ignore(all_objs)
                     for depth, parentid, parentrepr in tree.walk(maxdepth=1):
@@ -221,9 +240,9 @@ class Root(ServiceBase):
                 break
         if not rows:
             rows = ["<h3>The object you requested was not found.</h3>"]
-        return '\n'.join(rows)
+        return rows
 
-    @rpc(Unicode, Integer, _returns=Unicode)
+    @rpc(Unicode, Integer, _returns=AnyHtml)
     def tree(self, typename, objid):
         gc.collect()
         
@@ -259,16 +278,15 @@ class Root(ServiceBase):
 
 
 class ReferrerTree(reftree.Tree):
-    
     ignore_modules = True
     
     def _gen(self, obj, depth=0):
         if self.maxdepth and depth >= self.maxdepth:
             yield depth, 0, "---- Max depth reached ----"
-            raise StopIteration
+            raise StopIteration()
         
         if isinstance(obj, ModuleType) and self.ignore_modules:
-            raise StopIteration
+            raise StopIteration()
         
         refs = gc.get_referrers(obj)
         refiter = iter(refs)
@@ -317,7 +335,7 @@ class ReferrerTree(reftree.Tree):
         return ('<a class="objectid" href="%s">%s</a> '
                 '<span class="typename">%s</span>%s<br />'
                 '<span class="repr">%s</span>'
-                % (url("/trace/%s/%s" % (typename, id(obj))),
+                % (("/trace?typename=%s&objid=%s" % (typename, id(obj))),
                    id(obj), prettytype, key, get_repr(obj, 100))
                 )
     
@@ -332,12 +350,3 @@ class ReferrerTree(reftree.Tree):
             if getattr(obj, k, None) is referent:
                 return " (via its %r attribute)" % k
         return ""
-
-
-if __name__ == '__main__':
-##    cherrypy.config.update({"environment": "production"})
-    try:
-        cherrypy.quickstart(Root())
-    except AttributeError:
-        cherrypy.root = Root()
-        cherrypy.server.start()

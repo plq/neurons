@@ -108,6 +108,7 @@ setup(
 
     package_data = {
         'neurons.form.const': ['*.xhtml'],
+        'neurons.daemon.dowser.const': ['*.html', '*.css'],
     },
 
     tests_require=test_reqs,
