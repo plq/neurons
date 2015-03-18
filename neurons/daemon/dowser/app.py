@@ -55,7 +55,7 @@ def start_dowser(config):
 
     subconfig = config.services.getwrite('dowser', DowserListener(
         host='0.0.0.0',
-        port=0x1E4C,  # ~= leak == 7756
+        port=0x1EAC,  # ~= leak == 7852
         disabled=False,
         _subapps=[StaticFileServer(url='assets', path=ASSETS_DIR,
                                list_contents=False, disallowed_exts=["py"])],
