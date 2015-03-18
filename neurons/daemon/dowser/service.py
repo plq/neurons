@@ -57,12 +57,13 @@ try:
     from PIL import Image
     from PIL import ImageDraw
 
-except ImportError:
-    def Image(*args, **kwargs):
-        raise ImportError("Pillow is required to have dowser work")
+except ImportError as e:
+    class Image:
+        @classmethod
+        def new(self):
+            raise e
 
-    def ImageDraw(*args, **kwargs):
-        raise ImportError("Pillow is required to have dowser work")
+    ImageDraw = None
 
 
 def get_repr(obj, limit=250):
