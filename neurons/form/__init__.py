@@ -41,6 +41,7 @@ from neurons.form.form import PasswordWidget
 
 from neurons.form.form import ComboBoxWidget
 from neurons.form.form import ComplexHrefWidget
+from neurons.form.form import SimpleRenderWidget
 from neurons.form.form import ComplexRenderWidget
 
 from neurons.form.form_table import HtmlFormTable
