@@ -392,7 +392,7 @@ class HtmlForm(HtmlWidget):
                                 (attrs.tab.index, attrs.tab.htmlid), \
                None if attrs.fieldset is None else \
                                 (attrs.fieldset.index, attrs.fieldset.htmlid), \
-               attrs.order, k
+
 
     @coroutine
     def start_to_parent(self, ctx, cls, inst,parent, name, **kwargs):
