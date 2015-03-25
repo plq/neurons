@@ -915,9 +915,9 @@ class SimpleRenderWidget(HtmlWidget):
         if text_str is None:
             text_str = ''
 
-        cls_attr = self.get_cls_attrs(cls)
-        if cls_attr.min_occurs == 0:
-            return
+            cls_attr = self.get_cls_attrs(cls)
+            if cls_attr.min_occurs == 0:
+                return
 
         if self.label:
             label = self._gen_label_for(ctx, cls, name)
