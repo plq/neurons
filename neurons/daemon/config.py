@@ -584,7 +584,13 @@ class Daemon(ComplexModel):
                 return record['message'] + "\n"
             if 'log_failure' in record:
                 failure = record['log_failure']
-                return "%s: %s" % (failure.type, pformat(vars(failure.value)))
+                try:
+                    s = pformat(vars(failure.value))
+                except TypeError:
+                    # vars() argument must have __dict__ attribute
+                    s = repr(failure.value)
+
+                return "%s: %s" % (failure.type, s)
             return pformat(record)
 
         observer = FileLogObserver(log_dest, record_as_string)
