@@ -168,7 +168,6 @@ class HtmlFormTable(HtmlColumnTable, HtmlWidget):
                     except StopIteration:
                         pass
 
-
     def extend_header_row(self, ctx, cls, parent, name, **kwargs):
         if self.can_add or self.can_remove:
             parent.write(E.th())
