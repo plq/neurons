@@ -171,11 +171,15 @@ class HtmlWidget(HtmlBase):
 
         return E.label(self.trc(cls, ctx.locale, name), **attrib)
 
+    def _gen_label_wrapper_class(self, ctx, cls, name):
+        classes = ['label-input-wrapper', name]
+        return {'class': ' '.join(classes)}
+
     def _wrap_with_label(self, ctx, cls, name, input, no_label=False,
                                              wrap_label=WRAP_FORWARD, **kwargs):
         retval = input
 
-        attrib = {'class': 'label-input-wrapper'}
+        attrib = self._gen_label_wrapper_class(ctx, cls, name)
         if no_label and wrap_label is not None:
             retval = E.div(retval, **attrib)
 
@@ -921,8 +925,8 @@ class SimpleRenderWidget(HtmlWidget):
 
         if self.label:
             label = self._gen_label_for(ctx, cls, name)
-            # this part should be consistent with what _wrap_with_label does
-            with parent.element('div', attrib={'class': 'label-input-wrapper'}):
+            attrib = self._gen_label_wrapper_class(ctx, cls, name)
+            with parent.element('div', attrib=attrib):
                 parent.write(label)
                 parent.write(text_str)
 
@@ -999,8 +1003,8 @@ class ComplexRenderWidget(HtmlWidget):
         if self.label:
             elt_id = self._gen_input_elt_id(name, **kwargs)
             label = self._gen_label_for(ctx, cls, name, elt_id)
-            # this part should be consistent with what _wrap_with_label does
-            with parent.element('div', attrib={'class': 'label-input-wrapper'}):
+            attrib = self._gen_label_wrapper_class(ctx, cls, name)
+            with parent.element('div', attrib=attrib):
                 parent.write(label)
                 parent.write(text_str)
 
@@ -1127,8 +1131,8 @@ class ComboBoxWidget(ComplexRenderWidget):
         if self.label:
             elt_id = self._gen_input_elt_id(name, **kwargs)
             label = self._gen_label_for(ctx, cls, name, elt_id)
-            # this part should be consistent with what _wrap_with_label does
-            with parent.element('div', attrib={'class': 'label-input-wrapper'}):
+            attrib = self._gen_label_wrapper_class(ctx, cls, name)
+            with parent.element('div', attrib=attrib):
                 parent.write(label)
                 self._write_select(ctx, cls, inst, parent, name, fti, **kwargs)
 

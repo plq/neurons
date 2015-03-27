@@ -137,9 +137,7 @@ class HtmlFormTable(HtmlColumnTable, HtmlWidget):
         # If this is direct child of an array, table is already set up in
         # array_to_parent.
         if self.label:
-            div_attrib = {
-                'class': 'label-input-wrapper',
-            }
+            div_attrib = self._gen_label_wrapper_class(ctx, cls, name)
             label = self._gen_label_for(ctx, cls, name)
             with parent.element('div', attrib=div_attrib):
                 parent.write(label)
