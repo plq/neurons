@@ -336,7 +336,8 @@ class Logger(ComplexModel):
             _logger = logging.getLogger(self.path)
 
         _logger.setLevel(LOGLEVEL_MAP[self.level])
-        logger.info("Setting logging level for %r to %r.", _logger.name, self.level)
+        logger.info("Setting logging level for %r to %r.",
+                                                       _logger.name, self.level)
 
 
 class ServiceDisabled(Exception):
