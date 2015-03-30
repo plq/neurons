@@ -109,6 +109,26 @@ class TestFormTable(unittest.TestCase):
         for i, name in enumerate(elt.xpath('div/div/input/@name')):
             assert re.match(r'ints\[0*%d\]' % i, name)
 
+    def test_simple_sub(self):
+        v = "domates"  # 🍅
+
+        class SomeObject(ComplexModel):
+            i = Integer
+            s = Array(Unicode(64), prot=HtmlFormTable(label=True))
+
+        v = SomeObject(i=42, s=v)
+        elt = _test_type(SomeObject, v, HtmlForm)
+
+        assert elt.xpath(
+            'fieldset/div/table/tbody/tr/td/div/input[contains(@class, "s")]/@value') == \
+                                                                [s for s in v.s]
+        assert elt.xpath(
+            'fieldset/div/input[contains(@class, "i")]/@value') == [str(v.i)]
+
+        assert elt.xpath(
+            'fieldset/div/table/tbody/tr/td/button/text()') == ['-'] * 7 + ['+']
+
+
     def test_unicode_null(self):
         v = None
         elt = _test_type(Unicode(64), v).xpath('form/div/input')
