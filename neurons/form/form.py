@@ -279,11 +279,12 @@ class HtmlWidget(HtmlBase):
                 inst_label = values_dict.get(inst, inststr)
                 if isinstance(inst_label, dict):
                     inst_label = self.trd(inst_label, ctx.locale, inststr)
+                logger.debug("\t\tinst %r label %r", inst_label, inst)
                 elt.append(E.option(inst_label, value=inststr))
 
             else:
                 if cls_attrs.nullable or cls_attrs.min_occurs == 0:
-                    elt.append(E.option("", {'value':''}))
+                    elt.append(E.option("", {'value': ''}))
 
                 # FIXME: cache this!
                 for v in cls_attrs.values:
@@ -296,7 +297,7 @@ class HtmlWidget(HtmlBase):
                         attrib['selected'] = ''
 
                     val_label = values_dict.get(v, valstr)
-                    logger.debug("\tinst %r label %r", inst, val_label)
+                    logger.debug("\t\tother values inst %r label %r", v, val_label)
                     if isinstance(val_label, dict):
                         val_label = self.trd(val_label, ctx.locale, inststr)
 

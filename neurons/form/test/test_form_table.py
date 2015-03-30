@@ -120,7 +120,8 @@ class TestFormTable(unittest.TestCase):
         elt = _test_type(SomeObject, v, HtmlForm)
 
         assert elt.xpath(
-            'fieldset/div/table/tbody/tr/td/div/input[contains(@class, "s")]/@value') == \
+            'fieldset/div/table/tbody/tr/td/div'
+                            '/input[contains(@class, "s")]/@value') == \
                                                                 [s for s in v.s]
         assert elt.xpath(
             'fieldset/div/input[contains(@class, "i")]/@value') == [str(v.i)]
