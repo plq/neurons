@@ -596,6 +596,7 @@ class Daemon(ComplexModel):
 
         observer = FileLogObserver(log_dest, record_as_string)
         globalLogPublisher.addObserver(observer)
+        self._clear_other_observers(globalLogPublisher, observer)
 
         handler = TwistedHandler()
         handler.setFormatter(formatter)
@@ -617,6 +618,24 @@ class Daemon(ComplexModel):
 
         if self.log_results:
             logging.getLogger('sqlalchemy').setLevel(logging.DEBUG)
+
+    def _clear_other_observers(self, publisher, observer):
+        from twisted.python.logger import LimitedHistoryLogObserver, LogPublisher
+
+        # FIXME: Remove Limited History Observer in a supported way.
+        print(publisher._observers)
+
+        for o in publisher._observers:
+            if isinstance(o, LogPublisher):
+                self._clear_other_observers(o, observer)
+
+            elif isinstance(o, LimitedHistoryLogObserver):
+                publisher.removeObserver(o)
+                o.replayTo(observer)
+                print("Removing observer", o)
+
+            else:
+                print("Leaving alone observer", o)
 
     def sanitize(self):
         if self.logger_dest is not None:
