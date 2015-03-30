@@ -132,12 +132,22 @@ class DowserServices(ServiceBase):
         else:
             cls.samples = samples
 
-    @rpc(Integer(default=0), _patterns=[HttpPattern('/', verb='GET')],
-                                                               _returns=AnyHtml)
-    def index(ctx, floor):
+    ORDER_MAP = {
+        None: None,
+        'min': lambda x: min(DowserServices.history[x]),
+        'cur': lambda x: DowserServices.history[x][-1],
+        'max': lambda x: max(DowserServices.history[x]),
+    }
+
+    @rpc(Integer(default=0), Unicode(values=['max', 'min', 'cur']),
+                     _patterns=[HttpPattern('/', verb='GET')], _returns=AnyHtml)
+    def index(ctx, floor, order):
         rows = []
         typenames = ctx.descriptor.service_class.history.keys()
-        typenames.sort()
+
+        key = ctx.descriptor.service_class.ORDER_MAP[order]
+        typenames.sort(key=key, reverse=False if order is None else True)
+
         for typename in typenames:
             hist = ctx.descriptor.service_class.history[typename]
             maxhist = max(hist)
