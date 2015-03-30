@@ -37,7 +37,7 @@ logging.basicConfig(level=logging.DEBUG)
 import re
 import unittest
 
-from neurons.form import HtmlFormTable
+from neurons.form import HtmlFormTable, HtmlForm
 from neurons.form.test import strip_ns
 from neurons.form.const import T_TEST
 
@@ -47,7 +47,7 @@ from spyne import Application, NullServer, ServiceBase, rpc, ComplexModel, \
 from lxml import etree, html
 
 
-def _test_type(cls, inst):
+def _test_type(cls, inst, prot_cls=HtmlFormTable):
     from spyne.util import appreg; appreg._applications.clear()
 
     class SomeService(ServiceBase):
@@ -55,7 +55,7 @@ def _test_type(cls, inst):
         def some_call(ctx):
             return inst
 
-    prot = HtmlFormTable(cloth=T_TEST, doctype='<!DOCTYPE html>')
+    prot = prot_cls(cloth=T_TEST, doctype='<!DOCTYPE html>')
     app = Application([SomeService], 'some_ns', out_protocol=prot)
 
     null = NullServer(app, ostr=True)
@@ -68,7 +68,7 @@ def _test_type(cls, inst):
         raise
 
     show(elt)
-    elt = elt.xpath('//*[@spyne]')[0]
+    elt = elt.xpath('//form')[0]
     elt = strip_ns(elt)  # get rid of namespaces to simplify xpaths in tests
 
     print(etree.tostring(elt, pretty_print=True))
@@ -95,7 +95,7 @@ class TestFormTable(unittest.TestCase):
             s = Unicode(64)
 
         v = [SomeObject(i=i, s=s) for i, s in enumerate(v)]
-        elt = _test_type(Array(SomeObject), v)[0]
+        elt = _test_type(Array(SomeObject), v)
 
         assert elt.xpath(
             'table/tbody/tr/td/div/input[contains(@class, "i ")]/@value') == \
@@ -111,7 +111,7 @@ class TestFormTable(unittest.TestCase):
 
     def test_unicode_null(self):
         v = None
-        elt = _test_type(Unicode(64), v).xpath('form/div/input')[0]
+        elt = _test_type(Unicode(64), v).xpath('form/div/input')
 
         assert elt.attrib['type'] == 'text'
         assert not ('value' in elt.attrib)
