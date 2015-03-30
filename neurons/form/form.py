@@ -355,9 +355,9 @@ class HtmlForm(HtmlWidget):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
                        cloth=None, attr_name='spyne_id', root_attr_name='spyne',
                             cloth_parser=None, polymorphic=True, hier_delim='.',
-                                                                asset_paths={}):
+                                                  doctype=None, asset_paths={}):
 
-        super(HtmlForm, self).__init__(app=app,
+        super(HtmlForm, self).__init__(app=app, doctype=doctype,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
                 cloth=cloth, attr_name=attr_name, root_attr_name=root_attr_name,
                              cloth_parser=cloth_parser, polymorphic=polymorphic,
