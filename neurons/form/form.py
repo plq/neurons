@@ -497,7 +497,7 @@ class HtmlForm(HtmlWidget):
         elt.attrib['type'] = 'checkbox'
 
         if bool(inst):
-            elt.attrib['checked'] = ''
+            elt.attrib['checked'] = 'checked'
 
         div = self._wrap_with_label(ctx, cls, name, elt,
                                              wrap_label=WRAP_REVERSED, **kwargs)
