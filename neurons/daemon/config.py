@@ -624,7 +624,7 @@ class Daemon(ComplexModel):
         from twisted.python.logger import LimitedHistoryLogObserver, LogPublisher
 
         # FIXME: Remove Limited History Observer in a supported way.
-        print(publisher._observers)
+        logger.debug("Looking for rogue observers in %r", publisher._observers)
 
         for o in publisher._observers:
             if isinstance(o, LogPublisher):
@@ -633,10 +633,10 @@ class Daemon(ComplexModel):
             elif isinstance(o, LimitedHistoryLogObserver):
                 publisher.removeObserver(o)
                 o.replayTo(observer)
-                print("Removing observer", o)
+                logger.debug("Removing observer", o)
 
             else:
-                print("Leaving alone observer", o)
+                logger.debug("Leaving alone observer", o)
 
     def sanitize(self):
         if self.logger_dest is not None:
