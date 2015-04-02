@@ -547,11 +547,12 @@ class Daemon(ComplexModel):
 
             class DailyLogWithLeadingZero(DailyLogFile):
                 def suffix(self, tupledate):
+                    # this closely imitates the same function from parent class
                     try:
-                        return '_'.join(("%02d" % i for i in tupledate))
+                        return '-'.join(("%02d" % i for i in tupledate))
                     except:
                         # try taking a float unixtime
-                        return '_'.join(("%02d" % i for i in
+                        return '-'.join(("%02d" % i for i in
                                                         self.toDate(tupledate)))
 
             self.logger_dest = abspath(self.logger_dest)
