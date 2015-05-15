@@ -47,7 +47,7 @@ from lxml import html
 from lxml.builder import E
 
 from spyne import ComplexModelBase, Unicode, Decimal, Boolean, Date, Time, \
-    DateTime, Integer, Duration, PushBase, Array, MethodContext
+    DateTime, Integer, Duration, PushBase, Array, Uuid
 from spyne.protocol.html import HtmlBase
 from spyne.util import coroutine, Break
 from spyne.util.cdict import cdict
@@ -305,10 +305,15 @@ class HtmlWidget(HtmlBase):
 
         return elt
 
-    def _gen_input_unicode(self, ctx, cls, inst, name, **kwargs):
+    def _gen_input_unicode(self, ctx, cls, inst, name, attr_override={},
+                                                                      **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
 
-        if len(cls_attrs.values) == 0 and cls_attrs.max_len >= D('inf'):
+        max_len = attr_override.get('max_len', cls_attrs.max_len)
+        min_len = attr_override.get('min_len', cls_attrs.min_len)
+        values = attr_override.get('values', cls_attrs.values)
+
+        if len(values) == 0 and max_len >= D('inf'):
             tag = 'textarea'
 
             elt_attrs = self._gen_input_attrs_novalue(cls, name, cls_attrs)
@@ -325,10 +330,10 @@ class HtmlWidget(HtmlBase):
             elt = self._gen_input(ctx, cls, inst, name, cls_attrs, **kwargs)
             elt.attrib['type'] = 'text'
 
-            if cls_attrs.max_len < Unicode.Attributes.max_len:
-                elt.attrib['maxlength'] = str(int(cls_attrs.max_len))
-            if cls_attrs.min_len > Unicode.Attributes.min_len:
-                elt.attrib['minlength'] = str(int(cls_attrs.min_len))
+            if max_len < Unicode.Attributes.max_len:
+                elt.attrib['maxlength'] = str(int(max_len))
+            if min_len > Unicode.Attributes.min_len:
+                elt.attrib['minlength'] = str(int(min_len))
 
         return cls_attrs, elt
 
@@ -367,6 +372,7 @@ class HtmlForm(HtmlWidget):
         self.serialization_handlers = cdict({
             Date: self._check_hidden(self.date_to_parent),
             Time: self._check_hidden(self.time_to_parent),
+            Uuid: self._check_hidden(self.uuid_to_parent),
             Array: self.array_type_to_parent,
             Integer: self._check_hidden(self.integer_to_parent),
             Unicode: self._check_hidden(self.unicode_to_parent),
@@ -471,6 +477,11 @@ class HtmlForm(HtmlWidget):
                                             **{'class': "text-center"}))
 
     def unicode_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls_attrs, elt = self._gen_input_unicode(ctx, cls, inst, name, **kwargs)
+        parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
+
+    def uuid_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        kwargs.update({'attr_override': {'max_len': 36}})
         cls_attrs, elt = self._gen_input_unicode(ctx, cls, inst, name, **kwargs)
         parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
 
