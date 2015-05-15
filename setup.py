@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#encoding: utf8
+# encoding: utf8
 
 from __future__ import print_function
 
@@ -11,10 +11,13 @@ from setuptools import setup
 from setuptools import find_packages
 from setuptools.command.test import test as TestCommand
 
+
 try:
     import colorama
+
     colorama.init()
     from colorama import Fore
+
     RESET = Fore.RESET
     GREEN = Fore.GREEN
     RED = Fore.RED
@@ -25,6 +28,7 @@ except ImportError:
 
 import inspect
 from os.path import join, dirname, abspath
+
 OWN_PATH = abspath(inspect.getfile(inspect.currentframe()))
 EXAMPLES_DIR = join(dirname(OWN_PATH), 'examples')
 
@@ -32,7 +36,7 @@ v = open(os.path.join(os.path.dirname(__file__), 'neurons', '__init__.py'), 'r')
 VERSION = re.match(r".*__version__ = '(.*?)'", v.read(), re.S).group(1)
 
 SHORT_DESC = """Short"""
-LONG_DESC  = """Long"""
+LONG_DESC = """Long"""
 
 try:
     os.stat('CHANGELOG.rst')
@@ -40,34 +44,38 @@ try:
 except OSError:
     pass
 
-##################
-### testing stuff
-
 install_reqs = (
     'spyne>=2.12', 'msgpack-python', 'pycrypto', 'SQLAlchemy<0.9.99',
     'werkzeug', 'lxml>=3.4.1', 'Twisted>=15.0', 'pyyaml', 'psycopg2>=2.6',
 )
+
+##################
+# testing stuff
 
 test_reqs = install_reqs + ('pytest', 'tox')
 
 
 class Tox(TestCommand):
     user_options = [('tox-args=', 'a', "Arguments to pass to tox")]
+
     def initialize_options(self):
         TestCommand.initialize_options(self)
         self.tox_args = None
+
     def finalize_options(self):
         TestCommand.finalize_options(self)
         self.test_args = []
         self.test_suite = True
+
     def run_tests(self):
         #import here, cause outside the eggs aren't loaded
         import tox
         import shlex
+
         errno = tox.cmdline(args=shlex.split(self.tox_args))
         sys.exit(errno)
 
-### testing stuff
+# testing stuff
 ##################
 
 setup(
@@ -103,14 +111,14 @@ setup(
     install_requires=install_reqs,
 
     entry_points={
-        'console_scripts': [ ],
+        'console_scripts': [],
     },
 
-    package_data = {
+    package_data={
         'neurons.form.const': ['*.xhtml'],
         'neurons.daemon.dowser.const': ['*.html', '*.css'],
     },
 
     tests_require=test_reqs,
-    cmdclass = {'test': Tox},
+    cmdclass={'test': Tox},
 )
