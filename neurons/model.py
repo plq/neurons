@@ -33,10 +33,20 @@
 
 from contextlib import closing
 
-from spyne import TTableModel
+from spyne import TTableModel, Integer32
 from spyne.util.sqlalchemy import get_pk_columns
 
 TableModel = TTableModel()
+
+
+def TVersion(prefix, default_version):
+    class Version(TableModel):
+        __tablename__ = '%s_version' % prefix
+
+        id = Integer32(pk=True)
+        version = Integer32(default=default_version)
+
+    return Version
 
 
 def respawn(cls, ctx=None):
