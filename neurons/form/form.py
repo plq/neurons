@@ -493,6 +493,7 @@ class HtmlForm(HtmlWidget):
         elt = self._gen_input(ctx, cls, inst, name, cls_attrs, **kwargs)
 
         if 'value' in elt.attrib:
+            logger.debug("Removing value=%r from checkbox", elt.attrib['value'])
             del elt.attrib['value']
         elt.attrib['type'] = 'checkbox'
 
