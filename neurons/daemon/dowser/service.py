@@ -330,14 +330,17 @@ class ReferrerTree(reftree.Tree):
 
             # Yield the (depth, id, repr) of our object.
             yield depth, 0, '%s<div class="branch">' % (" " * depth)
+
             if id(ref) in self.seen:
                 yield depth, id(ref), "see %s above" % id(ref)
+
             else:
                 self.seen[id(ref)] = None
                 yield depth, id(ref), self.get_repr(ref, obj)
 
                 for parent in self._gen(ref, depth + 1):
                     yield parent
+
             yield depth, 0, '%s</div>' % (" " * depth)
 
     def get_repr(self, obj, referent=None):
