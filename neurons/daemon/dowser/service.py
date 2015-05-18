@@ -318,6 +318,9 @@ class ReferrerTree(reftree.Tree):
 
             # Exclude all functions and classes from this module or reftree.
             mod = getattr(ref, "__module__", "")
+            if mod is None:
+                continue
+
             if "dowser" in mod or "reftree" in mod or mod == '__main__':
                 continue
 
