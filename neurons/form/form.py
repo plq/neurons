@@ -1157,7 +1157,7 @@ class ComboBoxWidget(ComplexRenderWidget):
                                                                  cls, self.type)
             cls = self.type
 
-        if self.override_parent is not None:
+        if self.override_parent:
             logger.debug("ComboBoxWidget.override_parent "
                          "cls, inst switch: %r => %r", (cls, inst),
                                                     ctx.protocol.inst_stack[-1])
