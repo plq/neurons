@@ -1141,6 +1141,8 @@ class ComboBoxWidget(ComplexRenderWidget):
 
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         if self.type is not None:
+            logger.debug("ComboBoxWidget.type cls switch: %r => %r",
+                                                                 cls, self.type)
             cls = self.type
 
         if self.override_parent is not None:
