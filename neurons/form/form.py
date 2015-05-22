@@ -127,6 +127,19 @@ WRAP_REVERSED = type("WRAP_REVERSED", (object,), {})
 class HtmlWidget(HtmlBase):
     supported_types = None
 
+    def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
+                       cloth=None, attr_name='spyne_id', root_attr_name='spyne',
+                            cloth_parser=None, polymorphic=True, hier_delim='.',
+                                      label=True, doctype=None, asset_paths={}):
+
+        super(HtmlWidget, self).__init__(app=app, doctype=doctype,
+                     ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
+                cloth=cloth, attr_name=attr_name, root_attr_name=root_attr_name,
+                             cloth_parser=cloth_parser, polymorphic=polymorphic,
+                                                          hier_delim=hier_delim)
+        self.label = label
+        self.asset_paths = asset_paths
+
     @staticmethod
     def _format_js(lines, **kwargs):
         js = []
@@ -180,7 +193,7 @@ class HtmlWidget(HtmlBase):
         retval = input
 
         attrib = self._gen_label_wrapper_class(ctx, cls, name)
-        if no_label and wrap_label is not None:
+        if (no_label or not self.label) and wrap_label is not None:
             retval = E.div(retval, **attrib)
 
         else:
@@ -361,13 +374,13 @@ class HtmlForm(HtmlWidget):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
                        cloth=None, attr_name='spyne_id', root_attr_name='spyne',
                             cloth_parser=None, polymorphic=True, hier_delim='.',
-                                                  doctype=None, asset_paths={}):
+                                      doctype=None, label=True, asset_paths={}):
 
         super(HtmlForm, self).__init__(app=app, doctype=doctype,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
                 cloth=cloth, attr_name=attr_name, root_attr_name=root_attr_name,
                              cloth_parser=cloth_parser, polymorphic=polymorphic,
-                                                          hier_delim=hier_delim)
+                    hier_delim=hier_delim, label=label, asset_paths=asset_paths)
 
         self.serialization_handlers = cdict({
             Date: self._check_hidden(self.date_to_parent),
@@ -917,9 +930,8 @@ class HrefWidget(HtmlWidget):
 
 class SimpleRenderWidget(HtmlWidget):
     def __init__(self, label=True, type=None, hidden=False):
-        super(SimpleRenderWidget, self).__init__()
+        super(SimpleRenderWidget, self).__init__(label=label)
 
-        self.label = label
         self.type = type
         self.hidden = hidden
 
@@ -969,12 +981,12 @@ class ComplexRenderWidget(HtmlWidget):
             relevant widget id.
         """
 
+        super(ComplexRenderWidget, self).__init__(label=label)
+
         self.id_field = id_field
         self.text_field = text_field
         self.hidden_fields = hidden_fields
         self.type = type
-        self.label = label
-        super(HtmlWidget, self).__init__()
 
     def _prep_inst(self, cls, inst, fti):
         self._check_supported_types(cls)

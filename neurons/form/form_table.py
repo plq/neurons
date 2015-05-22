@@ -71,7 +71,7 @@ class HtmlFormTable(HtmlColumnTable, HtmlWidget):
             row_class=row_class, cell_class=cell_class,
             header_cell_class=header_cell_class)
 
-        self.prot_form = HtmlForm()
+        self.prot_form = HtmlForm(label=False)
         self.can_add = can_add
         self.can_remove = can_remove
         self.use_global_null_handler = False
