@@ -1074,7 +1074,7 @@ class ComplexHrefWidget(ComplexRenderWidget):
 
 class ComboBoxWidget(ComplexRenderWidget):
     def __init__(self, text_field, id_field, hidden_fields=None, label=True,
-                                 type=None, others=False, others_order_by=None):
+          type=None, others=False, others_order_by=None, override_parent=False):
         """Widget that renders complex objects as comboboxes.
 
         Please see :class:`ComplexRenderWidget` docstring for more info.
@@ -1094,10 +1094,14 @@ class ComboBoxWidget(ComplexRenderWidget):
                                                          label=label, type=type)
         self.others = others
         self.others_order_by = others_order_by
+        self.override_parent = override_parent
 
     def _write_select(self, ctx, cls, inst, parent, name, fti, **kwargs):
         attr = self.get_cls_attrs(cls)
         v_id_str, v_text_str = self._prep_inst(cls, inst, fti)
+
+        if self.override_parent:
+            name = name.rsplit(self.hier_delim)[0]
 
         sub_name = self.hier_delim.join((name, self.id_field))
         attrib = self._gen_input_attrs_novalue(cls, sub_name, attr, **kwargs)
@@ -1138,6 +1142,12 @@ class ComboBoxWidget(ComplexRenderWidget):
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         if self.type is not None:
             cls = self.type
+
+        if self.override_parent is not None:
+            logger.debug("ComboBoxWidget.override_parent "
+                         "cls, inst switch: %r => %r", (cls, inst),
+                                                    ctx.protocol.inst_stack[-1])
+            cls, inst = ctx.protocol.inst_stack[-1]
 
         fti = cls.get_flat_type_info(cls)
 

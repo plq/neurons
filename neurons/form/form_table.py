@@ -217,20 +217,28 @@ class HtmlFormTable(HtmlColumnTable, HtmlWidget):
         # are empty, it's not possible to have push data. so there's no need to
         # check the returned generators.
         if issubclass(cls, ComplexModelBase):
+            inst = cls()
+            ctx.protocol.inst_stack.append((cls, inst))
+
             if cls.Attributes.max_occurs > 1:
-                self._gen_row(ctx, cls, [cls()], parent, name,
+                self._gen_row(ctx, cls, [inst], parent, name,
                                          add=True, remove=False, array_index=-1)
             else:
-                self._gen_row(ctx, cls, cls(), parent, name,
+                self._gen_row(ctx, cls, inst, parent, name,
                                          add=True, remove=False, array_index=-1)
 
         else:
+            inst = None
+            ctx.protocol.inst_stack.append((cls, inst))
+
             if cls.Attributes.max_occurs > 1:
-                self.model_base_to_parent(ctx, cls, None, parent, name,
+                self.model_base_to_parent(ctx, cls, inst, parent, name,
                           from_arr=True, add=True, remove=False, array_index=-1)
             else:
-                self.model_base_to_parent(ctx, cls, None, parent, name,
+                self.model_base_to_parent(ctx, cls, inst, parent, name,
                                          add=True, remove=False, array_index=-1)
+
+        ctx.protocol.inst_stack.pop()
 
         name = '%s-%d' % (self.selsafe(name), SOME_COUNTER[0])
 
