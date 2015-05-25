@@ -520,8 +520,8 @@ class Daemon(ComplexModel):
 
     def apply_logging(self):
         # We're using twisted logging only for IO.
-        from twisted.python.logger import FileLogObserver
-        from twisted.python.logger import Logger, LogLevel, globalLogPublisher
+        from twisted.logger import FileLogObserver
+        from twisted.logger import Logger, LogLevel, globalLogPublisher
 
         LOGLEVEL_TWISTED_MAP = {
             logging.DEBUG: LogLevel.debug,
@@ -582,6 +582,8 @@ class Daemon(ComplexModel):
         def record_as_string(record):
             if 'log_text' in record:
                 return record['log_text'] + "\n"
+            if 'log_io' in record:
+                return record['log_io'] + "\n"
             if 'message' in record:
                 return record['message'] + "\n"
             if 'log_failure' in record:
@@ -621,7 +623,7 @@ class Daemon(ComplexModel):
             logging.getLogger('sqlalchemy').setLevel(logging.DEBUG)
 
     def _clear_other_observers(self, publisher, observer):
-        from twisted.python.logger import LimitedHistoryLogObserver, LogPublisher
+        from twisted.logger import LimitedHistoryLogObserver, LogPublisher
 
         # FIXME: Remove Limited History Observer in a supported way.
         logger.debug("Looking for rogue observers in %r", publisher._observers)
