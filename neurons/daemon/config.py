@@ -535,12 +535,12 @@ class Daemon(ComplexModel):
         class TwistedHandler(logging.Handler):
             def emit(self, record):
                 assert isinstance(record, logging.LogRecord)
-                logger = loggers.get(record.name, None)
-                if logger is None:
-                    logger = loggers[record.name] = Logger(record.name)
+                _logger = loggers.get(record.name, None)
+                if _logger is None:
+                    _logger = loggers[record.name] = Logger(record.name)
 
-                logger.emit(LOGLEVEL_TWISTED_MAP[record.levelno],
-                                         log_text=self.format(record))
+                _logger.emit(LOGLEVEL_TWISTED_MAP[record.levelno],
+                                                   log_text=self.format(record))
 
         if self.logger_dest is not None:
             from twisted.python.logfile import DailyLogFile
