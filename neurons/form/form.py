@@ -185,7 +185,7 @@ class HtmlWidget(HtmlBase):
         return E.label(self.trc(cls, ctx.locale, name), **attrib)
 
     def _gen_label_wrapper_class(self, ctx, cls, name):
-        classes = ['label-input-wrapper', name]
+        classes = ['label-input-wrapper', self.selsafe(name)]
         return {'class': ' '.join(classes)}
 
     def _wrap_with_label(self, ctx, cls, name, input, no_label=False,
