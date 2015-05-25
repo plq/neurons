@@ -524,8 +524,11 @@ class HtmlForm(HtmlWidget):
         if bool(inst):
             elt.attrib['checked'] = 'checked'
 
+        wrap_label = WRAP_FORWARD if cls_attrs.label_position == 'left' \
+                                                               else WRAP_FORWARD
         div = self._wrap_with_label(ctx, cls, name, elt,
-                                             wrap_label=WRAP_REVERSED, **kwargs)
+                                                wrap_label=wrap_label, **kwargs)
+
         parent.write(div)
 
     def date_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
