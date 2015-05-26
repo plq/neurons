@@ -46,7 +46,7 @@ except OSError:
 
 install_reqs = (
     'spyne>=2.12', 'msgpack-python', 'pycrypto', 'SQLAlchemy<0.9.99',
-    'werkzeug', 'lxml>=3.4.1', 'Twisted>=15.2', 'pyyaml', 'psycopg2>=2.6',
+    'werkzeug', 'lxml>=3.4.1', 'Twisted>=15.2', 'pyyaml', 'psycopg2>=2.5',
 )
 
 ##################
