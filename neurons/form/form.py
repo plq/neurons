@@ -34,6 +34,8 @@
 from __future__ import print_function
 
 import logging
+from spyne.util.six import string_types
+
 logger = logging.getLogger(__name__)
 
 import re
@@ -132,7 +134,7 @@ class HtmlWidget(HtmlBase):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
                        cloth=None, attr_name='spyne_id', root_attr_name='spyne',
                             cloth_parser=None, polymorphic=True, hier_delim='.',
-                                      label=True, doctype=None, asset_paths={}):
+                   label=True, doctype=None, asset_paths={}, placeholder=None):
 
         super(HtmlWidget, self).__init__(app=app, doctype=doctype,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
@@ -140,6 +142,7 @@ class HtmlWidget(HtmlBase):
                              cloth_parser=cloth_parser, polymorphic=polymorphic,
                                                           hier_delim=hier_delim)
         self.label = label
+        self.placeholder = placeholder
         self.asset_paths = asset_paths
 
     @staticmethod
@@ -222,7 +225,7 @@ class HtmlWidget(HtmlBase):
             return name
         return "%s[%d]" % (name, array_index)
 
-    def _gen_input_attrs_novalue(self, cls, name, cls_attrs, **kwargs):
+    def _gen_input_attrs_novalue(self, ctx, cls, name, cls_attrs, **kwargs):
         elt_class = ' '.join(oset([
             camel_case_to_uscore(cls.get_type_name()),
             name.rsplit(self.hier_delim, 1)[-1],
@@ -235,11 +238,21 @@ class HtmlWidget(HtmlBase):
             'type': 'text',
         }
 
-        if getattr(cls_attrs, 'pattern', None) is not None:
+        if cls_attrs.pattern is not None:
             elt_attrs['pattern'] = cls_attrs.pattern
 
         if cls_attrs.write is False or cls_attrs.primary_key:
             elt_attrs['readonly'] = ""
+
+        placeholder = cls_attrs.placeholder
+        if placeholder is None:
+            placeholder = self.placeholder
+
+        if isinstance(placeholder, string_types):
+            elt_attrs['placeholder'] = placeholder
+
+        elif placeholder:
+            elt_attrs['placeholder'] = self.trc(cls, ctx.locale, name)
 
         # Required bool means, in HTML context, a checkbox that needs to be
         # checked, which is not what we mean here at all.
@@ -251,8 +264,9 @@ class HtmlWidget(HtmlBase):
 
         return elt_attrs
 
-    def _gen_input_attrs(self, cls, inst, name, cls_attrs, **kwargs):
-        elt_attrs = self._gen_input_attrs_novalue(cls, name, cls_attrs, **kwargs)
+    def _gen_input_attrs(self, ctx, cls, inst, name, cls_attrs, **kwargs):
+        elt_attrs = self._gen_input_attrs_novalue(ctx, cls, name, cls_attrs,
+                                                                       **kwargs)
 
         if inst is None or isinstance(inst, type):
             # FIXME: this must be done the other way around
@@ -267,7 +281,8 @@ class HtmlWidget(HtmlBase):
         return elt_attrs
 
     def _gen_input(self, ctx, cls, inst, name, cls_attrs, **kwargs):
-        elt_attrs = self._gen_input_attrs(cls, inst, name, cls_attrs, **kwargs)
+        elt_attrs = self._gen_input_attrs(ctx, cls, inst, name, cls_attrs,
+                                                                       **kwargs)
 
         tag = 'input'
         values = cls_attrs.values
@@ -331,7 +346,7 @@ class HtmlWidget(HtmlBase):
         if len(values) == 0 and max_len >= D('inf'):
             tag = 'textarea'
 
-            elt_attrs = self._gen_input_attrs_novalue(cls, name, cls_attrs)
+            elt_attrs = self._gen_input_attrs_novalue(ctx, cls, name, cls_attrs)
             if cls_attrs.min_occurs == 1 and cls_attrs.nullable == False:
                 elt = html.fromstring('<%s required>' % tag)
                 elt.attrib.update(elt_attrs)
@@ -376,13 +391,14 @@ class HtmlForm(HtmlWidget):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
                        cloth=None, attr_name='spyne_id', root_attr_name='spyne',
                             cloth_parser=None, polymorphic=True, hier_delim='.',
-                                      doctype=None, label=True, asset_paths={}):
+                   doctype=None, label=True, asset_paths={}, placeholder=False):
 
         super(HtmlForm, self).__init__(app=app, doctype=doctype,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
                 cloth=cloth, attr_name=attr_name, root_attr_name=root_attr_name,
                              cloth_parser=cloth_parser, polymorphic=polymorphic,
-                    hier_delim=hier_delim, label=label, asset_paths=asset_paths)
+                    hier_delim=hier_delim, label=label, asset_paths=asset_paths,
+                    placeholder=placeholder)
 
         self.serialization_handlers = cdict({
             Date: self._check_hidden(self.date_to_parent),
@@ -1125,7 +1141,8 @@ class ComboBoxWidget(ComplexRenderWidget):
             name = name.rsplit(self.hier_delim)[0]
 
         sub_name = self.hier_delim.join((name, self.id_field))
-        attrib = self._gen_input_attrs_novalue(cls, sub_name, attr, **kwargs)
+        attrib = self._gen_input_attrs_novalue(ctx, cls, sub_name, attr,
+                                                                       **kwargs)
 
         # FIXME: this must be done the other way around
         if v_id_str == "" and 'readonly' in attrib and attr.allow_write_for_null:
