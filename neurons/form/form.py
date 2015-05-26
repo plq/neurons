@@ -37,7 +37,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 import re
+import collections
 
+from contextlib import closing
 from collections import namedtuple
 from inspect import isgenerator, isclass
 from decimal import Decimal as D
@@ -1107,7 +1109,11 @@ class ComboBoxWidget(ComplexRenderWidget):
         super(ComboBoxWidget, self).__init__(id_field=id_field,
                              text_field=text_field, hidden_fields=hidden_fields,
                                                          label=label, type=type)
-        self.others = others
+        if callable(others):
+            self.others = staticmethod(others)
+        else:
+            self.others = others
+
         self.others_order_by = others_order_by
         self.override_parent = override_parent
 
@@ -1126,33 +1132,56 @@ class ComboBoxWidget(ComplexRenderWidget):
             del attrib['readonly']
 
         with parent.element("select", attrib=attrib):
-            if self.others:
-                from contextlib import closing
-                if attr.min_occurs == 0:
-                    parent.write(E.option())
-                if attr.write is False and v_id_str != "":
-                    elt = E.option(v_text_str, value=v_id_str, selected="")
-                    parent.write(elt)
-                else:
-                    # FIXME: this blocks the reactor
-                    with closing(ctx.app.config.stores['sql_main'].itself.Session()) as session:
-                        q = session.query(cls.__orig__ or cls)
-                        if self.others_order_by is not None:
-                            if isinstance(self.others_order_by, (list, tuple)):
-                                q = q.order_by(*self.others_order_by)
-                            else:
-                                q = q.order_by(self.others_order_by)
-
-                        for o in q:
-                            id_str, text_str = self._prep_inst(cls, o, fti)
-
-                            elt = E.option(text_str, value=id_str)
-                            if id_str == v_id_str:
-                                elt.attrib['selected'] = ""
-
-                            parent.write(elt)
-            else:
+            if self.others is None:
                 parent.write(E.option(v_text_str, value=v_id_str, selected=''))
+                return
+
+            is_callable = callable(self.others)
+            is_iterable = isinstance(self.others, collections.Iterable)
+            is_autogen = (self.others is True)
+
+            if not any((is_callable, is_iterable, is_autogen)):
+                return
+
+            if attr.min_occurs == 0:
+                parent.write(E.option())
+
+            if attr.write is False and v_id_str != "":
+                elt = E.option(v_text_str, value=v_id_str, selected="")
+                parent.write(elt)
+
+            elif is_autogen:
+                db = ctx.app.config.stores['sql_main'].itself
+                # FIXME: this blocks the reactor
+                with closing(db.Session()) as session:
+                    q = session.query(cls.__orig__ or cls)
+                    if self.others_order_by is not None:
+                        if isinstance(self.others_order_by, (list, tuple)):
+                            q = q.order_by(*self.others_order_by)
+                        else:
+                            q = q.order_by(self.others_order_by)
+
+                    self._write_options(cls, parent, fti, q, v_id_str)
+
+            elif is_iterable or is_callable:
+                insts = self.others
+                if is_callable:
+                    insts = self.others(ctx, self)
+
+                self._write_options(cls, parent, fti, insts, v_id_str)
+
+            else:
+                raise Exception("This should not be possible")
+
+    def _write_options(self, cls, parent, fti, insts, v_id_str):
+        for o in insts:
+            id_str, text_str = self._prep_inst(cls, o, fti)
+
+            elt = E.option(text_str, value=id_str)
+            if id_str == v_id_str:
+                elt.attrib['selected'] = ""
+
+            parent.write(elt)
 
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         if self.type is not None:
