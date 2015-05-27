@@ -130,11 +130,14 @@ WRAP_REVERSED = type("WRAP_REVERSED", (object,), {})
 
 class HtmlWidget(HtmlBase):
     supported_types = None
+    DEFAULT_INPUT_WRAPPER_CLASS = 'label-input-wrapper'
 
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
                        cloth=None, attr_name='spyne_id', root_attr_name='spyne',
                             cloth_parser=None, polymorphic=True, hier_delim='.',
-                   label=True, doctype=None, asset_paths={}, placeholder=None):
+                   label=True, doctype=None, asset_paths={}, placeholder=None,
+                  input_class=None, input_div_class=None,
+                 input_wrapper_class=None, label_class=None):
 
         super(HtmlWidget, self).__init__(app=app, doctype=doctype,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
@@ -144,6 +147,13 @@ class HtmlWidget(HtmlBase):
         self.label = label
         self.placeholder = placeholder
         self.asset_paths = asset_paths
+        self.input_class = input_class
+        self.input_div_class = input_div_class
+        self.input_wrapper_class = input_wrapper_class
+        if self.input_wrapper_class is None:
+            self.input_wrapper_class = self.DEFAULT_INPUT_WRAPPER_CLASS
+        self.label_class = label_class
+
 
     @staticmethod
     def _format_js(lines, **kwargs):
@@ -186,24 +196,31 @@ class HtmlWidget(HtmlBase):
 
         if input_id is not None:
             attrib['for'] = input_id
+        if self.label_class is not None:
+            attrib['class'] = self.label_class
 
         return E.label(self.trc(cls, ctx.locale, name), **attrib)
 
     def _gen_label_wrapper_class(self, ctx, cls, name):
-        classes = ['label-input-wrapper', self.selsafe(name)]
+        classes = [self.input_wrapper_class, self.selsafe(name)]
         return {'class': ' '.join(classes)}
 
     def _wrap_with_label(self, ctx, cls, name, input, no_label=False,
                                              wrap_label=WRAP_FORWARD, **kwargs):
-        retval = input
+        input_id = input.attrib['id']
+        if self.input_div_class is not None:
+            input = E.div(input, **{'class': self.input_div_class})
 
         attrib = self._gen_label_wrapper_class(ctx, cls, name)
         if (no_label or not self.label) and wrap_label is not None:
-            retval = E.div(retval, **attrib)
+            retval = E.div(input, **attrib)
 
         else:
-            retval = E.label(self.trc(cls, ctx.locale, name),
-                                                  **{'for': input.attrib['id']})
+            label_attrib = {'for': input_id}
+            if self.label_class is not None:
+                label_attrib['class'] = self.label_class
+
+            retval = E.label(self.trc(cls, ctx.locale, name), **label_attrib)
             if wrap_label is WRAP_FORWARD:
                 retval = E.div(retval, input, **attrib)
             elif wrap_label is WRAP_REVERSED:
@@ -226,11 +243,15 @@ class HtmlWidget(HtmlBase):
         return "%s[%d]" % (name, array_index)
 
     def _gen_input_attrs_novalue(self, ctx, cls, name, cls_attrs, **kwargs):
-        elt_class = ' '.join(oset([
+        elt_class = oset([
             camel_case_to_uscore(cls.get_type_name()),
             name.rsplit(self.hier_delim, 1)[-1],
             re.sub(r'\[[0-9]+\]', '', name).replace(self.hier_delim, '__'),
-        ]))
+        ])
+        if self.input_class is not None:
+            elt_class.add(self.input_class)
+        elt_class = ' '.join(elt_class)
+
         elt_attrs = {
             'id': self._gen_input_elt_id(name, **kwargs),
             'name': self._gen_input_name(name),
@@ -391,14 +412,18 @@ class HtmlForm(HtmlWidget):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
                        cloth=None, attr_name='spyne_id', root_attr_name='spyne',
                             cloth_parser=None, polymorphic=True, hier_delim='.',
-                   doctype=None, label=True, asset_paths={}, placeholder=False):
+                   doctype=None, label=True, asset_paths={}, placeholder=None,
+                 input_class=None, input_div_class=None,
+                 input_wrapper_class=None, label_class=None):
 
         super(HtmlForm, self).__init__(app=app, doctype=doctype,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
                 cloth=cloth, attr_name=attr_name, root_attr_name=root_attr_name,
                              cloth_parser=cloth_parser, polymorphic=polymorphic,
                     hier_delim=hier_delim, label=label, asset_paths=asset_paths,
-                    placeholder=placeholder)
+                    placeholder=placeholder, input_class=input_class,
+               input_div_class=input_div_class,
+               input_wrapper_class=input_wrapper_class, label_class=label_class)
 
         self.serialization_handlers = cdict({
             Date: self._check_hidden(self.date_to_parent),
@@ -972,9 +997,12 @@ class SimpleRenderWidget(HtmlWidget):
         if self.label:
             label = self._gen_label_for(ctx, cls, name)
             attrib = self._gen_label_wrapper_class(ctx, cls, name)
+
             with parent.element('div', attrib=attrib):
                 parent.write(label)
-                parent.write(text_str)
+
+                span_attrib = {}
+                parent.write(E.span(text_str, **span_attrib))
 
         else:
             parent.write(text_str)
