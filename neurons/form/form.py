@@ -154,6 +154,18 @@ class HtmlWidget(HtmlBase):
             self.input_wrapper_class = self.DEFAULT_INPUT_WRAPPER_CLASS
         self.label_class = label_class
 
+    def to_subprot(self, ctx, cls, inst, parent, name, subprot, **kwargs):
+        if subprot.input_class is None:
+            subprot.input_class = self.input_class
+
+        if subprot.input_wrapper_class == self.DEFAULT_INPUT_WRAPPER_CLASS:
+            subprot.input_wrapper_class = self.input_wrapper_class
+
+        if subprot.label_class is None:
+            subprot.label_class = self.label_class
+
+        return super(HtmlWidget, self).to_subprot(ctx, cls, inst, parent, name,
+                                                              subprot, **kwargs)
 
     @staticmethod
     def _format_js(lines, **kwargs):
