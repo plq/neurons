@@ -419,7 +419,80 @@ _jstag = lambda src: E.script(src=src, type="text/javascript")
 _csstag = lambda src: E.link(href=src, type="text/css", rel="stylesheet")
 
 
-class HtmlForm(HtmlWidget):
+class HtmlFormRoot(HtmlWidget):
+    @coroutine
+    def start_to_parent(self, ctx, cls, inst,parent, name, **kwargs):
+        # FIXME: what a HUGE swath of copy/paste! I want yield from!
+        if not getattr(ctx.protocol, 'in_form', False):
+            ctx.protocol.in_form = True
+
+            if not (len(ctx.protocol.prot_stack) == 1 and \
+                              isinstance(ctx.protocol.prot_stack[0], HtmlForm)):
+                name = ''
+
+            attrib = dict(method='POST', enctype="multipart/form-data")
+            if hasattr(ctx.protocol, 'form_action'):
+                attrib['action'] = ctx.protocol.form_action
+                logger.debug("Set form action to '%s'", attrib['action'])
+            elif isinstance(ctx.transport, HttpTransportContext):
+                attrib['action'] = ctx.transport.get_path()
+
+            with parent.element('form', attrib=attrib):
+                ret = super(HtmlFormRoot, self).start_to_parent(ctx, cls, inst,
+                                                         parent, name, **kwargs)
+                if isgenerator(ret):
+                    try:
+                        while True:
+                            y = (yield)
+                            ret.send(y)
+
+                    except Break as b:
+                        try:
+                            ret.throw(b)
+                        except StopIteration:
+                            pass
+
+                    finally:
+                        parent.write(E.p(
+                            E.input(value="Submit", type="submit",
+                                            **{'class': "btn btn-default"}),
+                                                    **{'class': "text-center"}))
+                        ctx.protocol.in_form = False
+                else:
+                    parent.write(E.p(
+                        E.input(value="Submit", type="submit",
+                                        **{'class': "btn btn-default"}),
+                                                **{'class': "text-center"}))
+                    ctx.protocol.in_form = False
+
+        else:
+            ret = super(HtmlFormRoot, self).start_to_parent(ctx, cls, inst,
+                                                         parent, name, **kwargs)
+            if isgenerator(ret):
+                try:
+                    while True:
+                        y = (yield)
+                        ret.send(y)
+
+                except Break as b:
+                    try:
+                        ret.throw(b)
+                    except StopIteration:
+                        pass
+
+                finally:
+                    parent.write(E.p(
+                        E.input(value="Submit", type="submit",
+                                        **{'class': "btn btn-default"}),
+                                                    **{'class': "text-center"}))
+            else:
+                parent.write(E.p(
+                    E.input(value="Submit", type="submit",
+                                    **{'class': "btn btn-default"}),
+                                            **{'class': "text-center"}))
+
+
+class HtmlForm(HtmlFormRoot):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
                 cloth=None, cloth_parser=None, polymorphic=True, hier_delim='.',
                    doctype=None, label=True, asset_paths={}, placeholder=None,
@@ -468,78 +541,6 @@ class HtmlForm(HtmlWidget):
                                 (attrs.tab.index, attrs.tab.htmlid), \
                None if attrs.fieldset is None else \
                                 (attrs.fieldset.index, attrs.fieldset.htmlid), \
-
-
-    @coroutine
-    def start_to_parent(self, ctx, cls, inst,parent, name, **kwargs):
-        # FIXME: what a HUGE swath of copy/paste! I want yield from!
-        if not getattr(ctx.protocol, 'in_form', False):
-            ctx.protocol.in_form = True
-
-            if not (len(ctx.protocol.prot_stack) == 1 and \
-                              isinstance(ctx.protocol.prot_stack[0], HtmlForm)):
-                name = ''
-
-            attrib = dict(method='POST', enctype="multipart/form-data")
-            if hasattr(ctx.protocol, 'form_action'):
-                attrib['action'] = ctx.protocol.form_action
-                logger.debug("Set form action to '%s'", attrib['action'])
-            elif isinstance(ctx.transport, HttpTransportContext):
-                attrib['action'] = ctx.transport.get_path()
-
-            with parent.element('form', attrib=attrib):
-                ret = super(HtmlForm, self).start_to_parent(ctx, cls, inst,
-                                                         parent, name, **kwargs)
-                if isgenerator(ret):
-                    try:
-                        while True:
-                            y = (yield)
-                            ret.send(y)
-
-                    except Break as b:
-                        try:
-                            ret.throw(b)
-                        except StopIteration:
-                            pass
-
-                    finally:
-                        parent.write(E.p(
-                            E.input(value="Submit", type="submit",
-                                            **{'class': "btn btn-default"}),
-                                                    **{'class': "text-center"}))
-                        ctx.protocol.in_form = False
-                else:
-                    parent.write(E.p(
-                        E.input(value="Submit", type="submit",
-                                        **{'class': "btn btn-default"}),
-                                                **{'class': "text-center"}))
-                    ctx.protocol.in_form = False
-
-        else:
-            ret = super(HtmlForm, self).start_to_parent(ctx, cls, inst, parent,
-                                                                 name, **kwargs)
-            if isgenerator(ret):
-                try:
-                    while True:
-                        y = (yield)
-                        ret.send(y)
-
-                except Break as b:
-                    try:
-                        ret.throw(b)
-                    except StopIteration:
-                        pass
-
-                finally:
-                    parent.write(E.p(
-                        E.input(value="Submit", type="submit",
-                                        **{'class': "btn btn-default"}),
-                                                    **{'class': "text-center"}))
-            else:
-                parent.write(E.p(
-                    E.input(value="Submit", type="submit",
-                                    **{'class': "btn btn-default"}),
-                                            **{'class': "text-center"}))
 
     def unicode_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs, elt = self._gen_input_unicode(ctx, cls, inst, name, **kwargs)

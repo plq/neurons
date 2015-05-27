@@ -45,13 +45,13 @@ from spyne.util import Break, coroutine
 from spyne.protocol.html import HtmlColumnTable
 
 from neurons.form import HtmlForm
-from neurons.form import HtmlWidget
+from neurons.form import HtmlFormRoot
 
 
 SOME_COUNTER = [0]
 
 
-class HtmlFormTable(HtmlColumnTable, HtmlWidget):
+class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=True,
                     cloth=None, polymorphic=True, doctype=None, hier_delim='.',
                         cloth_parser=None, header=True, table_name_attr='class',
@@ -73,15 +73,6 @@ class HtmlFormTable(HtmlColumnTable, HtmlWidget):
         self.can_remove = can_remove
         self.use_global_null_handler = False
         self.label = label
-
-    def _init_cloth(self, *args, **kwargs):
-        super(HtmlFormTable, self)._init_cloth(*args, **kwargs)
-        form = E.form(method='POST', enctype="multipart/form-data")
-        if self._root_cloth is None:
-            self._cloth = self._root_cloth = form
-        else:
-            self._root_cloth.append(form)
-            self._root_cloth = form
 
     @coroutine
     def model_base_to_parent(self, ctx, cls, inst, parent, name, from_arr=False,

@@ -33,6 +33,7 @@
 
 from neurons.form.form import Tab
 from neurons.form.form import Fieldset
+from neurons.form.form import HtmlFormRoot
 from neurons.form.form import HtmlForm
 
 from neurons.form.form import HtmlWidget
