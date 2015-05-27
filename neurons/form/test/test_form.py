@@ -57,6 +57,7 @@ from neurons.form.form import Fieldset
 
 
 def _test_type(cls, inst):
+    # silence bogus warnings
     from spyne.util import appreg; appreg._applications.clear()
 
     class SomeService(ServiceBase):

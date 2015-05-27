@@ -1144,7 +1144,7 @@ class ComplexHrefWidget(ComplexRenderWidget):
 
 class ComboBoxWidget(ComplexRenderWidget):
     def __init__(self, text_field, id_field, hidden_fields=None, label=True,
-          type=None, others=False, others_order_by=None, override_parent=False):
+          type=None, others=None, others_order_by=None, override_parent=False):
         """Widget that renders complex objects as comboboxes.
 
         Please see :class:`ComplexRenderWidget` docstring for more info.

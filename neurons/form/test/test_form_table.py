@@ -42,6 +42,7 @@ from neurons.form.test import strip_ns
 from neurons.form.const import T_TEST
 
 from spyne.util.test import show
+from spyne.util.color import R
 from spyne import Application, NullServer, ServiceBase, rpc, ComplexModel, \
     Integer, Array, Unicode
 from lxml import etree, html
@@ -71,7 +72,9 @@ def _test_type(cls, inst, prot_cls=HtmlFormTable):
     elt = elt.xpath('//form')[0]
     elt = strip_ns(elt)  # get rid of namespaces to simplify xpaths in tests
 
+    print(R("========== fragment =========="))
     print(etree.tostring(elt, pretty_print=True))
+    print(R("========== fragment =========="))
 
     return elt
 
@@ -81,9 +84,9 @@ class TestFormTable(unittest.TestCase):
         v = range(5)
         elt = _test_type(Array(Integer), v)[0]
 
-        assert elt.xpath('table/tbody/tr/td/div/input/@value') == \
+        assert elt.xpath('tbody/tr/td/div/input/@value') == \
                                                        ['0', '1', '2', '3', '4']
-        assert elt.xpath('table/tbody/tr/td/button/text()') == ['-'] * 5 + ['+']
+        assert elt.xpath('tbody/tr/td/button/text()') == ['-'] * 5 + ['+']
         for i, name in enumerate(elt.xpath('div/div/input/@name')):
             assert re.match(r'ints\[0*%d\]' % i, name)
 
@@ -103,7 +106,6 @@ class TestFormTable(unittest.TestCase):
         assert elt.xpath(
             'table/tbody/tr/td/div/input[contains(@class, "s ")]/@value') == \
                                                            [str(o.s) for o in v]
-
 
         assert elt.xpath('table/tbody/tr/td/button/text()') == ['-'] * 7 + ['+']
         for i, name in enumerate(elt.xpath('div/div/input/@name')):
@@ -129,10 +131,9 @@ class TestFormTable(unittest.TestCase):
         assert elt.xpath(
             'fieldset/div/table/tbody/tr/td/button/text()') == ['-'] * 7 + ['+']
 
-
     def test_unicode_null(self):
         v = None
-        elt = _test_type(Unicode(64), v).xpath('form/div/input')
+        elt = _test_type(Unicode(64), v).xpath('div/input')[0]
 
         assert elt.attrib['type'] == 'text'
         assert not ('value' in elt.attrib)
