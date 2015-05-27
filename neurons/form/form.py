@@ -479,17 +479,6 @@ class HtmlFormRoot(HtmlWidget):
                     except StopIteration:
                         pass
 
-                finally:
-                    parent.write(E.p(
-                        E.input(value="Submit", type="submit",
-                                        **{'class': "btn btn-default"}),
-                                                    **{'class': "text-center"}))
-            else:
-                parent.write(E.p(
-                    E.input(value="Submit", type="submit",
-                                    **{'class': "btn btn-default"}),
-                                            **{'class': "text-center"}))
-
 
 class HtmlForm(HtmlFormRoot):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
