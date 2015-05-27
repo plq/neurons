@@ -53,23 +53,20 @@ SOME_COUNTER = [0]
 
 class HtmlFormTable(HtmlColumnTable, HtmlWidget):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=True,
-        cloth=None, attr_name='spyne_id', root_attr_name='spyne',
-        polymorphic=True, doctype=None, hier_delim='.',
-        cloth_parser=None, header=True,
-        table_name_attr='class', table_name=None,
-        field_name_attr='class', border=0, row_class=None, cell_class=None,
-        header_cell_class=None,
-        can_add=True, can_remove=True, label=False):
+                    cloth=None, polymorphic=True, doctype=None, hier_delim='.',
+                        cloth_parser=None, header=True, table_name_attr='class',
+                     table_name=None, table_class=None, field_name_attr='class',
+              border=0, row_class=None, cell_class=None, header_cell_class=None,
+                                    can_add=True, can_remove=True, label=False):
 
         super(HtmlFormTable, self).__init__(app=app,
-            ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
-            polymorphic=polymorphic, hier_delim=hier_delim, doctype=doctype,
-            cloth=cloth, attr_name=attr_name, root_attr_name=root_attr_name,
-            cloth_parser=cloth_parser, header=header,
-            table_name_attr=table_name_attr, table_name=table_name,
-            field_name_attr=field_name_attr, border=border,
-            row_class=row_class, cell_class=cell_class,
-            header_cell_class=header_cell_class)
+                     ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
+                polymorphic=polymorphic, hier_delim=hier_delim, doctype=doctype,
+                          cloth=cloth, cloth_parser=cloth_parser, header=header,
+                         table_name_attr=table_name_attr, table_name=table_name,
+                       table_class=table_class, field_name_attr=field_name_attr,
+                      border=border, row_class=row_class, cell_class=cell_class,
+                                            header_cell_class=header_cell_class)
 
         self.prot_form = HtmlForm(label=False)
         self.can_add = can_add

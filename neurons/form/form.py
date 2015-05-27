@@ -133,16 +133,14 @@ class HtmlWidget(HtmlBase):
     DEFAULT_INPUT_WRAPPER_CLASS = 'label-input-wrapper'
 
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
-                       cloth=None, attr_name='spyne_id', root_attr_name='spyne',
-                            cloth_parser=None, polymorphic=True, hier_delim='.',
-                   label=True, doctype=None, asset_paths={}, placeholder=None,
-                  input_class=None, input_div_class=None,
-                 input_wrapper_class=None, label_class=None):
+                cloth=None, cloth_parser=None, polymorphic=True, hier_delim='.',
+                     label=True, doctype=None, asset_paths={}, placeholder=None,
+               input_class=None, input_div_class=None, input_wrapper_class=None,
+                                                              label_class=None):
 
         super(HtmlWidget, self).__init__(app=app, doctype=doctype,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
-                cloth=cloth, attr_name=attr_name, root_attr_name=root_attr_name,
-                             cloth_parser=cloth_parser, polymorphic=polymorphic,
+                cloth=cloth, cloth_parser=cloth_parser, polymorphic=polymorphic,
                                                           hier_delim=hier_delim)
         self.label = label
         self.placeholder = placeholder
@@ -155,14 +153,15 @@ class HtmlWidget(HtmlBase):
         self.label_class = label_class
 
     def to_subprot(self, ctx, cls, inst, parent, name, subprot, **kwargs):
-        if subprot.input_class is None:
-            subprot.input_class = self.input_class
+        if isinstance(subprot, HtmlWidget):
+            if subprot.input_class is None:
+                subprot.input_class = self.input_class
 
-        if subprot.input_wrapper_class == self.DEFAULT_INPUT_WRAPPER_CLASS:
-            subprot.input_wrapper_class = self.input_wrapper_class
+            if subprot.input_wrapper_class == self.DEFAULT_INPUT_WRAPPER_CLASS:
+                subprot.input_wrapper_class = self.input_wrapper_class
 
-        if subprot.label_class is None:
-            subprot.label_class = self.label_class
+            if subprot.label_class is None:
+                subprot.label_class = self.label_class
 
         return super(HtmlWidget, self).to_subprot(ctx, cls, inst, parent, name,
                                                               subprot, **kwargs)
@@ -422,16 +421,14 @@ _csstag = lambda src: E.link(href=src, type="text/css", rel="stylesheet")
 
 class HtmlForm(HtmlWidget):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
-                       cloth=None, attr_name='spyne_id', root_attr_name='spyne',
-                            cloth_parser=None, polymorphic=True, hier_delim='.',
+                cloth=None, cloth_parser=None, polymorphic=True, hier_delim='.',
                    doctype=None, label=True, asset_paths={}, placeholder=None,
                  input_class=None, input_div_class=None,
                  input_wrapper_class=None, label_class=None):
 
         super(HtmlForm, self).__init__(app=app, doctype=doctype,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
-                cloth=cloth, attr_name=attr_name, root_attr_name=root_attr_name,
-                             cloth_parser=cloth_parser, polymorphic=polymorphic,
+                cloth=cloth, cloth_parser=cloth_parser, polymorphic=polymorphic,
                     hier_delim=hier_delim, label=label, asset_paths=asset_paths,
                     placeholder=placeholder, input_class=input_class,
                input_div_class=input_div_class,
