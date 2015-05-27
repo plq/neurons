@@ -144,6 +144,11 @@ class HtmlWidget(HtmlBase):
         self.label = label
         self.placeholder = placeholder
         self.asset_paths = asset_paths
+        self._init_input_vars(input_class, input_div_class,
+                                               input_wrapper_class, label_class)
+
+    def _init_input_vars(self, input_class, input_div_class,
+                                              input_wrapper_class, label_class):
         self.input_class = input_class
         self.input_div_class = input_div_class
         self.input_wrapper_class = input_wrapper_class
@@ -492,7 +497,7 @@ class HtmlForm(HtmlFormRoot):
                 cloth=cloth, cloth_parser=cloth_parser, polymorphic=polymorphic,
                     hier_delim=hier_delim, label=label, asset_paths=asset_paths,
                     placeholder=placeholder, input_class=input_class,
-               input_div_class=input_div_class,
+                    input_div_class=input_div_class,
                input_wrapper_class=input_wrapper_class, label_class=label_class)
 
         self.serialization_handlers = cdict({
