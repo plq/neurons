@@ -34,8 +34,6 @@
 from __future__ import print_function
 
 import logging
-from spyne.util.six import string_types
-
 logger = logging.getLogger(__name__)
 
 import re
@@ -45,7 +43,6 @@ from contextlib import closing
 from collections import namedtuple
 from inspect import isgenerator, isclass
 from decimal import Decimal as D
-from spyne.util.oset import oset
 
 from lxml import html
 from lxml.builder import E
@@ -54,6 +51,8 @@ from spyne import ComplexModelBase, Unicode, Decimal, Boolean, Date, Time, \
     DateTime, Integer, Duration, PushBase, Array, Uuid
 from spyne.protocol.html import HtmlBase
 from spyne.util import coroutine, Break
+from spyne.util.oset import oset
+from spyne.util.six import string_types
 from spyne.util.cdict import cdict
 from spyne.util.six.moves.urllib.parse import urlencode
 from spyne.server.http import HttpTransportContext
@@ -423,10 +422,10 @@ class HtmlFormRoot(HtmlWidget):
     @coroutine
     def start_to_parent(self, ctx, cls, inst,parent, name, **kwargs):
         # FIXME: what a HUGE swath of copy/paste! I want yield from!
-        if not getattr(ctx.protocol, 'in_form', False):
-            ctx.protocol.in_form = True
+        if not getattr(ctx.outprot_ctx, 'in_form', False):
+            ctx.outprot_ctx.in_form = True
 
-            if not (len(ctx.protocol.prot_stack) == 1 and \
+            if not (len(ctx.outprot_ctx.prot_stack) == 1 and \
                               isinstance(ctx.protocol.prot_stack[0], HtmlForm)):
                 name = ''
 
