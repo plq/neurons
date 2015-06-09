@@ -532,6 +532,7 @@ class Daemon(ComplexModel):
         }
 
         loggers = {}
+
         class TwistedHandler(logging.Handler):
             def emit(self, record):
                 assert isinstance(record, logging.LogRecord)

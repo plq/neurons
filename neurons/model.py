@@ -34,7 +34,7 @@
 from contextlib import closing
 
 from spyne import TTableModel, Integer32
-from spyne.util.sqlalchemy import get_pk_columns
+from spyne.store.relational import get_pk_columns
 
 TableModel = TTableModel()
 
@@ -57,7 +57,7 @@ def respawn(cls, ctx=None):
         in_object = ctx.in_object[0]
 
         filters = {}
-        for k,v in get_pk_columns(cls):
+        for k, v in get_pk_columns(cls):
             filters[k] = getattr(in_object, k)
 
         db = ctx.app.config.stores['sql_main'].itself
