@@ -130,6 +130,7 @@ WRAP_REVERSED = type("WRAP_REVERSED", (object,), {})
 class HtmlWidget(HtmlBase):
     supported_types = None
     DEFAULT_INPUT_WRAPPER_CLASS = 'label-input-wrapper'
+    DEFAULT_ANCHOR_WRAPPER_CLASS = 'label-anchor-wrapper'
 
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
                 cloth=None, cloth_parser=None, polymorphic=True, hier_delim='.',
@@ -1125,6 +1126,15 @@ class ComplexHrefWidget(ComplexRenderWidget):
         id_str, text_str = self._prep_inst(cls, inst, fti)
 
         attrib = {}
+        label_div_attrib = {}
+
+        label = None
+        if self.label:
+            label = self._gen_label_for(ctx, cls, name, "")
+            label_div_attrib = {
+                'class': '%s %s' % (
+                        self.DEFAULT_ANCHOR_WRAPPER_CLASS, cls.get_type_name())
+            }
 
         if id_str != "":
             tn_url = self.url
@@ -1132,13 +1142,24 @@ class ComplexHrefWidget(ComplexRenderWidget):
                 tn = cls.get_type_name()
                 tn_url = camel_case_to_uscore(tn)
             attrib['href'] = tn_url + "?" + urlencode({self.id_field: id_str})
-            parent.write(E.a(text_str, **attrib))
+
+            a_tag = E.a(text_str, **attrib)
+            if self.label:
+                parent.write(E.div(label, a_tag, **label_div_attrib))
+            else:
+                parent.write(a_tag)
 
             self._write_hidden_fields(ctx, cls, inst, parent, name, fti, **kwargs)
 
         elif self.empty_widget is not None:
-            self.empty_widget \
-                .to_parent(ctx, cls, inst, parent, name, **kwargs)
+            if self.label:
+                with parent.element('div', attrib=label_div_attrib):
+                    parent.write(label)
+                    self.empty_widget \
+                        .to_parent(ctx, cls, inst, parent, name, **kwargs)
+            else:
+                self.empty_widget \
+                    .to_parent(ctx, cls, inst, parent, name, **kwargs)
 
 
 class ComboBoxWidget(ComplexRenderWidget):
