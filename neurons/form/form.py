@@ -1074,6 +1074,11 @@ class ComplexRenderWidget(HtmlWidget):
                             parent, self.hier_delim.join((name, key)), **kwargs)
 
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        if self.type is not None:
+            logger.debug("ComplexRenderWidget.type cls switch: %r => %r",
+                                                                 cls, self.type)
+            cls = self.type
+
         fti = cls.get_flat_type_info(cls)
         _, text_str = self._prep_inst(cls, inst, fti)
 
