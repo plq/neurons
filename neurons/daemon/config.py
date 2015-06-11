@@ -606,9 +606,6 @@ class Daemon(ComplexModel):
         handler.setFormatter(formatter)
         logging.getLogger().addHandler(handler)
 
-        for l in self._loggers or []:
-            l.apply()
-
         if self.log_rpc or self.log_queries or self.log_results:
             logging.getLogger().setLevel(logging.DEBUG)
 
@@ -619,9 +616,14 @@ class Daemon(ComplexModel):
 
         if self.log_queries:
             logging.getLogger('sqlalchemy').setLevel(logging.INFO)
+            logging.getLogger('sqlalchemy.orm.mapper').setLevel(logging.WARNING)
 
         if self.log_results:
             logging.getLogger('sqlalchemy').setLevel(logging.DEBUG)
+            logging.getLogger('sqlalchemy.orm.mapper').setLevel(logging.WARNING)
+
+        for l in self._loggers or []:
+            l.apply()
 
     def _clear_other_observers(self, publisher, observer):
         from twisted.logger import LimitedHistoryLogObserver, LogPublisher
