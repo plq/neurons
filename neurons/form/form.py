@@ -1017,6 +1017,7 @@ class SimpleRenderWidget(HtmlWidget):
 
 class ComplexRenderWidget(HtmlWidget):
     supported_types = (ComplexModelBase,)
+    type_attrs = dict(validate_freq=False)
 
     def __init__(self, text_field, id_field=None, type=None, hidden_fields=None,
                                                                     label=True):
