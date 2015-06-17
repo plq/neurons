@@ -951,7 +951,7 @@ class PasswordWidget(HtmlWidget):
 class HrefWidget(HtmlWidget):
     supported_types = (Unicode, Decimal)
 
-    def __init__(self, href, hidden_input=True):
+    def __init__(self, href, hidden_input=False):
         super(HrefWidget, self).__init__()
 
         self.href = href
