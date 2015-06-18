@@ -43,6 +43,8 @@ import gc
 import sys
 
 from types import FrameType, ModuleType
+from collections import defaultdict
+
 from neurons.daemon.dowser.const import ASSETS_DIR
 
 from spyne import rpc, Unicode, ServiceBase, ByteArray, AnyHtml
@@ -97,6 +99,8 @@ class DowserServices(ServiceBase):
     maxhistory = 300
     history = {}
     samples = 0
+    id_history = []
+    max_id_history = 2
 
     @classmethod
     def tick(cls):
@@ -104,12 +108,20 @@ class DowserServices(ServiceBase):
         gc.collect()
 
         typecounts = {}
+        new_ids = defaultdict(set)
         for obj in gc.get_objects():
             objtype = type(obj)
+            typename = ".".join((objtype.__module__, objtype.__name__))
+            new_ids[typename].add(id(obj))
+
             if objtype in typecounts:
                 typecounts[objtype] += 1
             else:
                 typecounts[objtype] = 1
+
+        if len(DowserServices.id_history) > DowserServices.max_id_history:
+            DowserServices.id_history.pop(0)
+        DowserServices.id_history.append(new_ids)
 
         for objtype, count in typecounts.iteritems():
             typename = objtype.__module__ + "." + objtype.__name__
@@ -137,11 +149,14 @@ class DowserServices(ServiceBase):
         'min': lambda x: min(DowserServices.history[x]),
         'cur': lambda x: DowserServices.history[x][-1],
         'max': lambda x: max(DowserServices.history[x]),
+        'diff': lambda x: len(DowserServices.id_history[-1].get(x, tuple())) - \
+                          len(DowserServices.id_history[0].get(x, tuple())),
     }
 
-    @rpc(Integer(default=0), Unicode(values=['max', 'min', 'cur']),
+    @rpc(Unicode(values=['max', 'min', 'cur', 'diff']), Integer(default=0),
+                     Integer(default=0), Integer(default=0), Integer(default=0),
                      _patterns=[HttpPattern('/', verb='GET')], _returns=AnyHtml)
-    def index(ctx, floor, order):
+    def index(ctx, order, cur_floor, min_floor, max_floor, diff_floor):
         rows = []
         typenames = ctx.descriptor.service_class.history.keys()
 
@@ -150,19 +165,43 @@ class DowserServices(ServiceBase):
 
         for typename in typenames:
             hist = ctx.descriptor.service_class.history[typename]
+
+            # get numbers
             maxhist = max(hist)
-            if maxhist > int(floor):
-                row = (
-                    '<div class="typecount">%s<br />'
-                    '<img class="chart" src="%s" /><br />'
-                    'Min: %s Cur: %s Max: %s <a href="%s">TRACE</a></div>' % (
-                        cgi.escape(typename),
-                        "/chart?typename=%s" % typename,
-                        min(hist), hist[-1], maxhist,
-                        "/trace?typename=%s" % typename,
-                    )
+            minhist = max(hist)
+            cur = hist[-1]
+
+            idhist = DowserServices.id_history
+            last = idhist[-1].get(typename, None)
+            first = idhist[0].get(typename, None)
+            if last is not None and first is not None:
+                diff = len(last) - len(first)
+
+            # check floors
+            show_this = cur >= cur_floor and \
+                        minhist >= min_floor and \
+                        maxhist >= max_floor and \
+                        abs(diff) >= diff_floor
+
+            if not show_this:
+                continue
+
+            row = (
+                '<div class="typecount">%s<br />'
+                '<img class="chart" src="%s" /><br />'
+                'Min: %s Cur: %s Max: %s Diff: %s '
+                '<a href="%s">TRACE</a> &middot; '
+                '<a href="%s">DIFF TRACE</a>'
+                '</div>' % (
+                    cgi.escape(typename),
+                    "/chart?typename=%s" % typename,
+                    minhist, cur, maxhist, diff,
+                    "/trace?typename=%s" % typename,
+                    "/difftrace?typename=%s" % typename,
                 )
-                rows.append(row)
+            )
+            rows.append(row)
+
         return template("graphs.html", output="\n".join(rows))
 
     @rpc(Unicode, _returns=ByteArray)
@@ -175,7 +214,7 @@ class DowserServices(ServiceBase):
         im = Image.new("RGB", (len(data), int(height)), 'white')
         draw = ImageDraw.Draw(im)
         draw.line([(i, int(height - (v * scale))) for i, v in enumerate(data)],
-                  fill="#009900")
+                                                                 fill="#009900")
         del draw
 
         f = BytesIO()
@@ -187,7 +226,7 @@ class DowserServices(ServiceBase):
         return [result]
 
     @rpc(Unicode, Integer, _returns=AnyHtml)
-    def trace(ctx, typename, objid=None):
+    def trace(ctx, typename, objid):
         gc.collect()
 
         if objid is None:
@@ -199,14 +238,28 @@ class DowserServices(ServiceBase):
                         typename=cgi.escape(typename),
                         objid=str(objid or ''))
 
+    @rpc(Unicode, _returns=AnyHtml)
+    def difftrace(ctx, typename):
+        gc.collect()
+
+        rows = DowserServices.trace_all(typename, difftrace=True)
+
+        return template("trace.html", output="\n".join(rows),
+                                        typename=cgi.escape(typename), objid='')
+
     @classmethod
-    def trace_all(cls, typename):
+    def trace_all(cls, typename, difftrace=False):
         rows = []
         for obj in gc.get_objects():
             objtype = type(obj)
-            if objtype.__module__ + "." + objtype.__name__ == typename:
+            if objtype.__module__ + "." + objtype.__name__ == typename and \
+                    ((not difftrace) or (
+                             id(obj) in DowserServices.id_history[-1] and
+                        (not id(obj) in DowserServices.id_history[0])
+                    )):
                 rows.append("<p class='obj'>%s</p>"
                             % ReferrerTree(obj).get_repr(obj))
+
         if not rows:
             rows = ["<h3>The type you requested was not found.</h3>"]
 
