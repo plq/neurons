@@ -988,6 +988,8 @@ class SimpleRenderWidget(HtmlWidget):
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         if self.type is not None:
             cls = self.type
+            if len(self.type_attrs) > 0:
+                cls = self.type.customize(**self.type_attrs)
 
         text_str = self.to_unicode(cls, inst, **kwargs)
 
@@ -1080,6 +1082,8 @@ class ComplexRenderWidget(HtmlWidget):
             logger.debug("ComplexRenderWidget.type cls switch: %r => %r",
                                                                  cls, self.type)
             cls = self.type
+            if len(self.type_attrs) > 0:
+                cls = self.type.customize(**self.type_attrs)
 
         fti = cls.get_flat_type_info(cls)
         _, text_str = self._prep_inst(cls, inst, fti)
@@ -1263,6 +1267,8 @@ class ComboBoxWidget(ComplexRenderWidget):
             logger.debug("ComboBoxWidget.type cls switch: %r => %r",
                                                                  cls, self.type)
             cls = self.type
+            if len(self.type_attrs) > 0:
+                cls = self.type.customize(**self.type_attrs)
 
         if self.override_parent:
             logger.debug("ComboBoxWidget.override_parent "
