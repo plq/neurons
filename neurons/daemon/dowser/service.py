@@ -149,8 +149,8 @@ class DowserServices(ServiceBase):
         'min': lambda x: min(DowserServices.history[x]),
         'cur': lambda x: DowserServices.history[x][-1],
         'max': lambda x: max(DowserServices.history[x]),
-        'diff': lambda x: len(DowserServices.id_history[-1].get(x, tuple())) - \
-                          len(DowserServices.id_history[0].get(x, tuple())),
+        'diff': lambda x: len(DowserServices.id_history[-1][x]) - \
+                          len(DowserServices.id_history[0][x]),
     }
 
     @rpc(Unicode(values=['max', 'min', 'cur', 'diff']), Integer(default=0),
@@ -172,10 +172,9 @@ class DowserServices(ServiceBase):
             cur = hist[-1]
 
             idhist = DowserServices.id_history
-            last = idhist[-1].get(typename, None)
-            first = idhist[0].get(typename, None)
-            if last is not None and first is not None:
-                diff = len(last) - len(first)
+            last = idhist[-1][typename]
+            first = idhist[0][typename]
+            diff = len(last) - len(first)
 
             # check floors
             show_this = cur >= cur_floor and \
