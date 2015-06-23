@@ -1180,11 +1180,11 @@ class ComplexHrefWidget(ComplexRenderWidget):
 
 # FIXME: We need a better explanation for the very simple thing that
 # override_parent does.
-class ComboBoxWidget(ComplexRenderWidget):
+class SelectWidget(ComplexRenderWidget):
     def __init__(self, text_field, id_field, hidden_fields=None, label=True,
-                  type=None, inst_type=None, others=None, others_order_by=None,
-                                         override_parent=False, multiple=False):
-        """Widget that renders complex objects as comboboxes.
+                   type=None, inst_type=None, others=None, others_order_by=None,
+                                                         override_parent=False):
+        """Widget that renders complex objects as <select> tags.
 
         Please see :class:`ComplexRenderWidget` docstring for more info.
 
@@ -1206,7 +1206,7 @@ class ComboBoxWidget(ComplexRenderWidget):
             whatever passed in as ``type``.
         """
 
-        super(ComboBoxWidget, self).__init__(id_field=id_field,
+        super(SelectWidget, self).__init__(id_field=id_field,
                              text_field=text_field, hidden_fields=hidden_fields,
                                                          label=label, type=type)
 
@@ -1223,36 +1223,32 @@ class ComboBoxWidget(ComplexRenderWidget):
         if inst_type is None:
             self.inst_type = type
 
+    def _write_empty(self, parent):
+        parent.write(E.option())
+
     def _write_select(self, ctx, cls, inst, parent, name, fti, **kwargs):
+        raise NotImplementedError()
+
+    def _write_select_impl(self, ctx, cls, tag_attrib, data, fti, parent):
         attr = self.get_cls_attrs(cls)
-        v_id_str, v_text_str = self._prep_inst(cls, inst, fti)
 
-        if self.override_parent:
-            name = name.rsplit(self.hier_delim, 1)[0]
-
-        sub_name = self.hier_delim.join((name, self.id_field))
-        attrib = self._gen_input_attrs_novalue(ctx, cls, sub_name, attr,
-                                                                       **kwargs)
-
-        # FIXME: this must be done the other way around
-        if v_id_str == "" and 'readonly' in attrib and \
-                                                     attr.allow_write_when_null:
-            del attrib['readonly']
-
-        with parent.element("select", attrib=attrib):
+        with parent.element("select", attrib=tag_attrib):
             if self.others is None:
-                parent.write(E.option(v_text_str, value=v_id_str, selected=''))
+                for v_id_str, v_text_str in data:
+                    parent.write(E.option(v_text_str, value=v_id_str, selected=''))
                 return
 
             selected = False
             we_have_empty = False
             if attr.min_occurs == 0:
-                parent.write(E.option())
+                self._write_empty(parent)
                 we_have_empty = True
 
-            if attr.write is False and v_id_str != "":
-                elt = E.option(v_text_str, value=v_id_str, selected="")
-                parent.write(elt)
+            if attr.write is False:
+                for v_id_str, v_text_str in data:
+                    if v_id_str != "":
+                        elt = E.option(v_text_str, value=v_id_str, selected="")
+                        parent.write(elt)
 
             is_callable = callable(self.others)
             is_iterable = isinstance(self.others, collections.Iterable)
@@ -1273,34 +1269,34 @@ class ComboBoxWidget(ComplexRenderWidget):
                         else:
                             q = q.order_by(self.others_order_by)
 
-                    selected = self._write_options(cls, parent, fti, q, v_id_str)
+                    selected = self._write_options(cls, parent, fti, q, data)
 
             elif is_iterable or is_callable:
                 insts = self.others
                 if is_callable:
                     insts = self.others(ctx, self)
-                    logger.debug("Generating combobox contents from callable "
+                    logger.debug("Generating select contents from callable "
                                                                   "for %r", cls)
                 else:
-                    logger.debug("Generating combobox contents from iterable "
+                    logger.debug("Generating select contents from iterable "
                                                                   "for %r", cls)
 
-                selected = self._write_options(cls, parent, fti, insts, v_id_str)
+                selected = self._write_options(cls, parent, fti, insts, data)
 
             else:
                 raise Exception("This should not be possible")
 
             if not (we_have_empty or selected):
-                parent.write(E.option())
+                self._write_empty(parent)
 
-    def _write_options(self, cls, parent, fti, insts, v_id_str):
+    def _write_options(self, cls, parent, fti, insts, data):
         selected = False
-
+        data = set((i for (i,t) in data))
         for o in insts:
             id_str, text_str = self._prep_inst(cls, o, fti)
 
             elt = E.option(text_str, value=id_str)
-            if id_str == v_id_str:
+            if id_str in data:
                 elt.attrib['selected'] = ""
                 selected = True
 
@@ -1329,6 +1325,9 @@ class ComboBoxWidget(ComplexRenderWidget):
                                                     ctx.protocol.inst_stack[-1])
             cls, inst = ctx.protocol.inst_stack[-1]
 
+        self.to_parent_impl(ctx, cls, inst, parent, name, **kwargs)
+
+    def to_parent_impl(self, ctx, cls, inst, parent, name, **kwargs):
         fti = cls.get_flat_type_info(cls)
 
         if self.label:
@@ -1343,3 +1342,55 @@ class ComboBoxWidget(ComplexRenderWidget):
             self._write_select(ctx, cls, inst, parent, name, fti, **kwargs)
 
         self._write_hidden_fields(ctx, cls, inst, parent, name, fti, **kwargs)
+
+class ComboBoxWidget(SelectWidget):
+    def _write_select(self, ctx, cls, inst, parent, name, fti, **kwargs):
+        cls_attr = self.get_cls_attrs(cls)
+        v_id_str, v_text_str = self._prep_inst(cls, inst, fti)
+
+        if self.override_parent:
+            name = name.rsplit(self.hier_delim, 1)[0]
+
+        sub_name = self.hier_delim.join((name, self.id_field))
+        tag_attrib = self._gen_input_attrs_novalue(ctx, cls, sub_name, cls_attr,
+                                                                       **kwargs)
+
+        # FIXME: this must be done the other way around
+        if v_id_str == "" and 'readonly' in tag_attrib and \
+                                                     cls_attr.allow_write_when_null:
+            del tag_attrib['readonly']
+
+        data = ((v_id_str, v_text_str),)
+
+        self._write_select_impl(ctx, cls, tag_attrib, data, fti, parent)
+
+
+class MultiSelectWidget(SelectWidget):
+    supported_types = (Array,)
+
+    def to_parent_impl(self, ctx, cls, inst, parent, name, **kwargs):
+        if issubclass(cls, Array):
+            cls = next(iter(cls._type_info.values()))
+
+        super(MultiSelectWidget, self).to_parent_impl(ctx, cls, inst,
+                                                         parent, name, **kwargs)
+
+    def _write_select(self, ctx, cls, inst, parent, name, fti, **kwargs):
+        cls_attr = self.get_cls_attrs(cls)
+
+        data = []
+        for subinst in inst:
+            data.add(self._prep_inst(cls, subinst, fti))
+
+        if self.override_parent:
+            name = name.rsplit(self.hier_delim)[0]
+
+        sub_name = self.hier_delim.join((name, self.id_field))
+        tag_attrib = self._gen_input_attrs_novalue(ctx, cls, sub_name, cls_attr,
+                                                                       **kwargs)
+
+        tag_attrib['multiple'] = ""
+        self._write_select_impl(ctx, cls, tag_attrib, data, fti, parent)
+
+    def _write_empty(self, parent):
+        pass
