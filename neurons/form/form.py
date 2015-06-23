@@ -350,8 +350,14 @@ class HtmlWidget(HtmlBase):
                 elt.append(E.option(inst_label, value=inststr))
 
             else:
+                selected = False
+                we_have_empty = False
+
                 if cls_attrs.nullable or cls_attrs.min_occurs == 0:
-                    elt.append(E.option("", {'value': ''}))
+                    elt.append(E.option("", dict(value='')))
+                    we_have_empty = True
+                    # if none are selected, this will be the default anyway, so
+                    # no need to add selected attribute to the option tag.
 
                 # FIXME: cache this!
                 for v in cls_attrs.values:
@@ -362,6 +368,7 @@ class HtmlWidget(HtmlBase):
                     attrib = dict(value=valstr)
                     if inst == v:
                         attrib['selected'] = ''
+                        selected = True
 
                     val_label = values_dict.get(v, valstr)
                     logger.debug("\t\tother values inst %r label %r", v, val_label)
@@ -369,6 +376,9 @@ class HtmlWidget(HtmlBase):
                         val_label = self.trd(val_label, ctx.locale, inststr)
 
                     elt.append(E.option(val_label, **attrib))
+
+                if not (selected or we_have_empty):
+                    elt.append(E.option("", dict(value='', selected='')))
 
         return elt
 
@@ -1222,8 +1232,11 @@ class ComboBoxWidget(ComplexRenderWidget):
             if not any((is_callable, is_iterable, is_autogen)):
                 return
 
+            selected = False
+            we_have_empty = False
             if attr.min_occurs == 0:
                 parent.write(E.option())
+                we_have_empty = True
 
             if attr.write is False and v_id_str != "":
                 elt = E.option(v_text_str, value=v_id_str, selected="")
@@ -1240,27 +1253,35 @@ class ComboBoxWidget(ComplexRenderWidget):
                         else:
                             q = q.order_by(self.others_order_by)
 
-                    self._write_options(cls, parent, fti, q, v_id_str)
+                    selected = self._write_options(cls, parent, fti, q, v_id_str)
 
             elif is_iterable or is_callable:
                 insts = self.others
                 if is_callable:
                     insts = self.others(ctx, self)
 
-                self._write_options(cls, parent, fti, insts, v_id_str)
+                selected = self._write_options(cls, parent, fti, insts, v_id_str)
 
             else:
                 raise Exception("This should not be possible")
 
+            if not (we_have_empty or selected):
+                parent.write(E.option())
+
     def _write_options(self, cls, parent, fti, insts, v_id_str):
+        selected = False
+
         for o in insts:
             id_str, text_str = self._prep_inst(cls, o, fti)
 
             elt = E.option(text_str, value=id_str)
             if id_str == v_id_str:
                 elt.attrib['selected'] = ""
+                selected = True
 
             parent.write(elt)
+
+        return selected
 
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         if self.type is not None:
