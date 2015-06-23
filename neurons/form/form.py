@@ -1179,7 +1179,8 @@ class ComplexHrefWidget(ComplexRenderWidget):
 
 class ComboBoxWidget(ComplexRenderWidget):
     def __init__(self, text_field, id_field, hidden_fields=None, label=True,
-          type=None, others=None, others_order_by=None, override_parent=False):
+                  type=None, inst_type=None, others=None, others_order_by=None,
+                                                         override_parent=False):
         """Widget that renders complex objects as comboboxes.
 
         Please see :class:`ComplexRenderWidget` docstring for more info.
@@ -1192,6 +1193,9 @@ class ComboBoxWidget(ComplexRenderWidget):
             If given as a string, it's treated as one argument whereas given
             as a list or a tuple of strings, it's treated as multiple field
             names.
+
+        :param inst_type: Also force instance type to given type. Defaults to
+            whatever passed in as ``type``.
         """
 
         super(ComboBoxWidget, self).__init__(id_field=id_field,
@@ -1204,6 +1208,9 @@ class ComboBoxWidget(ComplexRenderWidget):
 
         self.others_order_by = others_order_by
         self.override_parent = override_parent
+        self.inst_type = inst_type
+        if inst_type is None:
+            self.inst_type = type
 
     def _write_select(self, ctx, cls, inst, parent, name, fti, **kwargs):
         attr = self.get_cls_attrs(cls)
@@ -1288,8 +1295,15 @@ class ComboBoxWidget(ComplexRenderWidget):
             logger.debug("ComboBoxWidget.type cls switch: %r => %r",
                                                                  cls, self.type)
             cls = self.type
+
             if len(self.type_attrs) > 0:
                 cls = self.type.customize(**self.type_attrs)
+
+        if self.inst_type is not None:
+            logger.debug("ComboBoxWidget.type inst switch: %r => %r",
+                                                             cls, self.type)
+
+            inst = self.type.init_from(inst)
 
         if self.override_parent:
             logger.debug("ComboBoxWidget.override_parent "
