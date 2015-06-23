@@ -1228,7 +1228,7 @@ class ComboBoxWidget(ComplexRenderWidget):
         v_id_str, v_text_str = self._prep_inst(cls, inst, fti)
 
         if self.override_parent:
-            name = name.rsplit(self.hier_delim)[0]
+            name = name.rsplit(self.hier_delim, 1)[0]
 
         sub_name = self.hier_delim.join((name, self.id_field))
         attrib = self._gen_input_attrs_novalue(ctx, cls, sub_name, attr,
