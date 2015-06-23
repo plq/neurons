@@ -308,7 +308,7 @@ class HtmlWidget(HtmlBase):
 
         if inst is None or isinstance(inst, type):
             # FIXME: this must be done the other way around
-            if 'readonly' in elt_attrs and cls_attrs.allow_write_for_null:
+            if 'readonly' in elt_attrs and cls_attrs.allow_write_when_null:
                 del elt_attrs['readonly']
 
         else:
@@ -1235,7 +1235,8 @@ class ComboBoxWidget(ComplexRenderWidget):
                                                                        **kwargs)
 
         # FIXME: this must be done the other way around
-        if v_id_str == "" and 'readonly' in attrib and attr.allow_write_for_null:
+        if v_id_str == "" and 'readonly' in attrib and \
+                                                     attr.allow_write_when_null:
             del attrib['readonly']
 
         with parent.element("select", attrib=attrib):
