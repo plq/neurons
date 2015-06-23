@@ -37,6 +37,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 import re
+import inspect
 import collections
 
 from contextlib import closing
@@ -1177,10 +1178,12 @@ class ComplexHrefWidget(ComplexRenderWidget):
                     .to_parent(ctx, cls, inst, parent, name, **kwargs)
 
 
+# FIXME: We need a better explanation for the very simple thing that
+# override_parent does.
 class ComboBoxWidget(ComplexRenderWidget):
     def __init__(self, text_field, id_field, hidden_fields=None, label=True,
                   type=None, inst_type=None, others=None, others_order_by=None,
-                                                         override_parent=False):
+                                         override_parent=False, multiple=False):
         """Widget that renders complex objects as comboboxes.
 
         Please see :class:`ComplexRenderWidget` docstring for more info.
@@ -1194,6 +1197,11 @@ class ComboBoxWidget(ComplexRenderWidget):
             as a list or a tuple of strings, it's treated as multiple field
             names.
 
+        :param override_parent: Overrides parent's name with the names from
+            ComboBox.
+
+        :param type: Force class type to given type.
+
         :param inst_type: Also force instance type to given type. Defaults to
             whatever passed in as ``type``.
         """
@@ -1201,10 +1209,13 @@ class ComboBoxWidget(ComplexRenderWidget):
         super(ComboBoxWidget, self).__init__(id_field=id_field,
                              text_field=text_field, hidden_fields=hidden_fields,
                                                          label=label, type=type)
+
+        self.others = others
         if callable(others):
-            self.others = staticmethod(others)
-        else:
-            self.others = others
+            argspec = inspect.getargspec(others)
+            assert argspec.varargs is not None or len(argspec.args) >= 2, \
+                "The callable passed to 'others' must accept at least 2 " \
+                "arguments: Instances of 'MethodContext' and 'ComboBoxWidget'."
 
         self.others_order_by = others_order_by
         self.override_parent = override_parent
@@ -1232,13 +1243,6 @@ class ComboBoxWidget(ComplexRenderWidget):
                 parent.write(E.option(v_text_str, value=v_id_str, selected=''))
                 return
 
-            is_callable = callable(self.others)
-            is_iterable = isinstance(self.others, collections.Iterable)
-            is_autogen = (self.others is True)
-
-            if not any((is_callable, is_iterable, is_autogen)):
-                return
-
             selected = False
             we_have_empty = False
             if attr.min_occurs == 0:
@@ -1249,7 +1253,15 @@ class ComboBoxWidget(ComplexRenderWidget):
                 elt = E.option(v_text_str, value=v_id_str, selected="")
                 parent.write(elt)
 
-            elif is_autogen:
+            is_callable = callable(self.others)
+            is_iterable = isinstance(self.others, collections.Iterable)
+            is_autogen = (self.others is True)
+
+            if not any((is_callable, is_iterable, is_autogen)):
+                return
+
+            if is_autogen:
+                logger.debug("Auto-generating combobox contents for %r", cls)
                 db = ctx.app.config.stores['sql_main'].itself
                 # FIXME: this blocks the reactor
                 with closing(db.Session()) as session:
@@ -1266,6 +1278,11 @@ class ComboBoxWidget(ComplexRenderWidget):
                 insts = self.others
                 if is_callable:
                     insts = self.others(ctx, self)
+                    logger.debug("Generating combobox contents from callable "
+                                                                  "for %r", cls)
+                else:
+                    logger.debug("Generating combobox contents from iterable "
+                                                                  "for %r", cls)
 
                 selected = self._write_options(cls, parent, fti, insts, v_id_str)
 
