@@ -31,24 +31,24 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+from neurons.form.widget import HtmlWidget
+from neurons.form.widget import HrefWidget
+from neurons.form.widget import PasswordWidget
+
+from neurons.form.widget import ComboBoxWidget
+from neurons.form.widget import MultiSelectWidget
+
+from neurons.form.widget import SimpleRenderWidget
+from neurons.form.widget import ComplexRenderWidget
+
+from neurons.form.widget import ComplexHrefWidget
+
 from neurons.form.form import Tab
 from neurons.form.form import Fieldset
 from neurons.form.form import HtmlFormRoot
 from neurons.form.form import HtmlForm
 
-from neurons.form.form import HtmlWidget
-from neurons.form.form import HrefWidget
-from neurons.form.form import PasswordWidget
-
-from neurons.form.form import ComboBoxWidget
-from neurons.form.form import MultiSelectWidget
-
-from neurons.form.form import SimpleRenderWidget
-from neurons.form.form import ComplexRenderWidget
-
-from neurons.form.form import ComplexHrefWidget
-
-from neurons.form.form_table import HtmlFormTable
+from neurons.form.table import HtmlFormTable
 
 def tou(name):
     if name is not None:
