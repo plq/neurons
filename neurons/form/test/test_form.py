@@ -349,8 +349,8 @@ class TestComplexHrefWidget(object):
         v = SomeObject(i=42, s="Arthur")
         elt = _test_type(SomeObject, v)
 
-        assert elt.xpath('a/text()') == ['Arthur']
-        assert elt.xpath('a/@href') == ['some_object?i=42']
+        assert elt.xpath('div/a/text()') == ['Arthur']
+        assert elt.xpath('div/a/@href') == ['some_object?i=42']
 
 
 class TestComboBoxWidget(object):
