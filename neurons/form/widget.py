@@ -46,10 +46,11 @@ from decimal import Decimal as D
 from lxml import html
 from lxml.builder import E
 
-from spyne import Unicode, Decimal, Boolean, ComplexModelBase, Array
+from spyne import Unicode, Decimal, Boolean, ComplexModelBase, Array, ModelBase
 from spyne.protocol.html import HtmlBase
 from spyne.util.oset import oset
 from spyne.util.six import string_types
+from spyne.util.cdict import cdict
 from spyne.util.six.moves.urllib.parse import urlencode
 
 
@@ -67,7 +68,6 @@ camel_case_to_uscore = lambda s: ''.join(camel_case_to_uscore_gen(s))
 
 
 class HtmlWidget(HtmlBase):
-    supported_types = None
     DEFAULT_INPUT_WRAPPER_CLASS = 'label-input-wrapper'
     DEFAULT_ANCHOR_WRAPPER_CLASS = 'label-anchor-wrapper'
 
@@ -89,6 +89,8 @@ class HtmlWidget(HtmlBase):
         self.asset_paths = asset_paths
         self._init_input_vars(input_class, input_div_class,
                                                input_wrapper_class, label_class)
+
+        self.use_global_null_handler = False
 
     def _init_input_vars(self, input_class, input_div_class,
                                               input_wrapper_class, label_class):
@@ -125,13 +127,6 @@ class HtmlWidget(HtmlBase):
     @staticmethod
     def selsafe(s):
         return s.replace('[', '').replace(']', '').replace('.', '__')
-
-    @classmethod
-    def _check_supported_types(cls, t):
-        if cls.supported_types is not None and \
-                                      not issubclass(t, cls.supported_types):
-            logger.warning("%r claims not to support %r. You have been warned.",
-                           cls, t)
 
     def _check_hidden(self, f):
         def _ch(ctx, cls, inst, parent, name, **kwargs):
@@ -366,24 +361,34 @@ class HtmlWidget(HtmlBase):
         if elt.attrib['type'] == 'range':
             if cls_attrs.ge != Decimal.Attributes.ge:
                 elt.attrib['min'] = str(cls_attrs.ge)
+
             if cls_attrs.gt != Decimal.Attributes.gt:
                 elt.attrib['min'] = str(cls_attrs.gt)
+
             if cls_attrs.le != Decimal.Attributes.le:
                 elt.attrib['max'] = str(cls_attrs.le)
+
             if cls_attrs.lt != Decimal.Attributes.lt:
                 elt.attrib['max'] = str(cls_attrs.lt)
 
+
+# TODO: Make label optional
 class PasswordWidget(HtmlWidget):
-    supported_types = (Unicode,)
+    def __init__(self, *args, **kwargs):
+        super(PasswordWidget, self).__init__(*args, **kwargs)
 
-    def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        self._check_supported_types(cls)
+        self.serialization_handlers = cdict({
+            Unicode: self.unicode_to_parent,
+            ComplexModelBase: self.not_supported,
+        })
 
+    def unicode_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs, elt = self._gen_input_unicode(ctx, cls, inst, name, **kwargs)
         elt.attrib['type'] = 'password'
         parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
 
 
+# TODO: Make label optional
 class HrefWidget(HtmlWidget):
     supported_types = (Unicode, Decimal)
 
@@ -393,9 +398,12 @@ class HrefWidget(HtmlWidget):
         self.href = href
         self.hidden_input = hidden_input
 
-    def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        self._check_supported_types(cls)
+        self.serialization_handlers = cdict({
+            ModelBase: self.model_base_to_parent,
+            ComplexModelBase: self.not_supported,
+        })
 
+    def model_base_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         id_str = self.to_unicode(cls, inst)
         if id_str is None:
             id_str = ''
@@ -420,8 +428,12 @@ class SimpleRenderWidget(HtmlWidget):
 
         self.type = type
         self.hidden = hidden
+        self.serialization_handlers = cdict({
+            ModelBase: self.model_base_to_parent,
+            ComplexModelBase: self.not_supported,
+        })
 
-    def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+    def model_base_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         if self.type is not None:
             cls = self.type
             if len(self.type_attrs) > 0:
@@ -454,7 +466,6 @@ class SimpleRenderWidget(HtmlWidget):
 
 
 class ComplexRenderWidget(HtmlWidget):
-    supported_types = (ComplexModelBase,)
     type_attrs = dict(validate_freq=False)
 
     def __init__(self, text_field, id_field=None, type=None, hidden_fields=None,
@@ -480,9 +491,11 @@ class ComplexRenderWidget(HtmlWidget):
         self.hidden_fields = hidden_fields
         self.type = type
 
-    def _prep_inst(self, cls, inst, fti):
-        self._check_supported_types(cls)
+        self.serialization_handlers = cdict({
+            ComplexModelBase: self.complex_model_to_parent,
+        })
 
+    def _prep_inst(self, cls, inst, fti):
         id_name = id_type = id_str = None
         if self.id_field is not None:
             id_name = self.id_field
@@ -513,7 +526,7 @@ class ComplexRenderWidget(HtmlWidget):
                 self._gen_input_hidden(fti[key], getattr(inst, key, None),
                             parent, self.hier_delim.join((name, key)), **kwargs)
 
-    def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+    def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         if self.type is not None:
             logger.debug("ComplexRenderWidget.type cls switch: %r => %r",
                                                                  cls, self.type)
@@ -562,7 +575,7 @@ class ComplexHrefWidget(ComplexRenderWidget):
             self.empty_widget = empty_widget(self.text_field, self.id_field,
                                    others=True, others_order_by=self.text_field)
 
-    def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+    def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         fti = cls.get_flat_type_info(cls)
         id_str, text_str = self._prep_inst(cls, inst, fti)
 
@@ -729,7 +742,7 @@ class SelectWidget(ComplexRenderWidget):
 
         return selected
 
-    def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+    def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         if self.type is not None:
             logger.debug("ComboBoxWidget.type cls switch: %r => %r",
                                                                  cls, self.type)
@@ -750,9 +763,9 @@ class SelectWidget(ComplexRenderWidget):
                                                     ctx.protocol.inst_stack[-1])
             cls, inst = ctx.protocol.inst_stack[-1]
 
-        self.to_parent_impl(ctx, cls, inst, parent, name, **kwargs)
+        self.cm_to_parent_impl(ctx, cls, inst, parent, name, **kwargs)
 
-    def to_parent_impl(self, ctx, cls, inst, parent, name, **kwargs):
+    def cm_to_parent_impl(self, ctx, cls, inst, parent, name, **kwargs):
         fti = cls.get_flat_type_info(cls)
 
         if self.label:
@@ -794,7 +807,7 @@ class ComboBoxWidget(SelectWidget):
 class MultiSelectWidget(SelectWidget):
     supported_types = (Array,)
 
-    def to_parent_impl(self, ctx, cls, inst, parent, name, **kwargs):
+    def cm_to_parent_impl(self, ctx, cls, inst, parent, name, **kwargs):
         if issubclass(cls, Array):
             cls = next(iter(cls._type_info.values()))
 
