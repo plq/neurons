@@ -662,6 +662,8 @@ class SelectWidget(ComplexRenderWidget):
         if inst_type is None:
             self.inst_type = type
 
+        self.serialization_handlers[ModelBase] = self.model_base_to_parent
+
     def _write_empty(self, parent):
         parent.write(E.option())
 
@@ -743,6 +745,20 @@ class SelectWidget(ComplexRenderWidget):
 
         return selected
 
+    def model_base_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        parent_cls, parent_inst = ctx.protocol.inst_stack[-2]
+
+        if self.override_parent and cls is not parent_cls:
+            logger.debug("ComboBoxWidget.override_parent "
+                         "cls, inst switch: %r => %r", (cls, inst),
+                                                    ctx.protocol.inst_stack[-1])
+
+            parent_name = name.rsplit(self.hier_delim, 1)[0]
+            return self.complex_model_to_parent(ctx, parent_cls, parent_inst,
+                                                parent, parent_name, **kwargs)
+
+        return self.not_supported(ctx, cls, inst, parent, name, **kwargs)
+
     def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         if self.type is not None:
             logger.debug("ComboBoxWidget.type cls switch: %r => %r",
@@ -757,12 +773,6 @@ class SelectWidget(ComplexRenderWidget):
                                                              cls, self.type)
 
             inst = self.type.init_from(inst)
-
-        if self.override_parent:
-            logger.debug("ComboBoxWidget.override_parent "
-                         "cls, inst switch: %r => %r", (cls, inst),
-                                                    ctx.protocol.inst_stack[-1])
-            cls, inst = ctx.protocol.inst_stack[-1]
 
         self.cm_to_parent_impl(ctx, cls, inst, parent, name, **kwargs)
 
@@ -787,9 +797,6 @@ class ComboBoxWidget(SelectWidget):
     def _write_select(self, ctx, cls, inst, parent, name, fti, **kwargs):
         cls_attr = self.get_cls_attrs(cls)
         v_id_str, v_text_str = self._prep_inst(cls, inst, fti)
-
-        if self.override_parent:
-            name = name.rsplit(self.hier_delim, 1)[0]
 
         sub_name = self.hier_delim.join((name, self.id_field))
         tag_attrib = self._gen_input_attrs_novalue(ctx, cls, sub_name, cls_attr,
