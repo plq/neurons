@@ -135,6 +135,7 @@ class HtmlWidget(HtmlBase):
                 self._gen_input_hidden(cls, inst, parent, name)
             else:
                 f(ctx, cls, inst, parent, name, **kwargs)
+        _ch.__name__ = f.__name__
         return _ch
 
     def _gen_input_hidden(self, cls, inst, parent, name, **kwargs):
