@@ -430,7 +430,10 @@ class HtmlForm(HtmlFormRoot):
                 continue
 
             logger.debug("Generating form element for %s", k)
-            subinst = getattr(inst, k, None)
+            try:
+                subinst = getattr(inst, k, None)
+            except (KeyError, AttributeError):
+                subinst = None
 
             tab = subattr.tab
             if not (tab is prev_tab):
