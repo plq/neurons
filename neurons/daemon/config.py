@@ -606,6 +606,9 @@ class Daemon(ComplexModel):
         handler.setFormatter(formatter)
         logging.getLogger().addHandler(handler)
 
+        logging.getLogger('spyne.protocol.cloth.to_cloth.cloth') \
+                                                         .setLevel(logging.INFO)
+
         if self.log_rpc or self.log_queries or self.log_results:
             logging.getLogger().setLevel(logging.DEBUG)
 
