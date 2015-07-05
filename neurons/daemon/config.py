@@ -117,6 +117,7 @@ class Relational(StorageInfo):
             self.itself.engine.close()
             self.itself.engine = None
 
+        return self
 
 class Service(ComplexModel):
     name = Unicode
@@ -339,6 +340,7 @@ class Logger(ComplexModel):
         logger.info("Setting logging level for %r to %r.",
                                                        _logger.name, self.level)
 
+        return self
 
 class ServiceDisabled(Exception):
     pass
@@ -681,6 +683,7 @@ class Daemon(ComplexModel):
 
         self.apply_storage()
 
+        return self
     def apply_storage(self):
         for store in self._stores or []:
             try:
