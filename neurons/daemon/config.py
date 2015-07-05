@@ -520,6 +520,30 @@ class Daemon(ComplexModel):
             ],
         )
 
+    def _clear_other_observers(self, publisher, observer):
+        from twisted.logger import LimitedHistoryLogObserver, LogPublisher
+
+        # FIXME: Remove Limited History Observer in a supported way.
+        logger.debug("Looking for rogue observers in %r", publisher._observers)
+
+        for o in publisher._observers:
+            if isinstance(o, LogPublisher):
+                self._clear_other_observers(o, observer)
+
+            elif isinstance(o, LimitedHistoryLogObserver):
+                publisher.removeObserver(o)
+                o.replayTo(observer)
+                logger.debug("Removing observer", o)
+
+            else:
+                logger.debug("Leaving alone observer", o)
+
+    def sanitize(self):
+        if self.logger_dest is not None:
+            self.logger_dest = abspath(self.logger_dest)
+        if self.pid_file is not None:
+            self.pid_file = abspath(self.pid_file)
+
     def apply_logging(self):
         # We're using twisted logging only for IO.
         from twisted.logger import FileLogObserver
@@ -630,29 +654,19 @@ class Daemon(ComplexModel):
         for l in self._loggers or []:
             l.apply()
 
-    def _clear_other_observers(self, publisher, observer):
-        from twisted.logger import LimitedHistoryLogObserver, LogPublisher
+    def apply_storage(self):
+        for store in self._stores or []:
+            try:
+                store.apply()
+            except Exception as e:
+                logger.exception(e)
+                raise
 
-        # FIXME: Remove Limited History Observer in a supported way.
-        logger.debug("Looking for rogue observers in %r", publisher._observers)
+            if self.main_store == store.name:
+                engine = store.itself.engine
 
-        for o in publisher._observers:
-            if isinstance(o, LogPublisher):
-                self._clear_other_observers(o, observer)
-
-            elif isinstance(o, LimitedHistoryLogObserver):
-                publisher.removeObserver(o)
-                o.replayTo(observer)
-                logger.debug("Removing observer", o)
-
-            else:
-                logger.debug("Leaving alone observer", o)
-
-    def sanitize(self):
-        if self.logger_dest is not None:
-            self.logger_dest = abspath(self.logger_dest)
-        if self.pid_file is not None:
-            self.pid_file = abspath(self.pid_file)
+                import neurons
+                neurons.TableModel.Attributes.sqla_metadata.bind = engine
 
     def apply(self, for_testing=False):
         """Daemonizes the process if requested, then sets up logging and data
@@ -684,19 +698,6 @@ class Daemon(ComplexModel):
         self.apply_storage()
 
         return self
-    def apply_storage(self):
-        for store in self._stores or []:
-            try:
-                store.apply()
-            except Exception as e:
-                logger.exception(e)
-                raise
-
-            if self.main_store == store.name:
-                engine = store.itself.engine
-
-                import neurons
-                neurons.TableModel.Attributes.sqla_metadata.bind = engine
 
     @classmethod
     def parse_config(cls, daemon_name, argv=None):
