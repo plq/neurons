@@ -106,9 +106,24 @@ class SqlDataStore(DataStoreBase):
 
     def add_txpool(self):
         from txpostgres import txpostgres
+        from txpostgres.reconnection import DeadConnectionDetector
+
+        class LoggingDeadConnectionDetector(DeadConnectionDetector):
+            def startReconnecting(self, f):
+                logger.warning('TxPool database connection down: %r)', f.value)
+                return DeadConnectionDetector.startReconnecting(self, f)
+
+            def reconnect(self):
+                logger.warning('TxPool reconnecting...')
+                return DeadConnectionDetector.reconnect(self)
+
+            def connectionRecovered(self):
+                logger.warning('TxPool connection recovered')
+                return DeadConnectionDetector.connectionRecovered(self)
 
         dsn = self.engine.raw_connection().connection.dsn
-        self.txpool = txpostgres.ConnectionPool("heleleley", dsn, min=1)
+        self.txpool = txpostgres.ConnectionPool("heleleley", dsn, min=1,
+                                       detector=LoggingDeadConnectionDetector())
         self.txpool_start_deferred = self.txpool.start()
         self.txpool_start_deferred.addCallback(
                                  lambda p: logger.info("TxPool %r started.", p))
