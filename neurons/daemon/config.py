@@ -421,8 +421,8 @@ class Daemon(ComplexModel):
         ('_loggers', Array(Logger, sub_name='loggers')),
     ]
 
-    # FIXME: we need this atrocity with custom constructor and properties
-    # because spyne doesn't support custom containers
+    # FIXME: We need all this hacky magic with custom constructor and properties
+    # because Spyne doesn't support custom containers
     def __init__(self, *args, **kwargs):
         super(Daemon, self).__init__(*args, **kwargs)
 
