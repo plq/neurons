@@ -105,7 +105,7 @@ class SqlDataStore(DataStoreBase):
         """Deferred from TxPostgres pool start()."""
 
     def add_txpool(self):
-        from txpostgres import txpostgres
+        from txpostgres.txpostgres import Connection, ConnectionPool
         from txpostgres.reconnection import DeadConnectionDetector
 
         class LoggingDeadConnectionDetector(DeadConnectionDetector):
@@ -122,8 +122,8 @@ class SqlDataStore(DataStoreBase):
                 return DeadConnectionDetector.connectionRecovered(self)
 
         dsn = self.engine.raw_connection().connection.dsn
-        self.txpool = txpostgres.ConnectionPool("heleleley", dsn, min=1,
-                                       detector=LoggingDeadConnectionDetector())
+
+        self.txpool = ConnectionPool("heleleley", dsn, min=1)
         self.txpool_start_deferred = self.txpool.start()
         self.txpool_start_deferred.addCallback(
                                  lambda p: logger.info("TxPool %r started.", p))
