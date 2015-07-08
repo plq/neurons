@@ -165,7 +165,7 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
 
     def extend_header_row(self, ctx, cls, parent, name, **kwargs):
         if self.can_add or self.can_remove:
-            parent.write(E.th())
+            parent.write(E.th(**{'class': 'array-button'}))
 
     def extend_data_row(self, ctx, cls, inst, parent, name, array_index=None,
                                              add=False, remove=True, **kwargs):
@@ -176,6 +176,7 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
             return
 
         td = E.td(style='white-space: nowrap;')
+        td.attrib['class'] = 'array-button'
         self._gen_buttons(td, name, add, remove)
 
         parent.write(td)
