@@ -386,6 +386,8 @@ class Daemon(ComplexModel):
     LOGGING_PROD_FORMAT = "%(asctime)s | %(module)-8s | %(message)s"
 
     _type_info = [
+        ('name', Boolean(help="Show version", no_cli=True)),
+
         ('uuid', Uuid(no_cli=True,
                       help="Daemon uuid. Regenerated every time a new "
                            "config file is written. It could come in handy.")),
@@ -415,6 +417,8 @@ class Daemon(ComplexModel):
 
         ('bootstrap', Boolean(help="Bootstrap the application. Create schema, "
                                    "insert initial data, etc.", no_config=True)),
+
+        ('version', Boolean(help="Show version", no_config=True)),
 
         ('_services', Array(Service, sub_name='services')),
         ('_stores', Array(StorageInfo, sub_name='stores')),
@@ -500,6 +504,7 @@ class Daemon(ComplexModel):
         return cls(
             uuid=uuid1(),
             secret=os.urandom(64),
+            name=daemon_name,
             _stores=[
                 Relational(
                     name="sql_main",

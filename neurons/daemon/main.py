@@ -31,6 +31,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+from __future__ import print_function
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -40,8 +42,39 @@ from os.path import isfile
 
 from neurons.daemon.config import Daemon, ServiceDisabled
 
+def _get_version(pkg_name):
+    try:
+        import pkg_resources
+        return pkg_resources.get_distribution(pkg_name).version
+    except Exception:
+        return 'unknown'
+
 
 def _inner_main(config, init, bootstrap):
+    if config.version:
+        myver = _get_version(config.name)
+        if myver == 'unknown':
+            print("Root package '%s' version unknown. Please pass root package"
+                  "name as daemon_name to the main function.")
+        else:
+            print("This is %s-%s" % (config.name, myver))
+
+        print()
+        print("Also:")
+        print(" * lxml-%s" % _get_version('lxml'))
+        print(" * pytz-%s" % _get_version('pytz'))
+        print(" * spyne-%s" % _get_version('spyne'))
+        print(" * pyyaml-%s" % _get_version('pyyaml'))
+        print(" * neurons-%s" % _get_version('neurons'))
+        print(" * twisted-%s" % _get_version('twisted'))
+        print(" * msgpack-%s" % _get_version('msgpack-python'))
+        print(" * pycrypto-%s" % _get_version('pycrypto'))
+        print(" * werkzeug-%s" % _get_version('werkzeug'))
+        print(" * txpostgres-%s" % _get_version('txpostgres'))
+        print(" * SQLAlchemy-%s" % _get_version('SQLAlchemy'))
+        print()
+        return 0
+
     config.apply()
 
     if config.bootstrap:
