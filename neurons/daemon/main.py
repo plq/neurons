@@ -36,7 +36,10 @@ from __future__ import print_function
 import logging
 logger = logging.getLogger(__name__)
 
-import gc, resource
+import os, gc
+import socket
+import struct
+import resource
 
 from os.path import isfile
 
@@ -48,6 +51,28 @@ def _get_version(pkg_name):
         return pkg_resources.get_distribution(pkg_name).version
     except Exception:
         return 'unknown'
+
+
+MGMT_ADDR_BASE = 0x7f0101010400 # 127.1.1.1:1024
+
+
+def get_mgmt_address(pid):
+    """Computes management service address from process id.
+
+    Returns a tuple containing the computed host as string and the port as int.
+    """
+
+    # port numbers should never fall below 1024.
+    mgmt_addr = MGMT_ADDR_BASE + pid + 1024 * (pid // 64512)
+
+    return (
+        socket.inet_ntoa(struct.pack('!L', mgmt_addr >> 16)),
+        mgmt_addr & 0xffff,
+    )
+
+
+def get_own_mgmt_address():
+    return get_mgmt_address(os.getpid())
 
 
 def _inner_main(config, init, bootstrap):
