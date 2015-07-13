@@ -103,6 +103,9 @@ def _inner_main(config, init, bootstrap):
 
     config.apply()
 
+    logger.info("Initialized '%s' version %s.", config.name,
+                                                      _get_version(config.name))
+
     if config.bootstrap:
         if not callable(bootstrap):
             raise ValueError("'bootstrap' must be a callable. It's %r." %
@@ -127,6 +130,9 @@ def _inner_main(config, init, bootstrap):
 
 def main(daemon_name, argv, init, bootstrap=None, cls=Daemon):
     config = cls.parse_config(daemon_name, argv)
+    if config.name is None:
+        config.name = daemon_name
+
     services = list(config._services)
     stores = list(config._stores)
 
