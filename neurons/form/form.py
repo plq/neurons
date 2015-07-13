@@ -125,6 +125,9 @@ class HtmlFormRoot(HtmlWidget):
             elif isinstance(ctx.transport, HttpTransportContext):
                 attrib['action'] = ctx.transport.get_path()
 
+            self.event_manager.fire_event("before_form", ctx, cls, inst, parent,
+                                                  name, attrib=attrib, **kwargs)
+
             with parent.element('form', attrib=attrib):
                 ret = super(HtmlFormRoot, self).start_to_parent(ctx, cls, inst,
                                                          parent, name, **kwargs)
