@@ -79,8 +79,9 @@ def _inner_main(config, init, bootstrap):
     if config.version:
         myver = _get_version(config.name)
         if myver == 'unknown':
-            print("Root package '%s' version unknown. Please pass root package"
-                  "name as daemon_name to the main function.")
+            print("Package '%s' version could not be determined. Please make "
+                  "sure a root package name is passed as daemon_name to the main "
+                  "function and also the package is correctly installed.")
         else:
             print("This is %s-%s" % (config.name, myver))
 
