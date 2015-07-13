@@ -109,12 +109,12 @@ _csstag = lambda src: E.link(href=src, type="text/css", rel="stylesheet")
 
 class HtmlFormRoot(HtmlWidget):
     @coroutine
-    def start_to_parent(self, ctx, cls, inst,parent, name, **kwargs):
+    def start_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         # FIXME: what a HUGE swath of copy/paste! I want yield from!
         if not getattr(ctx.outprot_ctx, 'in_form', False):
             ctx.outprot_ctx.in_form = True
 
-            if not (len(ctx.outprot_ctx.prot_stack) == 1 and \
+            if not (len(ctx.outprot_ctx.prot_stack) == 1 and
                               isinstance(ctx.protocol.prot_stack[0], HtmlForm)):
                 name = ''
 
