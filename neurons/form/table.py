@@ -53,12 +53,12 @@ SOME_COUNTER = [0]
 # FIXME: Could NOTHING be done about the horrendous number of arguments here?
 class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=True,
-                    cloth=None, polymorphic=True, doctype=None, hier_delim='.',
+                     cloth=None, polymorphic=True, doctype=None, hier_delim='.',
                         cloth_parser=None, header=True, table_name_attr='class',
-                     table_name=None, input_class=None, input_div_class=None,
+                        table_name=None, input_class=None, input_div_class=None,
                    input_wrapper_class=None, label_class=None, table_class=None,
              field_name_attr='class', border=0, row_class=None, cell_class=None,
-           header_cell_class=None,  can_add=True, can_remove=True, label=False):
+            header_cell_class=None, can_add=True, can_remove=True, label=False):
 
         super(HtmlFormTable, self).__init__(app=app,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
@@ -69,11 +69,10 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
                       border=border, row_class=row_class, cell_class=cell_class,
                                             header_cell_class=header_cell_class)
 
-        self.prot_form = HtmlForm(label=False,
-                                  label_class=label_class,
-                                  input_class=input_class,
-                                  input_div_class=input_div_class,
-                                  input_wrapper_class=input_wrapper_class)
+        self.prot_form = HtmlForm(label=False, label_class=label_class,
+                       input_class=input_class, input_div_class=input_div_class,
+                                        input_wrapper_class=input_wrapper_class)
+
         self.can_add = can_add
         self.can_remove = can_remove
         self.use_global_null_handler = False
