@@ -41,7 +41,8 @@ import socket
 import struct
 import resource
 
-from os.path import isfile
+from os.path import isfile, join, dirname
+from spyne.util.six import StringIO
 
 from neurons.daemon.config import Daemon, ServiceDisabled
 
@@ -102,6 +103,40 @@ def _print_version(config):
     return 0
 
 
+def _write_wsdl(config):
+    from lxml import etree
+
+    from spyne.interface.wsdl import Wsdl11
+    from spyne.test.sort_wsdl import sort_wsdl
+    from spyne.util.appreg import applications
+
+    for (tns, name), appdata in applications.items():
+        appdata.app.transport = "no_transport_at_all"
+        wsdl = Wsdl11(appdata.app.interface)
+        wsdl.build_interface_document('hxxp://invalid_url')
+        doc = wsdl.get_interface_document()
+        elt = etree.parse(StringIO(doc))
+        sort_wsdl(elt)
+
+        file_name = join(config.write_wsdl, 'wsdl.%s.xml' % name)
+
+        try:
+            os.makedirs(dirname(file_name))
+        except OSError:
+            pass
+
+        try:
+            with open(file_name, 'w') as f:
+                f.write(etree.tostring(elt, pretty_print=True))
+        except Exception as e:
+            print("Error: %r", e)
+            return -1
+
+        print(file_name, "written.")
+
+    return 0
+
+
 def _inner_main(config, init, bootstrap):
     if config.version:
         return _print_version(config)
@@ -131,6 +166,9 @@ def _inner_main(config, init, bootstrap):
                 v(config)
             except ServiceDisabled:
                 logger.info("Service '%s' is disabled.", k)
+
+    if config.write_wsdl:
+        return _write_wsdl(config)
 
 
 def main(daemon_name, argv, init, bootstrap=None, cls=Daemon):
