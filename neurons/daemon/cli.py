@@ -31,6 +31,11 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+from __future__ import print_function
+
+import logging
+logger = logging.getLogger(__name__)
+
 import argparse
 import os.path
 
@@ -108,6 +113,7 @@ def enum(*values):
 
     return enum_
 
+
 file_must_exist = Tmust_exist(os.path.isfile)
 dir_must_exist = Tmust_exist(os.path.isdir)
 
@@ -141,7 +147,7 @@ def spyne_to_argparse(cls):
     parser = ArgumentParser(description=cls.__doc__)
 
     parser.add_argument('-c', '--config-file', type=os.path.abspath,
-                        help="An alternative config file.")
+                                             help="An alternative config file.")
 
     for k, v in sorted(fti.items(), key=lambda i: i[0]):
         attrs = _some_prot.get_cls_attrs(v)
@@ -180,5 +186,6 @@ def spyne_to_argparse(cls):
             kwargs['type'] = ARGTYPE_MAP[v]
 
         parser.add_argument(*args, **kwargs)
+        # print("add_argument", args, kwargs)
 
     return parser
