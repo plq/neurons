@@ -396,27 +396,27 @@ class Daemon(ComplexModel):
         ('daemonize', Boolean(default=False,
                               help="Daemonizes before everything else.")),
 
-        ('uid', Unicode(help="The daemon user. You need to start the server as"
-                             " a priviledged user for this to work.")),
+        ('uid', Unicode(help="The daemon user. You need to start the server as "
+                             "a priviledged user for this to work.")),
         ('gid', Unicode(help="The daemon group. You need to start the server as"
                              " a priviledged user for this to work.")),
 
         ('pid_file', String(help="The path to a text file that contains the pid"
-                                 "of the daemonized process.")),
+                                 " of the daemonized process.")),
 
         ('logger_dest', String(help="The path to the log file. The server won't"
              " daemonize without this. Converted to an absolute path if not.")),
 
         ('log_rpc', Boolean(help="Log raw rpc data.")),
         ('log_queries', Boolean(help="Log sql queries.")),
-        ('log_results', Boolean(help="Log query results in addition to queries"
+        ('log_results', Boolean(help="Log query results in addition to queries "
                                      "themselves.")),
 
         ('main_store', Unicode(help="The name of the store for binding "
                                     "neurons.TableModel's metadata to.")),
 
         ('bootstrap', Boolean(help="Bootstrap the application. Create schema, "
-                                   "insert initial data, etc.", no_config=True)),
+                                  "insert initial data, etc.", no_config=True)),
 
         ('version', Boolean(help="Show version", no_config=True)),
 
