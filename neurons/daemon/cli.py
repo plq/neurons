@@ -165,6 +165,9 @@ def spyne_to_argparse(cls):
         if attrs.help is not None:
             kwargs['help'] = attrs.help
 
+        if attrs.default is not None:
+            kwargs['default'] = attrs.default
+
         # types
         if _is_array_of_primitives(v):
             kwargs['nargs'] = "+"
