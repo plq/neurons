@@ -114,7 +114,7 @@ def _inner_main(config, init, bootstrap):
     if config.bootstrap:
         if not callable(bootstrap):
             raise ValueError("'bootstrap' must be a callable. It's %r." %
-                                                                  bootstrap)
+                                                                      bootstrap)
 
         retval = bootstrap(config)
         if retval is None:
