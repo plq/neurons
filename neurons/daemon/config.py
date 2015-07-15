@@ -420,8 +420,9 @@ class Daemon(ComplexModel):
 
         ('version', Boolean(help="Show version", no_config=True)),
 
-        ('write_wsdl', Unicode(help="Write WSDL documents to given directory."
-                            "Directory is created if missing", no_config=True)),
+        ('write_wsdl', Unicode(
+            help="Write WSDL documents to the given directory. "
+                                   "It is created if missing", no_config=True)),
 
         ('_services', Array(Service, sub_name='services')),
         ('_stores', Array(StorageInfo, sub_name='stores')),
