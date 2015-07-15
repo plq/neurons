@@ -181,7 +181,7 @@ def spyne_to_argparse(cls):
 
         elif issubclass(v, Unicode):
             if len(v.Attributes.values) > 0:
-                kwargs['type'] = enum(v.Attributes.values)
+                kwargs['type'] = enum(*v.Attributes.values)
             else:
                 kwargs['type'] = six.text_type
 
