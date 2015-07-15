@@ -137,6 +137,40 @@ def _write_wsdl(config):
     return 0
 
 
+def _write_xml_schema(config):
+    from lxml import etree
+
+    from spyne.interface.xml_schema import XmlSchema
+    from spyne.util.appreg import applications
+
+    for (tns, name), appdata in applications.items():
+        xsd = XmlSchema(appdata.app.interface)
+        xsd.build_interface_document()
+        schemas = xsd.get_interface_document()
+
+        dir_name = join(config.write_xml_schema, 'schema.%s' % name)
+
+        try:
+            os.makedirs(dir_name)
+        except OSError:
+            pass
+
+        for k, v in schemas.items():
+            file_name = os.path.join(dir_name, "%s.xsd" % k)
+
+            try:
+                with open(file_name, 'wb') as f:
+                    etree.ElementTree(v).write(f, pretty_print=True)
+
+            except Exception as e:
+                print("Error:", e)
+                return -1
+
+            print("written",file_name, "for ns", appdata.app.interface.nsmap[k])
+
+    return 0
+
+
 def _inner_main(config, init, bootstrap):
     if config.version:
         return _print_version(config)
@@ -169,6 +203,9 @@ def _inner_main(config, init, bootstrap):
 
     if config.write_wsdl:
         return _write_wsdl(config)
+
+    if config.write_xml_schema:
+        return _write_xml_schema(config)
 
 
 def main(daemon_name, argv, init, bootstrap=None, cls=Daemon):

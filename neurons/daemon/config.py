@@ -424,6 +424,10 @@ class Daemon(ComplexModel):
             help="Write WSDL documents to the given directory. "
                                    "It is created if missing", no_config=True)),
 
+        ('write_xml_schema', Unicode(
+            help="Write Xml Schema documents to given directory. "
+                                   "It is created if missing", no_config=True)),
+
         ('_services', Array(Service, sub_name='services')),
         ('_stores', Array(StorageInfo, sub_name='stores')),
         ('_loggers', Array(Logger, sub_name='loggers')),
