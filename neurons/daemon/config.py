@@ -380,7 +380,9 @@ def _Twrdict(keyattr=None):
 
 
 class Daemon(ComplexModel):
-    """A couple of neurons."""
+    """This is a custom daemon with only pid files, forking, logging and initial
+    setuid/setgid operations.
+    """
 
     LOGGING_DEVEL_FORMAT = "%(module)-15s | %(message)s"
     LOGGING_PROD_FORMAT = "%(asctime)s | %(module)-8s | %(message)s"
@@ -407,29 +409,12 @@ class Daemon(ComplexModel):
         ('logger_dest', String(help="The path to the log file. The server won't"
              " daemonize without this. Converted to an absolute path if not.")),
 
-        ('log_rpc', Boolean(help="Log raw rpc data.")),
-        ('log_queries', Boolean(help="Log sql queries.")),
-        ('log_results', Boolean(help="Log query results in addition to queries "
-                                     "themselves.")),
-
-        ('main_store', Unicode(help="The name of the store for binding "
-                                    "neurons.TableModel's metadata to.")),
+        ('version', Boolean(help="Show version", no_config=True)),
 
         ('bootstrap', Boolean(help="Bootstrap the application. Create schema, "
                                   "insert initial data, etc.", no_config=True)),
 
-        ('version', Boolean(help="Show version", no_config=True)),
-
-        ('write_wsdl', Unicode(
-            help="Write WSDL documents to the given directory. "
-                                   "It is created if missing", no_config=True)),
-
-        ('write_xml_schema', Unicode(
-            help="Write Xml Schema documents to given directory. "
-                                   "It is created if missing", no_config=True)),
-
         ('_services', Array(Service, sub_name='services')),
-        ('_stores', Array(StorageInfo, sub_name='stores')),
         ('_loggers', Array(Logger, sub_name='loggers')),
     ]
 
@@ -474,23 +459,6 @@ class Daemon(ComplexModel):
             self.services = _Twrdict('name')([(s.name, s) for s in what])
 
     @property
-    def _stores(self):
-        if self.stores is not None:
-            for k, v in self.stores.items():
-                v.name = k
-
-            return self.stores.values()
-
-        self.stores = _wdict()
-        return []
-
-    @_stores.setter
-    def _stores(self, what):
-        self.stores = what
-        if what is not None:
-            self.stores = _wdict([(s.name, s) for s in what])
-
-    @property
     def _loggers(self):
         if self.loggers is not None:
             for k, v in self.loggers.items():
@@ -513,21 +481,6 @@ class Daemon(ComplexModel):
             uuid=uuid1(),
             secret=os.urandom(64),
             name=daemon_name,
-            _stores=[
-                Relational(
-                    name="sql_main",
-                    backend="sqlalchemy",
-                    pool_size=10,
-                    pool_recycle=3600,
-                    pool_timeout=30,
-                    max_overflow=3,
-                    conn_str='postgres://postgres:@localhost:5432/%s_%s' %
-                                               (daemon_name, getpass.getuser()),
-                    sync_pool=True,
-                    async_pool=True,
-                ),
-            ],
-            main_store='sql_main',
             _loggers=[
                 Logger(path='.', level='DEBUG', format=cls.LOGGING_DEVEL_FORMAT),
             ],
@@ -648,45 +601,18 @@ class Daemon(ComplexModel):
         logging.getLogger('spyne.protocol.cloth.to_cloth.cloth') \
                                                          .setLevel(logging.INFO)
 
-        if self.log_rpc or self.log_queries or self.log_results:
-            logging.getLogger().setLevel(logging.DEBUG)
-
-        if self.log_rpc:
-            logging.getLogger('spyne.protocol').setLevel(logging.DEBUG)
-            logging.getLogger('spyne.protocol.xml').setLevel(logging.DEBUG)
-            logging.getLogger('spyne.protocol.dictdoc').setLevel(logging.DEBUG)
-
-        if self.log_queries:
-            logging.getLogger('sqlalchemy').setLevel(logging.INFO)
-            logging.getLogger('sqlalchemy.orm.mapper').setLevel(logging.WARNING)
-
-        if self.log_results:
-            logging.getLogger('sqlalchemy').setLevel(logging.DEBUG)
-            logging.getLogger('sqlalchemy.orm.mapper').setLevel(logging.WARNING)
+        self.pre_logging_apply()
 
         for l in self._loggers or []:
             l.apply()
 
-    def apply_storage(self):
-        for store in self._stores or []:
-            try:
-                store.apply()
-            except Exception as e:
-                logger.exception(e)
-                raise
-
-            if self.main_store == store.name:
-                engine = store.itself.engine
-
-                import neurons
-                neurons.TableModel.Attributes.sqla_metadata.bind = engine
+    def pre_logging_apply(self):
+        pass
 
     def apply(self, for_testing=False):
-        """Daemonizes the process if requested, then sets up logging and data
-        stores.
+        """Daemonizes the process if requested, then sets up logging and pid
+        files.
         """
-
-        # FIXME: apply_storage could return a deferred due to txpool init.
 
         # Daemonization won't work if twisted is imported before fork().
         # It's best to know this in advance or you'll have to deal with daemons
@@ -707,10 +633,6 @@ class Daemon(ComplexModel):
             with open(self.pid_file, 'w') as f:
                 f.write(str(pid))
                 logger.debug("Pid file is at: %r", self.pid_file)
-
-        self.apply_storage()
-
-        return self
 
     @classmethod
     def parse_config(cls, daemon_name, argv=None):
@@ -746,3 +668,124 @@ class Daemon(ComplexModel):
     def write_config(self):
         open(self.config_file, 'wb').write(get_object_as_yaml(self,
                                               self.__class__, polymorphic=True))
+
+class ServiceDaemon(Daemon):
+    """This daemon uses a needs acess to persistance storage (or not) to run
+    services.
+    """
+
+    _type_info = [
+        ('log_rpc', Boolean(help="Log raw rpc data.")),
+        ('log_queries', Boolean(help="Log sql queries.")),
+        ('log_results', Boolean(help="Log query results in addition to queries "
+                                     "themselves.")),
+
+        ('main_store', Unicode(help="The name of the store for binding "
+                                    "neurons.TableModel's metadata to.")),
+
+        ('write_wsdl', Unicode(
+            help="Write WSDL documents to the given directory. "
+                                   "It is created if missing", no_config=True)),
+
+        ('write_xml_schema', Unicode(
+            help="Write Xml Schema documents to given directory. "
+                                   "It is created if missing", no_config=True)),
+
+        ('_stores', Array(StorageInfo, sub_name='stores')),
+    ]
+
+    # FIXME: We need all this hacky magic with custom constructor and properties
+    # because Spyne doesn't support custom containers
+    def __init__(self, *args, **kwargs):
+        super(Daemon, self).__init__(*args, **kwargs)
+
+        stores = kwargs.get('stores', None)
+        if stores is not None:
+            self.stores = stores
+        if not hasattr(self, 'stores') or self.stores is None:
+            self.stores = _wdict()
+
+    @property
+    def _stores(self):
+        if self.stores is not None:
+            for k, v in self.stores.items():
+                v.name = k
+
+            return self.stores.values()
+
+        self.stores = _wdict()
+        return []
+
+    @_stores.setter
+    def _stores(self, what):
+        self.stores = what
+        if what is not None:
+            self.stores = _wdict([(s.name, s) for s in what])
+
+    @classmethod
+    def get_default(cls, daemon_name):
+        return cls(
+            uuid=uuid1(),
+            secret=os.urandom(64),
+            name=daemon_name,
+            _stores=[
+                Relational(
+                    name="sql_main",
+                    backend="sqlalchemy",
+                    pool_size=10,
+                    pool_recycle=3600,
+                    pool_timeout=30,
+                    max_overflow=3,
+                    conn_str='postgres://postgres:@localhost:5432/%s_%s' %
+                                               (daemon_name, getpass.getuser()),
+                    sync_pool=True,
+                    async_pool=True,
+                ),
+            ],
+            main_store='sql_main',
+            _loggers=[
+                Logger(path='.', level='DEBUG', format=cls.LOGGING_DEVEL_FORMAT),
+            ],
+        )
+
+    def apply_storage(self):
+        for store in self._stores or []:
+            try:
+                store.apply()
+            except Exception as e:
+                logger.exception(e)
+                raise
+
+            if self.main_store == store.name:
+                engine = store.itself.engine
+
+                import neurons
+                neurons.TableModel.Attributes.sqla_metadata.bind = engine
+
+    def apply(self, for_testing=False):
+        """Daemonizes the process if requested, then sets up logging and pid
+        files plus data stores.
+        """
+
+        # FIXME: apply_storage could return a deferred due to txpool init.
+
+        super(ServiceDaemon, self).apply(for_testing=for_testing)
+
+        self.apply_storage()
+
+    def pre_logging_apply(self):
+        if self.log_rpc or self.log_queries or self.log_results:
+            logging.getLogger().setLevel(logging.DEBUG)
+
+        if self.log_rpc:
+            logging.getLogger('spyne.protocol').setLevel(logging.DEBUG)
+            logging.getLogger('spyne.protocol.xml').setLevel(logging.DEBUG)
+            logging.getLogger('spyne.protocol.dictdoc').setLevel(logging.DEBUG)
+
+        if self.log_queries:
+            logging.getLogger('sqlalchemy').setLevel(logging.INFO)
+            logging.getLogger('sqlalchemy.orm.mapper').setLevel(logging.WARNING)
+
+        if self.log_results:
+            logging.getLogger('sqlalchemy').setLevel(logging.DEBUG)
+            logging.getLogger('sqlalchemy.orm.mapper').setLevel(logging.WARNING)

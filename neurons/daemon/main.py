@@ -44,7 +44,8 @@ import resource
 from os.path import isfile, join, dirname
 from spyne.util.six import StringIO
 
-from neurons.daemon.config import Daemon, ServiceDisabled
+from neurons.daemon.config import Daemon, ServiceDisabled, ServiceDaemon
+
 
 def _get_version(pkg_name):
     try:
@@ -201,11 +202,12 @@ def _inner_main(config, init, bootstrap):
             except ServiceDisabled:
                 logger.info("Service '%s' is disabled.", k)
 
-    if config.write_wsdl:
-        return _write_wsdl(config)
+    if isinstance(config, ServiceDaemon):
+        if config.write_wsdl:
+            return _write_wsdl(config)
 
-    if config.write_xml_schema:
-        return _write_xml_schema(config)
+        if config.write_xml_schema:
+            return _write_xml_schema(config)
 
 
 def main(daemon_name, argv, init, bootstrap=None, cls=Daemon):
@@ -213,16 +215,33 @@ def main(daemon_name, argv, init, bootstrap=None, cls=Daemon):
     if config.name is None:
         config.name = daemon_name
 
-    services = list(config._services)
-    stores = list(config._stores)
+    # FIXME: Any better ideas?
+    has_services = hasattr(config, '_services')
+    has_stores = hasattr(config, '_stores')
+
+    services = None
+    if has_services:
+        services = list(config._services)
+
+    stores = None
+    if has_stores:
+        stores = list(config._stores)
 
     try:
         retval = _inner_main(config, init, bootstrap)
+
+        # if _inner_main did something other than initializing daemons
         if retval is not None:
             return retval
+
     finally:
-        if not isfile(config.config_file) or services != config._services \
-                                          or stores != config._stores:
+        if not isfile(config.config_file):
+            config.write_config()
+
+        elif has_services and services != config._services:
+            config.write_config()
+
+        elif has_stores and stores != config._stores:
             config.write_config()
 
     from twisted.internet import reactor
