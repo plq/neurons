@@ -129,7 +129,7 @@ def _write_wsdl(config):
             with open(file_name, 'w') as f:
                 f.write(etree.tostring(elt, pretty_print=True))
         except Exception as e:
-            print("Error: %r", e)
+            print("Error:", e)
             return -1
 
         print(file_name, "written.")
