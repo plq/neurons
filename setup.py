@@ -35,8 +35,8 @@ EXAMPLES_DIR = join(dirname(OWN_PATH), 'examples')
 v = open(os.path.join(os.path.dirname(__file__), 'neurons', '__init__.py'), 'r')
 VERSION = re.match(r".*__version__ = '(.*?)'", v.read(), re.S).group(1)
 
-SHORT_DESC = """Short"""
-LONG_DESC = """Long"""
+SHORT_DESC = """Neurons is a web framework tying together Spyne, Twisted and SQLAlchemy."""
+LONG_DESC = SHORT_DESC
 
 try:
     os.stat('CHANGELOG.rst')
