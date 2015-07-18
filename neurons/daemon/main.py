@@ -211,6 +211,16 @@ def _inner_main(config, init, bootstrap):
 
 
 def main(daemon_name, argv, init, bootstrap=None, cls=Daemon):
+    """A typical main function for daemons.
+
+    :param daemon_name: Daemon name.
+    :param argv: A sequence of command line arguments.
+    :param init: A callable that returns the init dict.
+    :param bootstrap: A callable that bootstraps daemon's environment.
+    :param cls: Daemon class
+    :return: Exit code of the daemon as int.
+    """
+
     config = cls.parse_config(daemon_name, argv)
     if config.name is None:
         config.name = daemon_name
