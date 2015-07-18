@@ -41,10 +41,13 @@ import socket
 import struct
 import resource
 
+from pprint import pformat
 from os.path import isfile, join, dirname
-from spyne.util.six import StringIO
 
-from neurons.daemon.config import Daemon, ServiceDisabled, ServiceDaemon
+from spyne.util.six import StringIO
+from spyne.store.relational.util import database_exists, create_database
+
+from neurons.daemon.config import ServiceDisabled, ServiceDaemon
 
 
 def _get_version(pkg_name):
@@ -172,24 +175,29 @@ def _write_xml_schema(config):
     return 0
 
 
-def _inner_main(config, init, bootstrap):
+def _inner_main(config, init, bootstrap, bootstrapper):
     if config.version:
         return _print_version(config)
 
-    config.apply()
-
-    logger.info("Initialized '%s' version %s.", config.name,
-                                                      _get_version(config.name))
-
     if config.bootstrap:
-        if not callable(bootstrap):
-            raise ValueError("'bootstrap' must be a callable. It's %r." %
-                                                                      bootstrap)
+        if bootstrap is None:
+            bootstrap = bootstrapper(init).do
+
+        assert callable(bootstrap), \
+                      "'bootstrap' must be a callable. It's %r." % bootstrap
 
         retval = bootstrap(config)
         if retval is None:
             return 0
         return retval
+
+    config.apply()
+    logger.info("Initialized '%s' version %s.", config.name,
+                                                      _get_version(config.name))
+
+    from neurons import TableModel
+    TableModel.Attributes.sqla_metadata.bind = \
+                                  config.stores[config.main_store].itself.engine
 
     items = init(config)
     if hasattr(items, 'items'):  # if it's a dict
@@ -210,13 +218,42 @@ def _inner_main(config, init, bootstrap):
             return _write_xml_schema(config)
 
 
-def main(daemon_name, argv, init, bootstrap=None, cls=Daemon):
+class BootStrapper(object):
+    def __init__(self, init):
+        self.init = init
+
+    def do(self, config):
+        for store in config.stores.values():
+            if database_exists(store.conn_str):
+                print(store.conn_str, "already exists.")
+                continue
+
+            create_database(store.conn_str)
+            print(store.conn_str, "did not exist, created.")
+
+        config.log_results = True
+        config.apply()
+
+        # Run init so that all relevant models get imported
+        self.init(config)
+
+        from neurons.model import TableModel
+        TableModel.Attributes.sqla_metadata.bind = \
+                        config.stores[config.main_store].itself.engine
+        TableModel.Attributes.sqla_metadata.create_all(checkfirst=True)
+
+
+def main(daemon_name, argv, init, bootstrap=None,
+                                  bootstrapper=BootStrapper, cls=ServiceDaemon):
     """A typical main function for daemons.
 
     :param daemon_name: Daemon name.
     :param argv: A sequence of command line arguments.
     :param init: A callable that returns the init dict.
     :param bootstrap: A callable that bootstraps daemon's environment.
+        It's deprecated in favor of bootstrapper.
+    :param bootstrapper: An object whose `do()` method bootstraps daemon's
+        environment.
     :param cls: Daemon class
     :return: Exit code of the daemon as int.
     """
@@ -238,7 +275,7 @@ def main(daemon_name, argv, init, bootstrap=None, cls=Daemon):
         stores = list(config._stores)
 
     try:
-        retval = _inner_main(config, init, bootstrap)
+        retval = _inner_main(config, init, bootstrap, bootstrapper)
 
         # if _inner_main did something other than initializing daemons
         if retval is not None:
