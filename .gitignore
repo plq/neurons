@@ -50,3 +50,6 @@ docs/_build/
 
 # test output
 /html
+
+# config files
+*.yaml
