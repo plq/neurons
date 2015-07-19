@@ -32,19 +32,18 @@
 #
 
 from __future__ import print_function
-from argparse import Action
 
 import logging
 logger = logging.getLogger(__name__)
 
-import os
-import re
-import sys
 import getpass
+import os, re, sys
 
-from uuid import uuid1
-from pprint import pformat
 from os import access
+from uuid import uuid1
+from resource import getrusage, RUSAGE_SELF
+from pprint import pformat
+from argparse import Action
 from os.path import isfile, abspath, dirname
 
 from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
@@ -414,6 +413,9 @@ class Daemon(ComplexModel):
         ('bootstrap', Boolean(help="Bootstrap the application. Create schema, "
                                   "insert initial data, etc.", no_config=True)),
 
+        ('log_rss', Boolean(help="Prepend ru_maxrss to all logging messages")),
+
+
         ('_services', Array(Service, sub_name='services')),
         ('_loggers', Array(Logger, sub_name='loggers')),
     ]
@@ -525,9 +527,21 @@ class Daemon(ComplexModel):
 
         loggers = {}
 
+        config = self
         class TwistedHandler(logging.Handler):
+            if config.log_rss:
+                def _modify_record(self, record):
+                    record.msg = '[%.2f] %s' % (
+                          getrusage(RUSAGE_SELF).ru_maxrss / 1024.0, record.msg)
+            else:
+                def _modify_record(self, record):
+                    pass
+
             def emit(self, record):
                 assert isinstance(record, logging.LogRecord)
+
+                self._modify_record(record)
+
                 _logger = loggers.get(record.name, None)
                 if _logger is None:
                     _logger = loggers[record.name] = Logger(record.name)
