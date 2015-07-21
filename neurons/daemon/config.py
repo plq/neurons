@@ -620,6 +620,8 @@ class Daemon(ComplexModel):
         for l in self._loggers or []:
             l.apply()
 
+        return self
+
     def pre_logging_apply(self):
         pass
 
@@ -647,6 +649,8 @@ class Daemon(ComplexModel):
             with open(self.pid_file, 'w') as f:
                 f.write(str(pid))
                 logger.debug("Pid file is at: %r", self.pid_file)
+
+        return self
 
     @classmethod
     def parse_config(cls, daemon_name, argv=None):
@@ -776,6 +780,8 @@ class ServiceDaemon(Daemon):
                 import neurons
                 neurons.TableModel.Attributes.sqla_metadata.bind = engine
 
+        return self
+
     def apply(self, for_testing=False):
         """Daemonizes the process if requested, then sets up logging and pid
         files plus data stores.
@@ -786,6 +792,8 @@ class ServiceDaemon(Daemon):
         super(ServiceDaemon, self).apply(for_testing=for_testing)
 
         self.apply_storage()
+
+        return self
 
     def pre_logging_apply(self):
         if self.log_rpc or self.log_queries or self.log_results:
