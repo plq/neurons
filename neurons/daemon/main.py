@@ -182,6 +182,8 @@ def _inner_main(config, init, bootstrap, bootstrapper):
     if config.bootstrap:
         if bootstrap is None:
             bootstrap = bootstrapper(init).do
+        else:
+            config.apply()
 
         assert callable(bootstrap), \
                       "'bootstrap' must be a callable. It's %r." % bootstrap
