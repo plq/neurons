@@ -197,8 +197,9 @@ def _inner_main(config, init, bootstrap, bootstrapper):
     logger.info("Initialized '%s' version %s.", config.name,
                                                       _get_version(config.name))
 
-    from neurons import TableModel
-    TableModel.Attributes.sqla_metadata.bind = \
+    if isinstance(config, ServiceDaemon):
+        from neurons import TableModel
+        TableModel.Attributes.sqla_metadata.bind = \
                                   config.stores[config.main_store].itself.engine
 
     items = init(config)
