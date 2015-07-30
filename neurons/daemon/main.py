@@ -181,12 +181,12 @@ def _inner_main(config, init, bootstrap, bootstrapper):
 
     if config.bootstrap:
         if bootstrap is None:
-            bootstrap = bootstrapper(init).do
+            bootstrap = bootstrapper(init)
         else:
             config.apply()
 
         assert callable(bootstrap), \
-                      "'bootstrap' must be a callable. It's %r." % bootstrap
+                          "'bootstrap' must be a callable. It's %r." % bootstrap
 
         retval = bootstrap(config)
         if retval is None:
@@ -225,7 +225,7 @@ class BootStrapper(object):
     def __init__(self, init):
         self.init = init
 
-    def do(self, config):
+    def __call__(self, config):
         for store in config.stores.values():
             if database_exists(store.conn_str):
                 print(store.conn_str, "already exists.")
@@ -255,8 +255,8 @@ def main(daemon_name, argv, init, bootstrap=None,
     :param init: A callable that returns the init dict.
     :param bootstrap: A callable that bootstraps daemon's environment.
         It's deprecated in favor of bootstrapper.
-    :param bootstrapper: An object whose `do()` method bootstraps daemon's
-        environment.
+    :param bootstrapper: A factory for a callable that bootstraps daemon's
+        environment. This is supposed to be run once for every new deployment.
     :param cls: Daemon class
     :return: Exit code of the daemon as int.
     """
