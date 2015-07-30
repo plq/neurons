@@ -198,6 +198,9 @@ def _inner_main(config, init, bootstrap, bootstrapper):
                                                       _get_version(config.name))
 
     if isinstance(config, ServiceDaemon):
+        if config.main_store is None:
+            config.main_store = 'sql_main'
+
         from neurons import TableModel
         TableModel.Attributes.sqla_metadata.bind = \
                                   config.stores[config.main_store].itself.engine
