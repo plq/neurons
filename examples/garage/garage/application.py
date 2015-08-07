@@ -37,13 +37,14 @@ logger = logging.getLogger(__name__)
 from os.path import abspath
 
 from spyne import Application
-from spyne.protocol.html import HtmlBase
+from spyne.protocol.html import HtmlMicroFormat
 from spyne.protocol.http import HttpRpc
 
 from twisted.internet import reactor
 
 from neurons.daemon.config import HttpListener, StaticFileServer
 
+from garage.const import T_INDEX
 from garage.service import GarageService
 
 
@@ -59,10 +60,11 @@ def start_garage(config):
     subconfig.subapps[''] = \
         Application([GarageService], 'garage.main',
                 in_protocol=HttpRpc(validator='soft'),
-                out_protocol=HtmlBase()
+                out_protocol=HtmlMicroFormat(cloth=T_INDEX)
             )
 
     logger.info("listening for garage http on %s:%d",
                                                  subconfig.host, subconfig.port)
+
     return reactor.listenTCP(subconfig.port, subconfig.gen_site(),
                                                  interface=subconfig.host), None

@@ -31,4 +31,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-__version__ = '0.3'
+from os.path import abspath, isfile
+
+from pkg_resources import resource_filename
+
+T_INDEX = abspath(resource_filename(__name__, 'index.html'))
+
+assert isfile(T_INDEX)
