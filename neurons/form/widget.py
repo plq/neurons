@@ -204,16 +204,17 @@ class HtmlWidget(HtmlBase):
             name.rsplit(self.hier_delim, 1)[-1],
             re.sub(r'\[[0-9]+\]', '', name).replace(self.hier_delim, '__'),
         ])
+
         if self.input_class is not None:
             elt_class.add(self.input_class)
         elt_class = ' '.join(elt_class)
 
-        elt_attrs = {
+        elt_attrs = tdict(six.string_types, six.string_types, {
             'id': self._gen_input_elt_id(name, **kwargs),
             'name': self._gen_input_name(name),
-            'class': elt_class,
             'type': 'text',
-        }
+            'class': elt_class,
+        })
 
         if cls_attrs.pattern is not None:
             elt_attrs['pattern'] = cls_attrs.pattern
