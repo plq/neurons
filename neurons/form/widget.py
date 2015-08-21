@@ -47,11 +47,13 @@ from lxml import html
 from lxml.builder import E
 
 from spyne import Unicode, Decimal, Boolean, ComplexModelBase, Array, ModelBase
-from spyne.protocol.html import HtmlBase
+from spyne.util import six
+from spyne.util.tdict import tdict
 from spyne.util.oset import oset
-from spyne.util.six import string_types
 from spyne.util.cdict import cdict
 from spyne.util.six.moves.urllib.parse import urlencode
+
+from spyne.protocol.html import HtmlBase
 
 
 def camel_case_to_uscore_gen(string):
@@ -223,7 +225,7 @@ class HtmlWidget(HtmlBase):
         if placeholder is None:
             placeholder = self.placeholder
 
-        if isinstance(placeholder, string_types):
+        if isinstance(placeholder, six.string_types):
             elt_attrs['placeholder'] = placeholder
 
         elif placeholder:
