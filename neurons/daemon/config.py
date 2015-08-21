@@ -319,10 +319,13 @@ class WsgiListener(HttpListener):
 
 
 LOGLEVEL_MAP = dict(zip(
-    ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+    ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL', 'FATAL'],
     [logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR,
-                                                               logging.CRITICAL]
+                                                logging.CRITICAL, logging.FATAL]
 ))
+
+
+LOGLEVEL_MAP_ABB = {v: k[0] for (k, v) in LOGLEVEL_MAP.items()}
 
 
 class Logger(ComplexModel):
@@ -340,6 +343,7 @@ class Logger(ComplexModel):
                                                        _logger.name, self.level)
 
         return self
+
 
 class ServiceDisabled(Exception):
     pass
@@ -383,8 +387,8 @@ class Daemon(ComplexModel):
     setuid/setgid operations.
     """
 
-    LOGGING_DEVEL_FORMAT = "%(module)-15s | %(message)s"
-    LOGGING_PROD_FORMAT = "%(asctime)s | %(module)-8s | %(message)s"
+    LOGGING_DEVEL_FORMAT = "%(l)s | %(module)-15s | %(message)s"
+    LOGGING_PROD_FORMAT = "%(l)s %(asctime)s | %(module)-8s | %(message)s"
 
     _type_info = [
         ('name', Boolean(help="Show version", no_cli=True)),
@@ -539,6 +543,8 @@ class Daemon(ComplexModel):
 
             def emit(self, record):
                 assert isinstance(record, logging.LogRecord)
+
+                record.l = LOGLEVEL_MAP_ABB.get(record.levelno, "?")
 
                 self._modify_record(record)
 
