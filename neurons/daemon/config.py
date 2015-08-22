@@ -491,6 +491,10 @@ class Daemon(ComplexModel):
             name=daemon_name,
             _loggers=[
                 Logger(path='.', level='DEBUG', format=cls.LOGGING_DEVEL_FORMAT),
+                # This produces too much output that's not very useful unless
+                # you're debugging *Cloth.
+                Logger(path='spyne.protocol.cloth.to_cloth.cloth', 
+                                  level='INFO', format=cls.LOGGING_DEVEL_FORMAT),
             ],
         )
 
@@ -619,9 +623,6 @@ class Daemon(ComplexModel):
         handler = TwistedHandler()
         handler.setFormatter(formatter)
         logging.getLogger().addHandler(handler)
-
-        logging.getLogger('spyne.protocol.cloth.to_cloth.cloth') \
-                                                         .setLevel(logging.INFO)
 
         self.pre_logging_apply()
 
