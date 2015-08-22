@@ -59,10 +59,12 @@ from neurons.daemon.daemonize import daemonize
 from neurons.daemon.store import SqlDataStore
 from neurons.daemon.cli import spyne_to_argparse, config_overrides
 
+
 STATIC_DESC_ROOT = "Directory that contains static files for the root url."
 STATIC_DESC_URL = "Directory that contains static files for the url '%s'."
 
 _some_prot = ProtocolBase()
+
 
 class _SetStaticPathAction(Action):
     def __init__(self, option_strings, dest, const=None, help=None):
