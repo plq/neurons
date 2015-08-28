@@ -41,7 +41,6 @@ import os, re, sys
 
 from os import access
 from uuid import uuid1
-from resource import getrusage, RUSAGE_SELF
 from pprint import pformat
 from argparse import Action
 from os.path import isfile, abspath, dirname
@@ -64,6 +63,29 @@ STATIC_DESC_ROOT = "Directory that contains static files for the root url."
 STATIC_DESC_URL = "Directory that contains static files for the url '%s'."
 
 _some_prot = ProtocolBase()
+
+
+_meminfo = None
+
+
+def update_meminfo():
+    global _meminfo
+
+    try:
+        import psutil
+        process = psutil.Process(os.getpid())
+        try: # psutil 2
+            _meminfo = process.get_memory_info
+        except AttributeError: # psutil 3
+            _meminfo = process.memory_info
+
+        del process
+
+    except ImportError:
+        pass
+
+
+update_meminfo()
 
 
 class _SetStaticPathAction(Action):
@@ -419,7 +441,8 @@ class Daemon(ComplexModel):
         ('bootstrap', Boolean(help="Bootstrap the application. Create schema, "
                                   "insert initial data, etc.", no_config=True)),
 
-        ('log_rss', Boolean(help="Prepend ru_maxrss to all logging messages")),
+        ('log_rss', Boolean(default=True, help="Prepend current memory usage "
+                                   "to all logging messages. Requires psutil")),
 
 
         ('_services', Array(Service, sub_name='services')),
@@ -540,9 +563,14 @@ class Daemon(ComplexModel):
         config = self
         class TwistedHandler(logging.Handler):
             if config.log_rss:
-                def _modify_record(self, record):
-                    record.msg = '[%.2f] %s' % (
-                          getrusage(RUSAGE_SELF).ru_maxrss / 1024.0, record.msg)
+                if _meminfo is None:
+                    def _modify_record(self, record):
+                        record.msg = '[psutil?] %s' % record.msg
+                else:
+                    def _modify_record(self, record):
+                        rss, vmsize = _meminfo()
+                        record.msg = '[%.2f] %s' % (rss / 1024.0 ** 2,
+                                                                     record.msg)
             else:
                 def _modify_record(self, record):
                     pass
@@ -650,6 +678,7 @@ class Daemon(ComplexModel):
         if self.daemonize:
             assert self.logger_dest, "Refusing to start without any log output."
             daemonize()
+            update_meminfo()
 
         self.apply_logging()
 
