@@ -441,9 +441,8 @@ class Daemon(ComplexModel):
         ('bootstrap', Boolean(help="Bootstrap the application. Create schema, "
                                   "insert initial data, etc.", no_config=True)),
 
-        ('log_rss', Boolean(default=True, help="Prepend current memory usage "
-                                   "to all logging messages. Requires psutil")),
-
+        ('log_rss', Boolean(help="Prepend current memory usage "
+                                 "to all logging messages. Requires psutil")),
 
         ('_services', Array(Service, sub_name='services')),
         ('_loggers', Array(Logger, sub_name='loggers')),
@@ -512,6 +511,7 @@ class Daemon(ComplexModel):
             uuid=uuid1(),
             secret=os.urandom(64),
             name=daemon_name,
+            log_rss=False,
             _loggers=[
                 Logger(path='.', level='DEBUG', format=cls.LOGGING_DEVEL_FORMAT),
                 # This produces too much output that's not very useful unless
