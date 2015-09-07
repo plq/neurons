@@ -726,9 +726,7 @@ class Daemon(ComplexModel):
                                               self.__class__, polymorphic=True))
 
 class ServiceDaemon(Daemon):
-    """This daemon uses a needs acess to persistance storage (or not) to run
-    services.
-    """
+    """This daemon needs access to one or more data stores to work."""
 
     _type_info = [
         ('log_rpc', Boolean(help="Log raw rpc data.")),
