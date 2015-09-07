@@ -107,7 +107,7 @@ class TestFormTable(unittest.TestCase):
             'table/tbody/tr/td/div/input[contains(@class, "s ")]/@value') == \
                                                            [str(o.s) for o in v]
 
-        assert elt.xpath('table/tbody/tr/td/button/text()') == ['-'] * 7 + ['+']
+        assert elt.xpath('table/tbody/tr/td/button/text()') == ['-'] * len(v) + ['+']
         for i, name in enumerate(elt.xpath('div/div/input/@name')):
             assert re.match(r'ints\[0*%d\]' % i, name)
 
@@ -129,7 +129,7 @@ class TestFormTable(unittest.TestCase):
             'fieldset/div/input[contains(@class, "i")]/@value') == [str(v.i)]
 
         assert elt.xpath(
-            'fieldset/div/table/tbody/tr/td/button/text()') == ['-'] * 7 + ['+']
+            'fieldset/div/table/tbody/tr/td/button/text()') == ['-'] * len(v.s) + ['+']
 
     def test_unicode_null(self):
         v = None
