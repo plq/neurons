@@ -444,6 +444,16 @@ class Daemon(ComplexModel):
         ('log_rss', Boolean(help="Prepend current memory usage "
                                  "to all logging messages. Requires psutil")),
 
+        ('log_rpc', Boolean(help="Log raw rpc data.")),
+
+        ('write_wsdl', Unicode(
+            help="Write WSDL documents to the given directory. "
+                                   "It is created if missing", no_config=True)),
+
+        ('write_xsd', Unicode(
+            help="Write Xml Schema documents to given directory. "
+                                   "It is created if missing", no_config=True)),
+
         ('_services', Array(Service, sub_name='services')),
         ('_loggers', Array(Logger, sub_name='loggers')),
     ]
@@ -729,21 +739,12 @@ class ServiceDaemon(Daemon):
     """This daemon needs access to one or more data stores to work."""
 
     _type_info = [
-        ('log_rpc', Boolean(help="Log raw rpc data.")),
         ('log_queries', Boolean(help="Log sql queries.")),
         ('log_results', Boolean(help="Log query results in addition to queries "
                                      "themselves.")),
 
         ('main_store', Unicode(help="The name of the store for binding "
                                     "neurons.TableModel's metadata to.")),
-
-        ('write_wsdl', Unicode(
-            help="Write WSDL documents to the given directory. "
-                                   "It is created if missing", no_config=True)),
-
-        ('write_xml_schema', Unicode(
-            help="Write Xml Schema documents to given directory. "
-                                   "It is created if missing", no_config=True)),
 
         ('_stores', Array(StorageInfo, sub_name='stores')),
     ]
