@@ -141,7 +141,7 @@ def _write_wsdl(config):
     return 0
 
 
-def _write_xml_schema(config):
+def _write_xsd(config):
     from lxml import etree
 
     from spyne.interface.xml_schema import XmlSchema
@@ -152,7 +152,7 @@ def _write_xml_schema(config):
         xsd.build_interface_document()
         schemas = xsd.get_interface_document()
 
-        dir_name = join(config.write_xml_schema, 'schema.%s' % name)
+        dir_name = join(config.write_xsd, 'schema.%s' % name)
 
         try:
             os.makedirs(dir_name)
@@ -220,8 +220,8 @@ def _inner_main(config, init, bootstrap, bootstrapper):
         if config.write_wsdl:
             return _write_wsdl(config)
 
-        if config.write_xml_schema:
-            return _write_xml_schema(config)
+        if config.write_xsd:
+            return _write_xsd(config)
 
 
 class BootStrapper(object):
