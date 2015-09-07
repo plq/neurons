@@ -128,6 +128,9 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
     # sole reason to override is to generate labels
     @coroutine
     def wrap_table(self, ctx, cls, inst, parent, name, gen_rows, **kwargs):
+        if name == "":
+            name = cls.get_type_name()
+
         # If this is direct child of an array, table is already set up in
         # array_to_parent.
         if self.label:
