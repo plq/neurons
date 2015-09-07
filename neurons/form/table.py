@@ -209,8 +209,8 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
             self._gen_row(ctx, cls, [(cls.__orig__ or cls)()], parent, name)
 
         # even though there are calls to coroutines here, as the passed objects
-        # are empty, it's not possible to have push data. so there's no need to
-        # check the returned generators.
+        # are empty, so it's not possible to have push data. so there's no need
+        # to check the returned generators.
         if issubclass(cls, ComplexModelBase):
             inst = (cls.__orig__ or cls)()
             ctx.protocol.inst_stack.append((cls, inst))

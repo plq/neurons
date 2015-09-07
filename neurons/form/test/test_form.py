@@ -49,9 +49,9 @@ from spyne import Application, NullServer, Unicode, ServiceBase, rpc, Decimal, \
     Mandatory as M
 from spyne.util.test import show
 
-from neurons.form.test import strip_ns
 from neurons.form import HtmlForm, PasswordWidget, Tab, HrefWidget, \
     ComboBoxWidget, ComplexHrefWidget
+from neurons.form.test import strip_ns
 from neurons.form.const import T_TEST
 from neurons.form.form import Fieldset
 
