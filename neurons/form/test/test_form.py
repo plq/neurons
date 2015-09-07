@@ -58,7 +58,7 @@ from neurons.form.form import Fieldset
 
 def _test_type(cls, inst):
     # silence bogus warnings
-    from spyne.util import appreg; appreg._applications.clear()
+    from spyne.util import appreg; appreg.applications.clear()
 
     class SomeService(ServiceBase):
         @rpc(_returns=cls, _body_style='bare')
@@ -87,7 +87,7 @@ def _test_type(cls, inst):
 
 
 def _test_type_no_root_cloth(cls, inst):
-    from spyne.util import appreg; appreg._applications.clear()
+    from spyne.util import appreg; appreg.applications.clear()
 
     class SomeService(ServiceBase):
         @rpc(_returns=cls, _body_style='bare')

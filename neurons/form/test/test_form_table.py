@@ -49,7 +49,7 @@ from lxml import etree, html
 
 
 def _test_type(cls, inst, prot_cls=HtmlFormTable):
-    from spyne.util import appreg; appreg._applications.clear()
+    from spyne.util import appreg; appreg.applications.clear()
 
     class SomeService(ServiceBase):
         @rpc(_returns=cls, _body_style='bare')
