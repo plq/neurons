@@ -251,14 +251,19 @@ var add = function(event) {
     var tr = td.parent();
     var f = orig_row.clone(true);
     var btn = f.find(".%(name)s_btn_add");
+    var pa = tr.parent();
 
     btn.off("click");
     btn.click(remove);
     btn.text("-");
 
     f.insertBefore(tr);
-
     rearrange();
+
+    if (pa.find("tr:visible").length == 2) {
+        var form = pa.closest('form');
+        form.find('#' + root_name + '-empty').remove();
+    }
 
     event.preventDefault();
     return false;
@@ -267,14 +272,32 @@ var add = function(event) {
 var remove = function (e) {
     var td = $(this).parent();
     var tr = td.parent();
-    tr.remove();
+    var pa = tr.parent();
 
+    tr.remove();
     rearrange();
+
+    if (pa.find("tr:visible").length == 1) {
+        var form = pa.closest('form');
+        $('<input>').attr({'type':'hidden', 'name': root_name, 'value': 'empty', 'id': root_name + '-empty'}).appendTo(form);
+    }
+
     e.preventDefault();
     return false;
 };
 
 var rearrange = function() {
+    function zerofill(num, numZeros) {
+        var n = Math.abs(num);
+        var zeros = Math.max(0, numZeros - Math.floor(n).toString().length);
+        var zeroString = Math.pow(10, zeros).toString().substr(1);
+        if (num < 0) {
+            zeroString = '-' + zeroString;
+        }
+
+        return zeroString + n;
+    }
+
     table.children('tr').each(function() {
         var idx = $(this).index();
         $(this).find('[name]').each(function() {
@@ -295,6 +318,8 @@ btn_add.click(add);
 var row = btn_add.parent().parent();
 var table = row.parent();
 var orig_row = row.clone(true);
+var root_name = $(orig_row.find(":input")[0]).attr('name');
+root_name = root_name.replace(new RegExp("\\\\[-1\\\\]\\\\..*"), "");
 
 for (var children = row.children(), i=0, l=children.length-1; i < l; ++i) {
     $(children[i]).children().remove();
