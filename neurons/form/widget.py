@@ -130,16 +130,6 @@ class HtmlWidget(HtmlBase):
     def selsafe(s):
         return s.replace('[', '').replace(']', '').replace('.', '__')
 
-    def _check_hidden(self, f):
-        def _ch(ctx, cls, inst, parent, name, **kwargs):
-            cls_attrs = self.get_cls_attrs(cls)
-            if cls_attrs.hidden:
-                self._gen_input_hidden(cls, inst, parent, name)
-            else:
-                f(ctx, cls, inst, parent, name, **kwargs)
-        _ch.__name__ = f.__name__
-        return _ch
-
     def _gen_input_hidden(self, cls, inst, parent, name, **kwargs):
         val = self.to_unicode(cls, inst)
         elt = E.input(type="hidden", name=name)
