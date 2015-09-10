@@ -48,8 +48,7 @@ from spyne.util import coroutine, Break
 from spyne.util.cdict import cdict
 from spyne.server.http import HttpTransportContext
 
-from neurons.form.widget import HtmlWidget
-
+from neurons.form.widget import HtmlWidget, SimpleRenderWidget
 
 SOME_COUNTER = 0
 
@@ -214,11 +213,15 @@ class HtmlForm(HtmlFormRoot):
         self.asset_paths.update(asset_paths)
         self.use_global_null_handler = False
 
+        self.simple = SimpleRenderWidget(label=label)
+
     def _check_simple(self, f):
         def _ch(ctx, cls, inst, parent, name, **kwargs):
             cls_attrs = self.get_cls_attrs(cls)
             if cls_attrs.hidden:
                 self._gen_input_hidden(cls, inst, parent, name)
+            elif cls_attrs.read_only:
+                self.simple.to_parent(ctx, cls, inst, parent, name, **kwargs)
             else:
                 f(ctx, cls, inst, parent, name, **kwargs)
         _ch.__name__ = f.__name__
