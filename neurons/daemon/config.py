@@ -47,7 +47,7 @@ from os.path import isfile, abspath, dirname
 
 from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
     UnsignedInteger, UnsignedInteger16, Array, String, Application, \
-    ComplexModelBase
+    ComplexModelBase, M
 
 from spyne.protocol import ProtocolBase
 from spyne.protocol.yaml import YamlDocument
@@ -105,6 +105,23 @@ def _apply_custom_attributes(cls):
             v.Attributes.prot_attrs={YamlDocument: dict(exc=True)}
 
 
+class AlertDestination(ComplexModel):
+    type = Unicode(default='email', values=['email'])
+
+
+EmailAddress = Unicode(pattern=r"[^@\s]+@[^@\s]+")
+
+
+class EmailAlert(AlertDestination):
+    host = Unicode(default='localhost')
+    port = UnsignedInteger16(default=25)
+    user = Unicode
+    sender = Unicode(default='Random Developer <robot@spyne.io>')
+    envelope_from = EmailAddress
+    password = Unicode
+    recipients = M(Array(M(EmailAddress)))
+
+
 class StorageInfo(ComplexModel):
     name = Unicode
     backend = Unicode
@@ -141,6 +158,7 @@ class Relational(StorageInfo):
             self.itself.engine = None
 
         return self
+
 
 class Service(ComplexModel):
     name = Unicode
@@ -453,6 +471,8 @@ class Daemon(ComplexModel):
         ('write_xsd', Unicode(
             help="Write Xml Schema documents to given directory. "
                                    "It is created if missing", no_config=True)),
+
+        ('alert_dests', Array(AlertDestination, default=[])),
 
         ('_services', Array(Service, sub_name='services')),
         ('_loggers', Array(Logger, sub_name='loggers')),
