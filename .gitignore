@@ -49,7 +49,7 @@ docs/_build/
 /assets/bootstrap-*
 
 # test output
-/html
+/test_html
 
 # config files
 *.yaml
