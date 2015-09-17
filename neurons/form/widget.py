@@ -409,7 +409,9 @@ class HrefWidget(HtmlWidget):
             elt.attrib['href'] = href
 
         parent.write(elt)
-        if self.hidden_input:
+
+        cls_attr = self.get_cls_attrs(cls)
+        if self.hidden_input and (inst is not None or cls_attr.min_occurs >= 1):
             self._gen_input_hidden(cls, inst, parent, name, **kwargs)
 
 
