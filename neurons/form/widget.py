@@ -671,7 +671,6 @@ class SelectWidget(ComplexRenderWidget):
                     parent.write(E.option(v_text_str, value=v_id_str, selected=''))
                 return
 
-            selected = False
             we_have_empty = False
             if attr.min_occurs == 0:
                 self._write_empty(parent)
@@ -690,6 +689,7 @@ class SelectWidget(ComplexRenderWidget):
             if not any((is_callable, is_iterable, is_autogen)):
                 return
 
+            selected = False
             if is_autogen:
                 logger.debug("Auto-generating combobox contents for %r", cls)
                 db = ctx.app.config.stores['sql_main'].itself
@@ -794,6 +794,7 @@ class SelectWidget(ComplexRenderWidget):
 class ComboBoxWidget(SelectWidget):
     def _write_select(self, ctx, cls, inst, parent, name, fti, **kwargs):
         cls_attr = self.get_cls_attrs(cls)
+
         v_id_str, v_text_str = self._prep_inst(cls, inst, fti)
 
         sub_name = self.hier_delim.join((name, self.id_field))
