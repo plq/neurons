@@ -69,7 +69,7 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
                       border=border, row_class=row_class, cell_class=cell_class,
                                             header_cell_class=header_cell_class)
 
-        self.prot_form = HtmlForm(label=False, label_class=label_class,
+        self.prot_form = HtmlForm(label=label, label_class=label_class,
                        input_class=input_class, input_div_class=input_div_class,
                                         input_wrapper_class=input_wrapper_class)
 
