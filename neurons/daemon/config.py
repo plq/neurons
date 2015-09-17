@@ -588,6 +588,8 @@ class Daemon(ComplexModel):
             logging.CRITICAL: LogLevel.critical,
         }
 
+        TWISTED_LOGLEVEL_MAP = {v: k for k,v in LOGLEVEL_TWISTED_MAP.items()}
+
         loggers = {}
 
         config = self
@@ -657,12 +659,6 @@ class Daemon(ComplexModel):
                 logger.debug("coloarama not loaded: %r" % e)
 
         def record_as_string(record):
-            if 'log_text' in record:
-                return record['log_text'] + "\n"
-            if 'log_io' in record:
-                return record['log_io'] + "\n"
-            if 'message' in record:
-                return record['message'] + "\n"
             if 'log_failure' in record:
                 failure = record['log_failure']
                 try:
@@ -670,8 +666,31 @@ class Daemon(ComplexModel):
                 except TypeError:
                     # vars() argument must have __dict__ attribute
                     s = repr(failure.value)
-
                 return "%s: %s" % (failure.type, s)
+
+            if 'log_text' in record:
+                return record['log_text'] + "\n"
+
+            if 'log_format' in record:
+                level = record.get('log_level', LogLevel.debug)
+                level = LOGLEVEL_MAP_ABB[TWISTED_LOGLEVEL_MAP[level]]
+
+                text = record['log_format'].format(**record) + "\n"
+                ns = record.get('log_namespace', "???")
+                lineno = 0
+                record = logging.LogRecord(
+                                      '?', level, ns, lineno, text, None, None)
+                record.l = level
+                record.module = ns.split('.')[-2]
+
+                return formatter.format(record)
+
+            if 'log_io' in record:
+                return record['log_io'] + "\n"
+
+            if 'message' in record:
+                return record['message'] + "\n"
+
             return pformat(record)
 
         observer = FileLogObserver(log_dest, record_as_string)
