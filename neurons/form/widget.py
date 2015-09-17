@@ -209,7 +209,10 @@ class HtmlWidget(HtmlBase):
         if cls_attrs.pattern is not None:
             elt_attrs['pattern'] = cls_attrs.pattern
 
-        if cls_attrs.write is False or cls_attrs.primary_key:
+        if cls_attrs.read_only:
+            elt_attrs['readonly'] = ""
+
+        if cls_attrs.write_once and inst is not None:
             elt_attrs['readonly'] = ""
 
         placeholder = cls_attrs.placeholder
@@ -236,15 +239,9 @@ class HtmlWidget(HtmlBase):
         elt_attrs = self._gen_input_attrs_novalue(ctx, cls, name, cls_attrs,
                                                                        **kwargs)
 
-        if inst is None or isinstance(inst, type):
-            # FIXME: this must be done the other way around
-            if 'readonly' in elt_attrs and cls_attrs.allow_write_when_null:
-                del elt_attrs['readonly']
-
-        else:
-            val = self.to_unicode(cls, inst)
-            if val is not None:
-                elt_attrs['value'] = val
+        val = self.to_unicode(cls, inst)
+        if val is not None:
+            elt_attrs['value'] = val
 
         return elt_attrs
 
@@ -739,6 +736,12 @@ class SelectWidget(ComplexRenderWidget):
         return selected
 
     def model_base_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls_attr = self.get_cls_attrs(cls)
+
+        if cls_attr.write_once and inst is not None:
+            parent.write(self.to_unicode(cls, inst))
+            return
+
         parent_cls, parent_inst = ctx.protocol.inst_stack[-2]
 
         if self.override_parent and cls is not parent_cls:
@@ -794,12 +797,6 @@ class ComboBoxWidget(SelectWidget):
         sub_name = self.hier_delim.join((name, self.id_field))
         tag_attrib = self._gen_input_attrs_novalue(ctx, cls, sub_name, cls_attr,
                                                                        **kwargs)
-
-        # FIXME: this must be done the other way around
-        if v_id_str == "" and 'readonly' in tag_attrib and \
-                                                     cls_attr.allow_write_when_null:
-            del tag_attrib['readonly']
-
         data = ((v_id_str, v_text_str),)
 
         self._write_select_impl(ctx, cls, tag_attrib, data, fti, parent)
