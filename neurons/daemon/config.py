@@ -69,6 +69,8 @@ _meminfo = None
 
 
 def update_meminfo():
+    """Call this when the process pid changes."""
+
     global _meminfo
 
     try:
@@ -445,6 +447,8 @@ class Daemon(ComplexModel):
 
         ('uid', Unicode(help="The daemon user. You need to start the server as "
                              "a priviledged user for this to work.")),
+        ('workdir', Unicode(help="The daemon workdir. It won't boot if this"
+                                 "directory can't be created.")),
         ('gid', Unicode(help="The daemon group. You need to start the server as"
                              " a priviledged user for this to work.")),
 
@@ -542,6 +546,7 @@ class Daemon(ComplexModel):
             secret=os.urandom(64),
             name=daemon_name,
             log_rss=False,
+            workdir=os.getcwd(),
             _loggers=[
                 Logger(path='.', level='DEBUG', format=cls.LOGGING_DEVEL_FORMAT),
                 # This produces too much output that's not very useful unless
@@ -726,7 +731,10 @@ class Daemon(ComplexModel):
         self.sanitize()
         if self.daemonize:
             assert self.logger_dest, "Refusing to start without any log output."
-            daemonize()
+            workdir = self.workdir
+            if workdir is None:
+                workdir = os.getcwd()
+            daemonize(workdir=workdir)
             update_meminfo()
 
         self.apply_logging()

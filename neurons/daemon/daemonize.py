@@ -24,26 +24,23 @@ __copyright__ = "Copyright (C) 2005 Chad J. Schroeder"
 __revision__ = "$Id$"
 __version__ = "0.2"
 
-# Standard Python modules.
-import os  # Miscellaneous OS interfaces.
 
-# Default daemon parameters.
-# File mode creation mask of the daemon.
-UMASK = 0
+import os
 
-# Default working directory for the daemon.
-WORKDIR = "/"
 
 # Default maximum for the number of available file descriptors.
 MAXFD = 1024
 
-# The standard I/O file descriptors are redirected to /dev/null by default.
-REDIRECT_TO = os.devnull
 
-
-def daemonize():
+def daemonize(umask=0, workdir='/', maxfd=None, redirect_to=os.devnull):
     """Detach a process from the controlling terminal and run it in the
     background as a daemon.
+
+    :param umask: File mode creation mask of the daemon.
+    :param workdir: Default working directory for the daemon.
+    :param maxfd: Default maximum for the number of available file descriptors.
+    :param redirect_to: The target for standard I/O file descriptors. By
+        default, it's `/dev/null`.
     """
 
     # Fork a child process so the parent can exit.  This returns control to
@@ -103,12 +100,12 @@ def daemonize():
             # Since the current working directory may be a mounted filesystem,
             # we avoid the issue of not being able to unmount the filesystem at
             # shutdown time by changing it to the root directory.
-            os.chdir(WORKDIR)
+            os.chdir(workdir)
 
             # We probably don't want the file mode creation mask inherited from
             # the parent, so we give the child complete control over
             # permissions.
-            os.umask(UMASK)
+            os.umask(umask)
 
         else:
             # exit() or _exit()?  See below.
@@ -151,15 +148,18 @@ def daemonize():
     #
     import resource  # Resource usage information.
 
-    maxfd = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
-    if (maxfd == resource.RLIM_INFINITY):
-        maxfd = MAXFD
+    if maxfd is None:
+        soft_fd_limit, hard_fd_limit = resource.getrlimit(resource.RLIMIT_NOFILE)
+        if hard_fd_limit != resource.RLIM_INFINITY:
+            maxfd = hard_fd_limit
+        else:
+            maxfd = MAXFD
 
     # Iterate through and close all file descriptors.
     for fd in range(0, maxfd):
         try:
             os.close(fd)
-        except OSError as e:    # ERROR, fd wasn't open to begin with (ignored)
+        except OSError:    # ERROR, fd wasn't open to begin with (ignored)
             pass
 
     # Redirect the standard I/O file descriptors to the specified file.  Since
@@ -169,7 +169,7 @@ def daemonize():
 
     # This call to open is guaranteed to return the lowest file descriptor,
     # which will be 0 (stdin), since it was closed above.
-    os.open(REDIRECT_TO, os.O_RDWR)    # standard input (0)
+    os.open(redirect_to, os.O_RDWR)    # standard input (0)
 
     # Duplicate standard input to standard output and standard error.
     os.dup2(0, 1)            # standard output (1)
