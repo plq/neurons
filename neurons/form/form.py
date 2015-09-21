@@ -40,11 +40,12 @@ from collections import namedtuple
 from inspect import isgenerator
 from decimal import Decimal as D
 
+from lxml import etree, html
 from lxml.builder import E
 
 from spyne import ComplexModelBase, Unicode, Decimal, Boolean, Date, Time, \
-    DateTime, Integer, Duration, PushBase, Array, Uuid
-from spyne.util import coroutine, Break
+    DateTime, Integer, Duration, PushBase, Array, Uuid, AnyHtml, AnyXml
+from spyne.util import coroutine, Break, six
 from spyne.util.cdict import cdict
 from spyne.server.http import HttpTransportContext
 
@@ -191,8 +192,10 @@ class HtmlForm(HtmlFormRoot):
             Time: self._check_simple(self.time_to_parent),
             Uuid: self._check_simple(self.uuid_to_parent),
             Array: self.array_type_to_parent,
+            AnyXml: self._check_simple(self.anyxml_to_parent),
             Integer: self._check_simple(self.integer_to_parent),
             Unicode: self._check_simple(self.unicode_to_parent),
+            AnyHtml: self._check_simple(self.anyhtml_to_parent),
             Decimal: self._check_simple(self.decimal_to_parent),
             Boolean: self._check_simple(self.boolean_to_parent),
             Duration: self._check_simple(self.duration_to_parent),
@@ -237,6 +240,30 @@ class HtmlForm(HtmlFormRoot):
 
     def unicode_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs, elt = self._gen_input_unicode(ctx, cls, inst, name, **kwargs)
+        parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
+
+    def anyhtml_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        if isinstance(inst, six.string_types):
+            inst = html.fromstring(inst)
+
+        cls_attrs, elt = self._gen_input_ml(ctx, cls, inst, name, **kwargs)
+
+        # TODO: Use something like ACE editor to generate a proper html editor
+        if not (inst is None and isinstance(inst, type)):
+            elt.text = html.tostring(inst)
+
+        parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
+
+    def anyxml_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        if isinstance(inst, six.string_types):
+            inst = etree.fromstring(inst)
+
+        cls_attrs, elt = self._gen_input_ml(ctx, cls, inst, name, **kwargs)
+
+        # TODO: Use something like ACE editor to generate a proper xml editor
+        if not (inst is None and isinstance(inst, type)):
+            elt.text = etree.tostring(inst)
+
         parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
 
     def uuid_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
