@@ -46,7 +46,8 @@ from decimal import Decimal as D
 from lxml import html
 from lxml.builder import E
 
-from spyne import Unicode, Decimal, Boolean, ComplexModelBase, Array, ModelBase
+from spyne import Unicode, Decimal, Boolean, ComplexModelBase, Array, ModelBase, \
+    AnyHtml
 from spyne.util import six
 from spyne.util.tdict import tdict
 from spyne.util.oset import oset
@@ -312,6 +313,18 @@ class HtmlWidget(HtmlBase):
 
         return elt
 
+    def _gen_input_ml(self, ctx, cls, inst, name, **kwargs):
+        cls_attrs = self.get_cls_attrs(cls)
+
+        elt_attrs = self._gen_input_attrs_novalue(ctx, cls, name, cls_attrs)
+        if cls_attrs.min_occurs == 1 and cls_attrs.nullable == False:
+            elt = html.fromstring('<textarea required>')
+            elt.attrib.update(elt_attrs)
+        else:
+            elt = E.textarea(**elt_attrs)
+
+        return elt
+
     def _gen_input_unicode(self, ctx, cls, inst, name, attr_override={},
                                                                       **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
@@ -423,14 +436,20 @@ class SimpleRenderWidget(HtmlWidget):
         self.hidden = hidden
         self.serialization_handlers = cdict({
             ModelBase: self.model_base_to_parent,
+            AnyHtml: self.any_html_to_parent,
             ComplexModelBase: self.not_supported,
         })
 
-    def model_base_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+    def _get_cls(self, cls):
         if self.type is not None:
             cls = self.type
             if len(self.type_attrs) > 0:
                 cls = self.type.customize(**self.type_attrs)
+
+        return cls
+
+    def model_base_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls = self._get_cls(cls)
 
         text_str = self.to_unicode(cls, inst, **kwargs)
 
@@ -453,6 +472,33 @@ class SimpleRenderWidget(HtmlWidget):
 
         else:
             parent.write(text_str)
+
+        if self.hidden:
+            self._gen_input_hidden(cls, inst, parent, name, **kwargs)
+
+    def any_html_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls = self._get_cls(cls)
+
+        if isinstance(inst, six.string_types):
+            inst = html.fromstring(inst)
+
+        if inst is None:
+            inst = ''
+
+            cls_attr = self.get_cls_attrs(cls)
+            if cls_attr.min_occurs == 0:
+                return
+
+        if self.label:
+            label = self._gen_label_for(ctx, cls, name)
+            attrib = self._gen_label_wrapper_class(ctx, cls, name)
+
+            with parent.element('div', attrib=attrib):
+                parent.write(label)
+                parent.write(inst)
+
+        else:
+            parent.write(inst)
 
         if self.hidden:
             self._gen_input_hidden(cls, inst, parent, name, **kwargs)
