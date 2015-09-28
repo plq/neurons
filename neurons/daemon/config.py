@@ -745,6 +745,8 @@ class Daemon(ComplexModel):
         self.sanitize()
         if self.daemonize:
             assert self.logger_dest, "Refusing to start without any log output."
+            assert not for_testing, "Refusing to daemonize a test environment."
+
             workdir = self.workdir
             if workdir is None:
                 workdir = os.getcwd()
