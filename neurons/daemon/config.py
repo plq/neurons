@@ -156,7 +156,7 @@ class Relational(StorageInfo):
         if not self.sync_pool:
             self.itself.Session = None
             self.itself.metadata = None
-            self.itself.engine.close()
+            self.itself.engine.dispose()
             self.itself.engine = None
 
         return self
