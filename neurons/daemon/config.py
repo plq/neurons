@@ -161,6 +161,20 @@ class Relational(StorageInfo):
 
         return self
 
+    def close(self):
+        if self.async_pool:
+            self.itself.txpool.close()
+
+        if self.sync_pool:
+            self.itself.Session = None
+            self.itself.metadata = None
+            self.itself.engine.dispose()
+            self.itself.engine = None
+
+        self.itself = None
+
+        return self
+
 
 class Service(ComplexModel):
     name = Unicode
