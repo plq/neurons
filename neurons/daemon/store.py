@@ -143,7 +143,7 @@ class SqlDataStore(DataStoreBase):
     @metadata.setter
     def metadata(self, metadata):
         self.__metadata = metadata
-        if self.__engine is not None:
+        if self.__engine is not None and metadata is not None:
             self.__metadata.bind = self.__engine
 
     @property
