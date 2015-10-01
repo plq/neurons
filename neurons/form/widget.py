@@ -657,7 +657,7 @@ class ComplexHrefWidget(ComplexRenderWidget):
 
 # FIXME: We need a better explanation for the very simple thing that
 # override_parent does.
-class SelectWidget(ComplexRenderWidget):
+class SelectWidgetBase(ComplexRenderWidget):
     def __init__(self, text_field, id_field, hidden_fields=None, label=True,
                    type=None, inst_type=None, others=None, others_order_by=None,
                                                          override_parent=False):
@@ -683,7 +683,7 @@ class SelectWidget(ComplexRenderWidget):
             whatever passed in as ``type``.
         """
 
-        super(SelectWidget, self).__init__(id_field=id_field,
+        super(SelectWidgetBase, self).__init__(id_field=id_field,
                              text_field=text_field, hidden_fields=hidden_fields,
                                                          label=label, type=type)
 
@@ -837,7 +837,7 @@ class SelectWidget(ComplexRenderWidget):
         self._write_hidden_fields(ctx, cls, inst, parent, name, fti, **kwargs)
 
 
-class ComboBoxWidget(SelectWidget):
+class ComboBoxWidget(SelectWidgetBase):
     def _write_select(self, ctx, cls, inst, parent, name, fti, **kwargs):
         cls_attr = self.get_cls_attrs(cls)
 
@@ -851,7 +851,7 @@ class ComboBoxWidget(SelectWidget):
         self._write_select_impl(ctx, cls, tag_attrib, data, fti, parent)
 
 
-class MultiSelectWidget(SelectWidget):
+class MultiSelectWidget(SelectWidgetBase):
     supported_types = (Array,)
 
     def cm_to_parent_impl(self, ctx, cls, inst, parent, name, **kwargs):
