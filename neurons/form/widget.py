@@ -213,9 +213,6 @@ class HtmlWidget(HtmlBase):
         if cls_attrs.read_only:
             elt_attrs['readonly'] = ""
 
-        if cls_attrs.write_once and inst is not None:
-            elt_attrs['readonly'] = ""
-
         placeholder = cls_attrs.placeholder
         if placeholder is None:
             placeholder = self.placeholder
@@ -239,6 +236,9 @@ class HtmlWidget(HtmlBase):
     def _gen_input_attrs(self, ctx, cls, inst, name, cls_attrs, **kwargs):
         elt_attrs = self._gen_input_attrs_novalue(ctx, cls, name, cls_attrs,
                                                                        **kwargs)
+
+        if cls_attrs.write_once and inst is not None:
+            elt_attrs['readonly'] = ""
 
         val = self.to_unicode(cls, inst)
         if val is not None:
@@ -337,6 +337,9 @@ class HtmlWidget(HtmlBase):
             tag = 'textarea'
 
             elt_attrs = self._gen_input_attrs_novalue(ctx, cls, name, cls_attrs)
+            if cls_attrs.write_once and inst is not None:
+                elt_attrs['readonly'] = ""
+
             if cls_attrs.min_occurs == 1 and cls_attrs.nullable == False:
                 elt = html.fromstring('<%s required>' % tag)
                 elt.attrib.update(elt_attrs)
