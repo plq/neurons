@@ -45,7 +45,7 @@ from lxml.builder import E
 
 from spyne import ComplexModelBase, Unicode, Decimal, Boolean, Date, Time, \
     DateTime, Integer, Duration, PushBase, Array, Uuid, AnyHtml, AnyXml
-from spyne.util import coroutine, Break, six
+from spyne.util import coroutine, Break, six, memoize_id
 from spyne.util.cdict import cdict
 from spyne.server.http import HttpTransportContext
 
@@ -227,6 +227,7 @@ class HtmlForm(HtmlFormRoot):
                 self.simple.to_parent(ctx, cls, inst, parent, name, **kwargs)
             else:
                 f(ctx, cls, inst, parent, name, **kwargs)
+
         _ch.__name__ = f.__name__
         return _ch
 
@@ -242,29 +243,32 @@ class HtmlForm(HtmlFormRoot):
         cls_attrs, elt = self._gen_input_unicode(ctx, cls, inst, name, **kwargs)
         parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
 
-    def anyhtml_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        if isinstance(inst, six.string_types):
-            inst = html.fromstring(inst)
+    @staticmethod
+    @memoize_id
+    def Tany_ml_to_parent(lxml_package):
+        def _ml_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+            cls_attrs, elt = self._gen_input_textarea(ctx, cls, name, **kwargs)
+            # TODO: Use something like ACE editor to generate a proper html editor
 
-        cls_attrs, elt = self._gen_input_ml(ctx, cls, inst, name, **kwargs)
+            if inst is not None:
+                if cls_attrs.serialize_as in ('element', 'elt'):
+                    if isinstance(inst, six.string_types):
+                        inst = lxml_package.fromstring(inst)
 
-        # TODO: Use something like ACE editor to generate a proper html editor
-        if not (inst is None and isinstance(inst, type)):
-            elt.text = html.tostring(inst)
+                    elt.append(inst)
 
-        parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
+                else:
+                    if not isinstance(inst, six.string_types):
+                        inst = lxml_package.tostring(inst)
 
-    def anyxml_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        if isinstance(inst, six.string_types):
-            inst = etree.fromstring(inst)
+                    elt.text = inst
 
-        cls_attrs, elt = self._gen_input_ml(ctx, cls, inst, name, **kwargs)
+            parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
 
-        # TODO: Use something like ACE editor to generate a proper xml editor
-        if not (inst is None and isinstance(inst, type)):
-            elt.text = etree.tostring(inst)
+        return _ml_to_parent
 
-        parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
+    anyhtml_to_parent = Tany_ml_to_parent.__func__(html)
+    anyxml_to_parent = Tany_ml_to_parent.__func__(etree)
 
     def uuid_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         kwargs.update({'attr_override': {'max_len': 36}})

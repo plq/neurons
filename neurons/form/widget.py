@@ -313,7 +313,7 @@ class HtmlWidget(HtmlBase):
 
         return elt
 
-    def _gen_input_ml(self, ctx, cls, inst, name, **kwargs):
+    def _gen_input_textarea(self, ctx, cls, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
 
         elt_attrs = self._gen_input_attrs_novalue(ctx, cls, name, cls_attrs)
@@ -323,7 +323,7 @@ class HtmlWidget(HtmlBase):
         else:
             elt = E.textarea(**elt_attrs)
 
-        return elt
+        return cls_attrs, elt
 
     def _gen_input_unicode(self, ctx, cls, inst, name, attr_override={},
                                                                       **kwargs):

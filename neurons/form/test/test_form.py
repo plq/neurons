@@ -46,7 +46,7 @@ from lxml import etree, html
 
 from spyne import Application, NullServer, Unicode, ServiceBase, rpc, Decimal, \
     Boolean, Date, Time, DateTime, Integer, ComplexModel, Array, Double, \
-    Mandatory as M
+    Mandatory as M, AnyHtml, AnyXml
 from spyne.util.test import show
 
 from neurons.form import HtmlForm, PasswordWidget, Tab, HrefWidget, \
@@ -212,6 +212,18 @@ class TestFormPrimitive(unittest.TestCase):
         elt = _test_type(Integer(hidden=True), None).xpath('input')[0]
         assert elt.attrib['type'] == "hidden"
         assert not 'value' in elt.attrib
+
+    def test_html(self):
+        v = "<html><head></head><body><p>test</p></body></html>"
+        elt = _test_type(AnyHtml, v).xpath('div/textarea')[0]
+
+        assert elt.text == str(v)
+
+    def test_xml(self):
+        v = "<html><head/><body><p>test</p></body></html>"
+        elt = _test_type(AnyXml, v).xpath('div/textarea')[0]
+
+        assert elt.text == str(v)
 
 
 class TestFormComplex(unittest.TestCase):
