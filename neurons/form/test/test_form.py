@@ -190,26 +190,33 @@ class TestFormPrimitive(unittest.TestCase):
         # FIXME: Need to find a better way to test the generated js
 
     def test_integer(self):
-        elt = _test_type(Integer, 42).xpath('div/input')[0]
-        assert elt.attrib['value'] == '42'
+        v = 42
+        elt = _test_type(Integer, v).xpath('div/input')[0]
+        assert elt.attrib['value'] == str(v)
 
     def test_integer_none(self):
-        elt = _test_type(Integer, None).xpath('div/input')[0]
+        v = None
+        elt = _test_type(Integer, v).xpath('div/input')[0]
         assert not 'value' in elt.attrib
 
     def test_hidden_input(self):
-        elt = _test_type(Integer(hidden=True), 5).xpath('input')[0]
+        v = 5
+        elt = _test_type(Integer(hidden=True), v).xpath('input')[0]
+
         assert elt.attrib['type'] == "hidden"
-        assert elt.attrib['value'] == "5"
+        assert elt.attrib['value'] == str(v)
 
     def test_hidden_input_pa(self):
-        elt = _test_type(Unicode(pa={HtmlForm:dict(hidden=True)}), "punk") \
+        v = "punk"
+        elt = _test_type(Unicode(pa={HtmlForm:dict(hidden=True)}), v) \
                                                               .xpath('input')[0]
         assert elt.attrib['type'] == "hidden"
-        assert elt.attrib['value'] == "punk"
+        assert elt.attrib['value'] == v
 
     def test_hidden_input_none(self):
-        elt = _test_type(Integer(hidden=True), None).xpath('input')[0]
+        v = None
+        elt = _test_type(Integer(hidden=True), v).xpath('input')[0]
+
         assert elt.attrib['type'] == "hidden"
         assert not 'value' in elt.attrib
 

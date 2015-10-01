@@ -714,7 +714,8 @@ class SelectWidgetBase(ComplexRenderWidget):
         with parent.element("select", attrib=tag_attrib):
             if self.others is None:
                 for v_id_str, v_text_str in data:
-                    parent.write(E.option(v_text_str, value=v_id_str, selected=''))
+                    elt = E.option(v_text_str, value=v_id_str, selected="")
+                    parent.write(elt)
                 return
 
             we_have_empty = False
@@ -839,16 +840,16 @@ class SelectWidgetBase(ComplexRenderWidget):
 
 class ComboBoxWidget(SelectWidgetBase):
     def _write_select(self, ctx, cls, inst, parent, name, fti, **kwargs):
-        cls_attr = self.get_cls_attrs(cls)
+        cls_attrs = self.get_cls_attrs(cls)
 
         v_id_str, v_text_str = self._prep_inst(cls, inst, fti)
 
         sub_name = self.hier_delim.join((name, self.id_field))
-        tag_attrib = self._gen_input_attrs_novalue(ctx, cls, sub_name, cls_attr,
+        elt_attrs = self._gen_input_attrs_novalue(ctx, cls, sub_name, cls_attrs,
                                                                        **kwargs)
         data = ((v_id_str, v_text_str),)
 
-        self._write_select_impl(ctx, cls, tag_attrib, data, fti, parent)
+        self._write_select_impl(ctx, cls, elt_attrs, data, fti, parent)
 
 
 class MultiSelectWidget(SelectWidgetBase):
