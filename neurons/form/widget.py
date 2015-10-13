@@ -512,8 +512,8 @@ class SimpleRenderWidget(HtmlWidget):
 class ComplexRenderWidget(HtmlWidget):
     type_attrs = dict(validate_freq=False)
 
-    def __init__(self, text_field, id_field=None, type=None, hidden_fields=None,
-                                                                    label=True):
+    def __init__(self, text_field=None, id_field=None, type=None,
+                                                hidden_fields=None, label=True):
         """A widget that renders complex objects as links.
 
         :param text_field: The name of the field containing a human readable
@@ -545,17 +545,20 @@ class ComplexRenderWidget(HtmlWidget):
             id_name = self.id_field
             id_type = fti[id_name]
 
+        text_str = text_type = None
         text_name = self.text_field
-        text_type = fti[text_name]
-        text_str = "[NULL]"
+        if text_name is not None:
+            text_str = "[NULL]"
+            text_type = fti[text_name]
 
         if inst is not None:
             if id_name is not None:
                 id_val = getattr(inst, id_name)
                 id_str = self.to_unicode(id_type, id_val)
 
-            text_val = getattr(inst, text_name)
-            text_str = self.to_unicode(text_type, text_val)
+            if text_name is not None:
+                text_val = getattr(inst, text_name)
+                text_str = self.to_unicode(text_type, text_val)
 
         if id_str is None:
             id_str = ""
@@ -665,7 +668,7 @@ class ComplexHrefWidget(ComplexRenderWidget):
 class SelectWidgetBase(ComplexRenderWidget):
     def __init__(self, text_field, id_field, hidden_fields=None, label=True,
                    type=None, inst_type=None, others=None, others_order_by=None,
-                                                         override_parent=False):
+                    override_parent=False, nonempty_widget=ComplexRenderWidget):
         """Widget that renders complex objects as <select> tags.
 
         Please see :class:`ComplexRenderWidget` docstring for more info.
@@ -681,6 +684,9 @@ class SelectWidgetBase(ComplexRenderWidget):
 
         :param override_parent: Overrides parent's name with the names from
             ComboBox.
+
+        :param nonempty_widget: The widget to be used for non-null instances of
+            classes with ``write_once`` attribute set.
 
         :param type: Force class type to given type.
 
@@ -704,6 +710,16 @@ class SelectWidgetBase(ComplexRenderWidget):
         self.inst_type = inst_type
         if inst_type is None:
             self.inst_type = type
+
+        self.nonempty_widget = nonempty_widget
+        if isclass(nonempty_widget):
+            assert issubclass(nonempty_widget, ComplexRenderWidget), \
+                         "I don't know" \
+                         "how to instantiate a non-ComplexRenderWidget-subclass"
+
+            self.nonempty_widget = nonempty_widget(self.text_field, label=False,
+                          hidden_fields=(self.hidden_fields or ())+ (id_field,),
+                                                   type=self.type)
 
         self.serialization_handlers[ModelBase] = self.model_base_to_parent
 
@@ -787,8 +803,7 @@ class SelectWidgetBase(ComplexRenderWidget):
         cls_attr = self.get_cls_attrs(cls)
 
         if cls_attr.write_once and inst is not None:
-            parent.write(self.to_unicode(cls, inst))
-            return
+            return self._gen_input_hidden(cls, inst, parent, name, **kwargs)
 
         parent_cls, parent_inst = ctx.protocol.inst_stack[-2]
 
@@ -807,8 +822,8 @@ class SelectWidgetBase(ComplexRenderWidget):
         cls_attr = self.get_cls_attrs(cls)
 
         if inst is not None and cls_attr.write_once:
-            return ComplexRenderWidget.complex_model_to_parent(
-                                self, ctx, cls, inst, parent, name, **kwargs)
+            return self.nonempty_widget.to_parent(ctx, cls, inst, parent,
+                                                                 name, **kwargs)
 
         if self.type is not None:
             logger.debug("ComboBoxWidget.type cls switch: %r => %r",
