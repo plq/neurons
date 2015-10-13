@@ -615,7 +615,7 @@ class ComplexHrefWidget(ComplexRenderWidget):
                          "how to instantiate a non-ComplexRenderWidget-subclass"
 
             self.empty_widget = empty_widget(self.text_field, self.id_field,
-                                   others=True, others_order_by=self.text_field)
+                      others=True, others_order_by=self.text_field, label=False)
 
     def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         fti = cls.get_flat_type_info(cls)
