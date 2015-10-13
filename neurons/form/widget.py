@@ -804,6 +804,12 @@ class SelectWidgetBase(ComplexRenderWidget):
         return self.not_supported(ctx, cls, inst, parent, name, **kwargs)
 
     def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls_attr = self.get_cls_attrs(cls)
+
+        if inst is not None and cls_attr.write_once:
+            return ComplexRenderWidget.complex_model_to_parent(
+                                self, ctx, cls, inst, parent, name, **kwargs)
+
         if self.type is not None:
             logger.debug("ComboBoxWidget.type cls switch: %r => %r",
                                                                  cls, self.type)
