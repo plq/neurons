@@ -237,7 +237,8 @@ class HtmlWidget(HtmlBase):
         elt_attrs = self._gen_input_attrs_novalue(ctx, cls, name, cls_attrs,
                                                                        **kwargs)
 
-        if cls_attrs.write_once and inst is not None:
+        if (cls_attrs.write_once and inst is not None) or \
+                                                       cls_attrs.write is False:
             elt_attrs['readonly'] = ""
 
         val = self.to_unicode(cls, inst)
@@ -337,7 +338,8 @@ class HtmlWidget(HtmlBase):
             tag = 'textarea'
 
             elt_attrs = self._gen_input_attrs_novalue(ctx, cls, name, cls_attrs)
-            if cls_attrs.write_once and inst is not None:
+            if (cls_attrs.write_once and inst is not None) or \
+                                                       cls_attrs.write is False:
                 elt_attrs['readonly'] = ""
 
             if cls_attrs.min_occurs == 1 and cls_attrs.nullable == False:
