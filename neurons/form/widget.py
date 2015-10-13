@@ -726,12 +726,6 @@ class SelectWidgetBase(ComplexRenderWidget):
                 self._write_empty(parent)
                 we_have_empty = True
 
-            if attr.write is False:
-                for v_id_str, v_text_str in data:
-                    if v_id_str != "":
-                        elt = E.option(v_text_str, value=v_id_str, selected="")
-                        parent.write(elt)
-
             is_callable = callable(self.others)
             is_iterable = isinstance(self.others, collections.Iterable)
             is_autogen = (self.others is True)
