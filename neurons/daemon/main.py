@@ -41,7 +41,6 @@ import socket
 import struct
 import resource
 
-from pprint import pformat
 from os.path import isfile, join, dirname
 
 from spyne.util.six import StringIO
@@ -222,6 +221,25 @@ def _inner_main(config, init, bootstrap, bootstrapper):
 
         if config.write_xsd:
             return _write_xsd(config)
+
+    if config.shell or config.ikernel:
+        # Import db handle, session and other useful stuff to the shell's scope
+        db =None
+        if isinstance(config, ServiceDaemon):
+            db = config.stores[config.main_store].itself
+
+        session = db.Session()
+
+        import IPython, traceback, inspect, sys
+        from pprint import pprint, pformat
+
+        # start the kind of shell requested by user
+        if config.shell:
+            return \
+                IPython.embed(header="Database handle is at:           db\n"
+                                     "There's also an open session at: session")
+        elif config.ikernel:
+            return IPython.embed_kernel()
 
 
 class BootStrapper(object):
