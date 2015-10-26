@@ -513,7 +513,7 @@ class ComplexRenderWidget(HtmlWidget):
     type_attrs = dict(validate_freq=False)
 
     def __init__(self, text_field=None, id_field=None, type=None,
-                                                hidden_fields=None, label=True):
+                             hidden_fields=None, label=True, null_str='[NULL]'):
         """A widget that renders complex objects as links.
 
         :param text_field: The name of the field containing a human readable
@@ -534,6 +534,7 @@ class ComplexRenderWidget(HtmlWidget):
         self.text_field = text_field
         self.hidden_fields = hidden_fields
         self.type = type
+        self.null_str = null_str
 
         self.serialization_handlers = cdict({
             ComplexModelBase: self.complex_model_to_parent,
@@ -548,7 +549,7 @@ class ComplexRenderWidget(HtmlWidget):
         text_str = text_type = None
         text_name = self.text_field
         if text_name is not None:
-            text_str = "[NULL]"
+            text_str = self.null_str
             text_type = fti[text_name]
 
         if inst is not None:

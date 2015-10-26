@@ -492,6 +492,11 @@ class Daemon(ComplexModel):
 
         ('alert_dests', Array(AlertDestination, default=[])),
 
+        ('shell', Boolean(no_config=True, default=False,
+                    help="Drop to IPython shell. Useful for trying ORM stuff")),
+        ('ikernel', Boolean(no_config=True, default=False,
+                    help="Start IPython kernel.")),
+
         ('_services', Array(Service, sub_name='services')),
         ('_loggers', Array(Logger, sub_name='loggers')),
     ]
