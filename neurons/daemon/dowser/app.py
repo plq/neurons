@@ -38,6 +38,7 @@ from neurons import Application
 from neurons.daemon.config import HttpListener, StaticFileServer
 from neurons.daemon.dowser.const import ASSETS_DIR
 from neurons.daemon.dowser.service import DowserServices
+from neurons.daemon.ipc import get_own_dowser_address
 
 from spyne import Double
 from spyne.protocol.html import HtmlBase
@@ -53,9 +54,10 @@ def start_dowser(config):
     from twisted.internet.task import LoopingCall
     from twisted.internet.threads import deferToThread
 
+    host, port = get_own_dowser_address()
+
     subconfig = config.services.getwrite('dowser', DowserListener(
-        host='0.0.0.0',
-        port=0x1EAC,  # ~= leak == 7852
+        host=None, port=None,
         disabled=False,
         _subapps=[StaticFileServer(url='assets', path=ASSETS_DIR,
                                list_contents=False, disallowed_exts=["py"])],
@@ -77,5 +79,5 @@ def start_dowser(config):
     task = LoopingCall(deferToThread, DowserServices.tick)
     task.start(subconfig.tick_period_sec)
 
-    logger.info("listening for dowser on %s:%d", subconfig.host, subconfig.port)
-    return reactor.listenTCP(subconfig.port, site, interface=subconfig.host), None
+    logger.info("listening for dowser on %s:%d", host, port)
+    return reactor.listenTCP(port, site, interface=host), None
