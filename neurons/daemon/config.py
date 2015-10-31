@@ -916,3 +916,9 @@ class ServiceDaemon(Daemon):
         if self.log_results:
             logging.getLogger('sqlalchemy').setLevel(logging.DEBUG)
             logging.getLogger('sqlalchemy.orm.mapper').setLevel(logging.WARNING)
+
+    def get_main_store(self):
+        return self.stores[self.main_store].itself
+
+    def get_main_store_config(self):
+        return self.stores[self.main_store]
