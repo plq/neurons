@@ -51,6 +51,7 @@ from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
 
 from spyne.protocol import ProtocolBase
 from spyne.protocol.yaml import YamlDocument
+from spyne.util.color import B, YEL, R, DARK_R
 
 from spyne.util.dictdoc import yaml_loads, get_object_as_yaml
 
@@ -377,13 +378,19 @@ class WsgiListener(HttpListener):
 
 
 LOGLEVEL_MAP = dict(zip(
-    ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL', 'FATAL'],
+    ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
     [logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR,
-                                                logging.CRITICAL, logging.FATAL]
+                                                               logging.CRITICAL]
 ))
 
 
-LOGLEVEL_MAP_ABB = {v: k[0] for (k, v) in LOGLEVEL_MAP.items()}
+LOGLEVEL_MAP_ABB = {
+    logging.DEBUG: 'D',
+    logging.INFO: B('I'),
+    logging.WARNING: YEL('W'),
+    logging.ERROR: R('E'),
+    logging.CRITICAL: DARK_R('C'),
+}
 
 
 class Logger(ComplexModel):
