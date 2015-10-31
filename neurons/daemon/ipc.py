@@ -59,6 +59,8 @@ def get_mgmt_address_for_tcp_port(port):
     if pid is not None:
         return get_mgmt_address_for_pid(pid)
 
+    return None, None
+
 
 def get_own_mgmt_address():
     return get_mgmt_address_for_pid(os.getpid())
