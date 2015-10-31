@@ -54,6 +54,13 @@ from neurons.form.widget import HtmlWidget, SimpleRenderWidget
 SOME_COUNTER = 0
 
 
+def _idxof(haystack, needle, default):
+    try:
+        return haystack.index(needle)
+    except ValueError:
+        return default
+
+
 class Fieldset(namedtuple('Fieldset', 'legend tag attrib index htmlid')):
     def __new__(cls, legend=None, tag='fieldset', attrib={}, index=None,
                                                                    htmlid=None):
@@ -375,6 +382,44 @@ class HtmlForm(HtmlFormRoot):
         div.append(script)
         parent.write(div)
 
+    @staticmethod
+    def _split_datetime_format(f):
+        """this is actually a pathetic attempt at splitting datetime
+        format to date and time formats. assumes date and time fields are
+        not mixed"""
+
+        lf = len(f)
+        date_start_idx = min(
+            _idxof(f, '%Y', lf), _idxof(f, '%m', lf), _idxof(f, '%d', lf)
+        )
+        date_end_idx = max(
+            _idxof(f, '%Y', -1), _idxof(f, '%m', -1), _idxof(f, '%d', -1)
+        ) + 2
+
+        time_start_idx = min(
+            _idxof(f, '%H', lf), _idxof(f, '%M', lf), _idxof(f, '%S', lf)
+        )
+        time_end_idx = max(
+            _idxof(f, '%H', -1), _idxof(f, '%M', -1), _idxof(f, '%S', -1)
+        ) + 2
+
+        if date_end_idx <= time_start_idx:
+            date_format = f[:date_end_idx].strip()
+            time_format = f[time_start_idx:].strip()
+        else:
+            date_format = f[date_start_idx:].strip()
+            time_format = f[:time_end_idx].strip()
+
+        date_format = date_format.replace('%Y', 'yy') \
+                                 .replace('%m', 'mm') \
+                                 .replace('%d', 'dd') \
+
+        time_format = time_format.replace('%H', 'HH') \
+                                     .replace('%M', 'MM') \
+                                     .replace('%S', 'SS')
+
+        return date_format, time_format
+
     def datetime_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         ctx.protocol.assets.extend([('jquery',), ('jquery-ui', 'datepicker'),
                                                         ('jquery-timepicker',)])
@@ -384,30 +429,27 @@ class HtmlForm(HtmlFormRoot):
         elt.attrib['type'] = 'text'
 
         if cls_attrs.format is None:
-            data_format = 'yy-mm-dd HH:MM:SS'
+            date_format, time_format = 'yy-mm-dd', 'HH:MM:SS'
 
         else:
-            data_format = cls_attrs.format.replace('%Y', 'yy') \
-                                          .replace('%m', 'mm') \
-                                          .replace('%d', 'dd') \
-                                          .replace('%H', 'HH') \
-                                          .replace('%M', 'MM') \
-                                          .replace('%S', 'SS')
+            date_format, time_format = \
+                                   self._split_datetime_format(cls_attrs.format)
 
         code = [
             "$('#%(field_name)s').datetimepicker();",
-            "$('#%(field_name)s').datetimepicker('option', 'DateTimeFormat', '%(format)s');",
+            "$('#%(field_name)s').datetimepicker('option', 'dateFormat', '%(date_format)s');",
+            "$('#%(field_name)s').datetimepicker('option', 'timeFormat', '%(time_format)s');",
         ]
 
         if inst is None:
             script = self._format_js(code, field_name=elt.attrib['id'],
-                                                             format=data_format)
+                               date_format=date_format, time_format=time_format)
         else:
             value = self.to_unicode(cls, inst)
             code.append(
                 "$('#%(field_name)s').datetimepicker('setDate', '%(value)s');")
             script = self._format_js(code, field_name=elt.attrib['id'],
-                                                format=data_format, value=value)
+                  date_format=date_format, time_format=time_format, value=value)
 
         div = self._wrap_with_label(ctx, cls, name, elt, **kwargs)
         div.append(script)
