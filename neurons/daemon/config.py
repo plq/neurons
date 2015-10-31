@@ -51,6 +51,7 @@ from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
 
 from spyne.protocol import ProtocolBase
 from spyne.protocol.yaml import YamlDocument
+from spyne.util.odict import odict
 from spyne.util.color import B, YEL, R, DARK_R
 
 from spyne.util.dictdoc import yaml_loads, get_object_as_yaml
@@ -404,7 +405,7 @@ class Logger(ComplexModel):
             _logger = logging.getLogger(self.path)
 
         _logger.setLevel(LOGLEVEL_MAP[self.level])
-        logger.info("Setting logging level for %r to %r.",
+        logger.info("Setting logging level for %r to %s.",
                                                        _logger.name, self.level)
 
         return self
@@ -414,7 +415,7 @@ class ServiceDisabled(Exception):
     pass
 
 
-class _wdict(dict):
+class _wdict(odict):
     def getwrite(self, key, *args):
         if len(args) > 0:
             if not key in self:
