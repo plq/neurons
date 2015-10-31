@@ -31,7 +31,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-__version__ = '0.3'
+__version__ = '0.4'
 
 from neurons.model import TableModel
 from neurons.application import Application
