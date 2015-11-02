@@ -811,6 +811,17 @@ class Daemon(ComplexModel):
         open(self.config_file, 'wb').write(get_object_as_yaml(self,
                                               self.__class__, polymorphic=True))
 
+    def get_email_alert_addresses(self):
+        retval = []
+
+        if self.alert_dests is not None:
+            for dest in self.alert_dests:
+                if isinstance(dest, EmailAlert):
+                    retval.extend(dest.recipients)
+
+        return retval
+
+
 class ServiceDaemon(Daemon):
     """This daemon needs access to one or more data stores to work."""
 
