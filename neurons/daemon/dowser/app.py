@@ -38,7 +38,6 @@ from neurons import Application
 from neurons.daemon.config import HttpListener, StaticFileServer
 from neurons.daemon.dowser.const import ASSETS_DIR
 from neurons.daemon.dowser.service import DowserServices
-from neurons.daemon.ipc import get_own_dowser_address
 
 from spyne import Double
 from spyne.protocol.html import HtmlBase
@@ -53,6 +52,7 @@ def start_dowser(config):
     from twisted.internet import reactor
     from twisted.internet.task import LoopingCall
     from twisted.internet.threads import deferToThread
+    from neurons.daemon.ipc import get_own_dowser_address
 
     host, port = get_own_dowser_address()
 
