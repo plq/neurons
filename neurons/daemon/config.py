@@ -54,6 +54,7 @@ from spyne.protocol.yaml import YamlDocument
 from spyne.util.odict import odict
 from spyne.util.color import B, YEL, R, DARK_R
 
+from spyne.util import six
 from spyne.util.dictdoc import yaml_loads, get_object_as_yaml
 
 from neurons.daemon.daemonize import daemonize
@@ -650,8 +651,15 @@ class Daemon(ComplexModel):
                 if _logger is None:
                     _logger = loggers[record.name] = Logger(record.name)
 
-                _logger.emit(LOGLEVEL_TWISTED_MAP[record.levelno],
-                                                   log_text=self.format(record))
+                t = self.format(record)
+
+                if six.PY2 and isinstance(t, str):
+                    # Libraries outside of our control can throw exceptions with
+                    # a "str with known encoding", which can cause issues down
+                    # the logging pipeline. Her
+                    t = t.decode('utf8', errors='replace')
+
+                _logger.emit(LOGLEVEL_TWISTED_MAP[record.levelno], log_text=t)
 
         if self.logger_dest is not None:
             from twisted.python.logfile import DailyLogFile
