@@ -19,7 +19,7 @@ setup(
     version=VERSION,
     packages=find_packages(),
 
-    install_requires=['neurons>=0.2'],
+    install_requires=['neurons>=0.5'],
     entry_points={
         'console_scripts': [
             'garage_daemon=garage.main:main_daemon',
