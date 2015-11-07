@@ -674,13 +674,13 @@ class Daemon(ComplexModel):
             else:
                 Logger().warn("%r is not accessible. We need rwx on it to "
                                "rotate logs." % dirname(self.logger_dest))
-                log_dest = open(self.logger_dest, 'wb+')
+                log_dest = open(self.logger_dest, 'w+')
 
             formatter = logging.Formatter(self.LOGGING_PROD_FORMAT)
 
         else:
             formatter = logging.Formatter(self.LOGGING_DEVEL_FORMAT)
-            log_dest = open('/dev/stdout', 'wb+')
+            log_dest = open('/dev/stdout', 'w+')
 
             try:
                 import colorama
