@@ -114,6 +114,22 @@ _jstag = lambda src: E.script(src=src, type="text/javascript")
 _csstag = lambda src: E.link(href=src, type="text/css", rel="stylesheet")
 
 
+# monkeypatch spyne <2.13
+if not hasattr(HtmlWidget, '_get_datetime_format'):
+    def _get_datetime_format(self, cls_attrs):
+        dt_format = cls_attrs.dt_format
+        if dt_format is None:
+            dt_format = cls_attrs.date_format
+        if dt_format is None:
+            dt_format = cls_attrs.out_format
+        if dt_format is None:
+            dt_format = cls_attrs.format
+
+        return dt_format
+
+    HtmlWidget._get_datetime_format = _get_datetime_format
+
+
 class HtmlFormRoot(HtmlWidget):
     @coroutine
     def start_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
@@ -421,6 +437,7 @@ class HtmlForm(HtmlFormRoot):
         return date_format, time_format
 
     def datetime_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        # see: http://trentrichardson.com/examples/timepicker/
         ctx.protocol.assets.extend([('jquery',), ('jquery-ui', 'datepicker'),
                                                         ('jquery-timepicker',)])
 
@@ -428,17 +445,19 @@ class HtmlForm(HtmlFormRoot):
         elt = self._gen_input(ctx, cls, None, name, cls_attrs, **kwargs)
         elt.attrib['type'] = 'text'
 
-        if cls_attrs.format is None:
-            date_format, time_format = 'yy-mm-dd', 'HH:MM:SS'
-
+        dt_format = self._get_datetime_format(cls_attrs)
+        if dt_format is None:
+            date_format, time_format = 'yy-mm-dd', 'HH:mm:ss'
         else:
             date_format, time_format = \
-                                   self._split_datetime_format(cls_attrs.format)
+                                self._split_datetime_format(cls_attrs.dt_format)
 
         code = [
-            "$('#%(field_name)s').datetimepicker();",
-            "$('#%(field_name)s').datetimepicker('option', 'dateFormat', '%(date_format)s');",
-            "$('#%(field_name)s').datetimepicker('option', 'timeFormat', '%(time_format)s');",
+            "var t=$('#%(field_name)s');",
+            "t.datetimepicker({",
+            "    dateFormat: '%(date_format)s',",
+            "    timeFormat: '%(time_format)s'",
+            "});",
         ]
 
         if inst is None:
@@ -446,8 +465,10 @@ class HtmlForm(HtmlFormRoot):
                                date_format=date_format, time_format=time_format)
         else:
             value = self.to_unicode(cls, inst)
+
             code.append(
-                "$('#%(field_name)s').datetimepicker('setDate', '%(value)s');")
+                "t.datetimepicker('setTime', '%(value)s');")
+
             script = self._format_js(code, field_name=elt.attrib['id'],
                   date_format=date_format, time_format=time_format, value=value)
 
