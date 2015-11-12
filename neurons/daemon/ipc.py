@@ -4,6 +4,9 @@ import socket
 import struct
 import psutil
 
+from spyne import rpc, UnsignedInteger16, Unicode
+from neurons.base.service import TReaderServiceBase
+
 
 def _gen_addr(base, num):
     # port numbers should never fall below 1024.
@@ -64,3 +67,9 @@ def get_mgmt_address_for_tcp_port(port):
 
 def get_own_mgmt_address():
     return get_mgmt_address_for_pid(os.getpid())
+
+
+class DaemonServices(TReaderServiceBase()):
+    @rpc(Unicode, UnsignedInteger16)
+    def unlisten(self, host, port):
+        pass
