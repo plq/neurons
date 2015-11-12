@@ -415,8 +415,8 @@ class HtmlForm(HtmlFormRoot):
                                  .replace('%d', 'dd') \
 
         time_format = time_format.replace('%H', 'HH') \
-                                     .replace('%M', 'MM') \
-                                     .replace('%S', 'SS')
+                                 .replace('%M', 'mm') \
+                                 .replace('%S', 'ss')
 
         return date_format, time_format
 
