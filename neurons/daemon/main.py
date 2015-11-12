@@ -185,10 +185,11 @@ def _inner_main(config, init, bootstrap, bootstrapper):
     if hasattr(items, 'items'):  # if it's a dict
         items = items.items()
 
+    handles = config._handles = {}
     for k, v in items:
         if not k in config.services or not config.services[k].disabled:
             try:
-                v(config)
+                handles[k] = v(config)
             except ServiceDisabled:
                 logger.info("Service '%s' is disabled.", k)
 
