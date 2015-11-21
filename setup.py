@@ -116,7 +116,7 @@ setup(
     },
 
     package_data={
-        'neurons.form.const': ['*.xhtml'],
+        'neurons.form.const': ['*.html'],
         'neurons.daemon.dowser.const': ['*.html', '*.css'],
     },
 
