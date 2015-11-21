@@ -44,17 +44,22 @@ try:
 except OSError:
     pass
 
-install_reqs = (
-    'spyne>=2.12', 'msgpack-python', 'pycrypto', 'SQLAlchemy<0.9.99',
-    'werkzeug', 'lxml>=3.4.1', 'Twisted>=15.2', 'pyyaml', 'psycopg2>=2.5',
-    'txpostgres',
+
+common_reqs = ('spyne>=2.12', 'SQLAlchemy<0.9.99', 'Twisted>=15.2',
+    'lxml>=3.4.1', 'pyyaml', 'msgpack-python', 'pycrypto',
+)
+
+
+test_reqs = common_reqs + ('pytest', 'pytest-cov', 'pytest-twisted',
+    'tox',
+)
+
+install_reqs = common_reqs + (
+    'werkzeug',  'psycopg2>=2.5', 'txpostgres',
 )
 
 ##################
 # testing stuff
-
-test_reqs = install_reqs + ('pytest', 'tox')
-
 
 class Tox(TestCommand):
     user_options = [('tox-args=', 'a', "Arguments to pass to tox")]
