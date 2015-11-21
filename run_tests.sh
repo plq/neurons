@@ -59,9 +59,7 @@ PYNAME=python$PYVER;
 
 if [ -z "$FN" ]; then
     declare -A URLS;
-    URLS["cpy26"]="2.6.9/Python-2.6.9.tgz";
     URLS["cpy27"]="2.7.10/Python-2.7.10.tar.xz";
-    URLS["cpy33"]="3.3.6/Python-3.3.6.tar.xz";
     URLS["cpy34"]="3.4.3/Python-3.4.3.tar.xz";
     URLS["cpy35"]="3.5.0/Python-3.5.0.tar.xz";
     URLS["jyt27"]="2.7-b2/jython-installer-2.7-b2.jar";
@@ -77,9 +75,7 @@ fi;
 
 # tox compat
 declare -A TOX_ENVS;
-TOX_ENVS["cpy26"]="py26";
 TOX_ENVS["cpy27"]="py27";
-TOX_ENVS["cpy33"]="py33";
 TOX_ENVS["cpy34"]="py34";
 TOX_ENVS["cpy35"]="py35";
 
@@ -106,7 +102,7 @@ fi;
 
 # Set common variables
 PYTHON="$WORKSPACE/$PREFIX/bin/$PYNAME";
-EASY="$WORKSPACE/$PREFIX/bin/easy_install-$PYVER";
+PIP="$WORKSPACE/$PREFIX/bin/pip$PYVER";
 TOX="$WORKSPACE/$PREFIX/bin/tox";
 TOX2="$HOME/.local/bin/tox"
 
@@ -173,26 +169,12 @@ elif [ $PYIMPL == 'ipy' ]; then
 
 fi;
 
-# Set up distribute
-if [ ! -x "$EASY" ]; then
-  (
-    mkdir -p .data; cd .data;
-    $PYTHON "$WORKSPACE"/bin/distribute_setup.py;
-  )
-fi;
-
 # Set up tox
 if [ ! -x "$TOX" ]; then
-   $EASY tox;
+   $PIP install tox;
 fi;
 
-#while read line; do $EASY $line; done < requirements/test_requirements.txt
 if [ $PYIMPL == 'cpy' ]; then
-    # Sometimes, easy_install works in mysterious ways...
-    if [ ! -x "$TOX" ]; then
-      TOX="$TOX2"
-    fi;
-
     # Run tests. Tox runs coverage.
     TENV=${TOX_ENVS[$PYFLAV]};
     BASEPYTHON="$PYTHON" "$TOX" --version
