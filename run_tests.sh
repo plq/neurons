@@ -178,6 +178,15 @@ fi;
 set
 
 
+if [ "$JENKINS_URL" == "https://spyne.ci.cloudbees.com/" ]; then
+
+    export POSTGRESQL_VERSION=9.2.4
+    curl -s -o use-postgresql https://repository-cloudbees.forge.cloudbees.com/distributions/ci-addons/postgresql/use-postgresql
+    source ./use-postgresql
+
+fi
+
+
 if [ $PYIMPL == 'cpy' ]; then
     # Run tests. Tox runs coverage.
     TENV=${TOX_ENVS[$PYFLAV]};
