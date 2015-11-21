@@ -174,6 +174,10 @@ if [ ! -x "$TOX" ]; then
    $PIP install tox;
 fi;
 
+
+set
+
+
 if [ $PYIMPL == 'cpy' ]; then
     # Run tests. Tox runs coverage.
     TENV=${TOX_ENVS[$PYFLAV]};
