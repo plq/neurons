@@ -194,6 +194,7 @@ fi
 if [ $PYIMPL == 'cpy' ]; then
     # Run tests. Ignore return values, the information we need is in the
     # test_result.*.xml and coverage.xml
+    TENV=${TOX_ENVS[$PYFLAV]};
     "$TOX" -e "$TENV" || true;
 
 else
