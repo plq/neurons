@@ -33,6 +33,8 @@ htmlcov/
 .cache
 test_result.*.xml
 coverage.xml
+.data
+Python-*
 
 # Translations
 *.mo
