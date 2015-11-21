@@ -63,7 +63,7 @@ if [ -z "$FN" ]; then
     URLS["cpy27"]="2.7.10/Python-2.7.10.tar.xz";
     URLS["cpy33"]="3.3.6/Python-3.3.6.tar.xz";
     URLS["cpy34"]="3.4.3/Python-3.4.3.tar.xz";
-    URLS["cpy35"]="3.5.0/Python-3.5.0b3.tar.xz";
+    URLS["cpy35"]="3.5.0/Python-3.5.0.tar.xz";
     URLS["jyt27"]="2.7-b2/jython-installer-2.7-b2.jar";
     URLS["ipy27"]="ipy-2.7.4.zip";
 
