@@ -102,7 +102,7 @@ fi;
 
 # Set common variables
 PYTHON="$WORKSPACE/$PREFIX/bin/$PYNAME";
-PIP="$WORKSPACE/$PREFIX/bin/pip";
+PIP="$WORKSPACE/$PREFIX/bin/pip$PYVER";
 TOX="$WORKSPACE/$PREFIX/bin/tox";
 TOX2="$HOME/.local/bin/tox"
 
