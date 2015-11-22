@@ -1,0 +1,4 @@
+[run]
+include = neurons
+omit = neurons/test
+
