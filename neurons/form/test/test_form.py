@@ -191,16 +191,16 @@ class TestFormPrimitive(unittest.TestCase):
 
     def test_datetime_format_split(self):
         ret = HtmlForm._split_datetime_format('%Y-%m-%d %H:%M:%S')
-        assert ret == ('yy-mm-dd', 'HH:MM:SS')
+        assert ret == ('yy-mm-dd', 'HH:mm:ss')
 
         ret = HtmlForm._split_datetime_format('%Y-%m-%d %H:%M')
-        assert ret == ('yy-mm-dd', 'HH:MM')
+        assert ret == ('yy-mm-dd', 'HH:mm')
 
         ret = HtmlForm._split_datetime_format('%Y-%m-%d')
         assert ret == ('yy-mm-dd', '')
 
         ret = HtmlForm._split_datetime_format('%H:%M:%S')
-        assert ret == ('', 'HH:MM:SS')
+        assert ret == ('', 'HH:mm:ss')
 
     def test_integer(self):
         v = 42
