@@ -214,9 +214,11 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
         # even though there are calls to coroutines here, as the passed objects
         # are empty, so it's not possible to have push data. so there's no need
         # to check the returned generators.
+
+        from_arr = True
         if issubclass(cls, ComplexModelBase):
             inst = (cls.__orig__ or cls)()
-            ctx.protocol.inst_stack.append((cls, inst))
+            ctx.protocol.inst_stack.append((cls, inst, from_arr))
 
             if cls.Attributes.max_occurs > 1:
                 self._gen_row(ctx, cls, [inst], parent, name,
@@ -227,7 +229,7 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
 
         else:
             inst = None
-            ctx.protocol.inst_stack.append((cls, inst))
+            ctx.protocol.inst_stack.append((cls, inst, from_arr))
 
             if cls.Attributes.max_occurs > 1:
                 self.model_base_to_parent(ctx, cls, inst, parent, name,

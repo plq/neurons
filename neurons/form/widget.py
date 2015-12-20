@@ -803,19 +803,24 @@ class SelectWidgetBase(ComplexRenderWidget):
     def model_base_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attr = self.get_cls_attrs(cls)
 
-        if cls_attr.write_once and inst is not None:
-            return self._gen_input_hidden(cls, inst, parent, name, **kwargs)
-
-        parent_cls, parent_inst = ctx.protocol.inst_stack[-2]
+        parent_cls, parent_inst, parent_fromarr = ctx.protocol.inst_stack[-2]
 
         if self.override_parent and cls is not parent_cls:
             logger.debug("ComboBoxWidget.override_parent "
-                         "cls, inst switch: %r => %r", (cls, inst),
-                                                    ctx.protocol.inst_stack[-1])
+                                        "cls switch: %r => %r", cls, parent_cls)
 
             parent_name = name.rsplit(self.hier_delim, 1)[0]
-            return self.complex_model_to_parent(ctx, parent_cls, parent_inst,
-                                                parent, parent_name, **kwargs)
+            kwargs['from_arr'] = parent_fromarr
+
+            if inst is not None and self.nonempty_widget is not None:
+                return self.nonempty_widget.to_parent(ctx,
+                         parent_cls, parent_inst, parent, parent_name, **kwargs)
+
+            return self.complex_model_to_parent(ctx,
+                         parent_cls, parent_inst, parent, parent_name, **kwargs)
+
+        if cls_attr.write_once and inst is not None:
+            return self._gen_input_hidden(cls, inst, parent, name, **kwargs)
 
         return self.not_supported(ctx, cls, inst, parent, name, **kwargs)
 
