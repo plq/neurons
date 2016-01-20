@@ -458,7 +458,7 @@ class Daemon(ComplexModel):
     LOGGING_PROD_FORMAT = "%(l)s %(asctime)s | %(module)-8s | %(message)s"
 
     _type_info = [
-        ('name', Boolean(help="Show version", no_cli=True)),
+        ('name', Unicode(no_cli=True, help="Daemon Name")),
 
         ('uuid', Uuid(no_cli=True,
                       help="Daemon uuid. Regenerated every time a new "
