@@ -355,7 +355,7 @@ class HtmlForm(HtmlFormRoot):
             script = self._format_js(code, field_name=elt.attrib['id'],
                                                              format=data_format)
         else:
-            value = self.to_string(cls, inst)
+            value = self.to_unicode(cls, inst)
             code.append("$('#%(field_name)s').datepicker('setDate', '%(value)s');")
             script = self._format_js(code, field_name=elt.attrib['id'], value=value,
                                                              format=data_format)
