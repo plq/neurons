@@ -458,7 +458,7 @@ class Daemon(ComplexModel):
     LOGGING_PROD_FORMAT = "%(l)s %(asctime)s | %(module)-8s | %(message)s"
 
     _type_info = [
-        ('name', Boolean(help="Show version", no_cli=True)),
+        ('name', Unicode(no_cli=True, help="Daemon Name")),
 
         ('uuid', Uuid(no_cli=True,
                       help="Daemon uuid. Regenerated every time a new "
@@ -880,21 +880,21 @@ class ServiceDaemon(Daemon):
             name=daemon_name,
             _stores=[
                 Relational(
-                    name="sql_main",
-                    backend="sqlalchemy",
+                    name=u"sql_main",
+                    backend=u"sqlalchemy",
                     pool_size=10,
                     pool_recycle=3600,
                     pool_timeout=30,
                     max_overflow=3,
-                    conn_str='postgres://postgres:@localhost:5432/%s_%s' %
+                    conn_str=u'postgres://postgres:@localhost:5432/%s_%s' %
                                                (daemon_name, getpass.getuser()),
                     sync_pool=True,
                     async_pool=True,
                 ),
             ],
-            main_store='sql_main',
+            main_store=u'sql_main',
             _loggers=[
-                Logger(path='.', level='DEBUG', format=cls.LOGGING_DEVEL_FORMAT),
+                Logger(path=u'.', level=u'DEBUG', format=cls.LOGGING_DEVEL_FORMAT),
             ],
         )
 

@@ -187,11 +187,18 @@ def _inner_main(config, init, bootstrap, bootstrapper):
 
     handles = config._handles = {}
     for k, v in items:
-        if not k in config.services or not config.services[k].disabled:
-            try:
-                handles[k] = v(config)
-            except ServiceDisabled:
-                logger.info("Service '%s' is disabled.", k)
+        disabled = False
+        if k in config.services:
+            disabled = config.services[k].disabled
+
+        if disabled:
+            logger.info("Service '%s' is disabled in the config.", k)
+            continue
+
+        try:
+            handles[k] = v(config)
+        except ServiceDisabled:
+            logger.info("Service '%s' is disabled.", k)
 
     if isinstance(config, ServiceDaemon):
         if config.write_wsdl:
