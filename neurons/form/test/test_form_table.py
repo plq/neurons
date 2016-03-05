@@ -116,7 +116,7 @@ class TestFormTable(unittest.TestCase):
 
         class SomeObject(ComplexModel):
             i = Integer
-            s = Array(Unicode(64), prot=HtmlFormTable(label=True))
+            s = Array(Unicode(64), prot=HtmlFormTable(), label=True)
 
         v = SomeObject(i=42, s=v)
         elt = _test_type(SomeObject, v, HtmlForm)
