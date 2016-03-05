@@ -56,9 +56,10 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
                      cloth=None, polymorphic=True, doctype=None, hier_delim='.',
                         cloth_parser=None, header=True, table_name_attr='class',
                         table_name=None, input_class=None, input_div_class=None,
-                   input_wrapper_class=None, label_class=None, table_class=None,
-             field_name_attr='class', border=0, row_class=None, cell_class=None,
-            header_cell_class=None, can_add=True, can_remove=True, label=False):
+                   input_wrapper_class=None, label_class=None, action=None,
+                 table_class=None, field_name_attr='class', border=0,
+                 row_class=None, cell_class=None, header_cell_class=None,
+                 can_add=True, can_remove=True, label=False, before_table=None):
 
         super(HtmlFormTable, self).__init__(app=app,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
@@ -67,10 +68,11 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
                          table_name_attr=table_name_attr, table_name=table_name,
                        table_class=table_class, field_name_attr=field_name_attr,
                       border=border, row_class=row_class, cell_class=cell_class,
-                                            header_cell_class=header_cell_class)
+                 header_cell_class=header_cell_class, before_table=before_table)
 
         self.prot_form = HtmlForm(label=label, label_class=label_class,
-                       input_class=input_class, input_div_class=input_div_class,
+                                        action=action, input_class=input_class,
+                                                input_div_class=input_div_class,
                                         input_wrapper_class=input_wrapper_class)
 
         self.can_add = can_add
@@ -131,39 +133,19 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
         if name == "":
             name = cls.get_type_name()
 
-        # If this is direct child of an array, table is already set up in
-        # array_to_parent.
-        if self.label:
-            div_attrib = self._gen_label_wrapper_class(ctx, cls, name)
-            label = self._gen_label_for(ctx, cls, name)
-            with parent.element('div', attrib=div_attrib):
-                parent.write(label)
-                ret = self._gen_table(ctx, cls, inst, parent, name, gen_rows,
-                                                                       **kwargs)
-                if isgenerator(ret):
-                    try:
-                        while True:
-                            sv2 = (yield)
-                            ret.send(sv2)
-                    except Break as b:
-                        try:
-                            ret.throw(b)
-                        except StopIteration:
-                            pass
-        else:
-            ret = self._gen_table(ctx, cls, inst, parent, name, gen_rows,
-                                                                       **kwargs)
+        ret = self._gen_table(ctx, cls, inst, parent, name, gen_rows,
+                                                                   **kwargs)
 
-            if isgenerator(ret):
+        if isgenerator(ret):
+            try:
+                while True:
+                    sv2 = (yield)
+                    ret.send(sv2)
+            except Break as b:
                 try:
-                    while True:
-                        sv2 = (yield)
-                        ret.send(sv2)
-                except Break as b:
-                    try:
-                        ret.throw(b)
-                    except StopIteration:
-                        pass
+                    ret.throw(b)
+                except StopIteration:
+                    pass
 
     def extend_header_row(self, ctx, cls, parent, name, **kwargs):
         if self.can_add or self.can_remove:

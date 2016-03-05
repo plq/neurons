@@ -131,6 +131,22 @@ if not hasattr(HtmlWidget, '_get_datetime_format'):
 
 
 class HtmlFormRoot(HtmlWidget):
+    def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
+                cloth=None, cloth_parser=None, polymorphic=True, hier_delim='.',
+                     label=True, doctype=None, asset_paths={}, placeholder=None,
+               input_class=None, input_div_class=None, input_wrapper_class=None,
+                                                 label_class=None, action=None):
+
+        super(HtmlFormRoot, self).__init__(app=app, doctype=doctype,
+                     ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
+                cloth=cloth, cloth_parser=cloth_parser, polymorphic=polymorphic,
+                    hier_delim=hier_delim, label=label, asset_paths=asset_paths,
+                    placeholder=placeholder, input_class=input_class,
+                    input_div_class=input_div_class,
+               input_wrapper_class=input_wrapper_class, label_class=label_class)
+
+        self.action = action
+
     @coroutine
     def start_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         # FIXME: what a HUGE swath of copy/paste! I want yield from!
@@ -145,6 +161,10 @@ class HtmlFormRoot(HtmlWidget):
             if hasattr(ctx.protocol, 'form_action'):
                 attrib['action'] = ctx.protocol.form_action
                 logger.debug("Set form action to '%s'", attrib['action'])
+
+            elif self.action is not None:
+                attrib['action'] = self.action
+
             elif isinstance(ctx.transport, HttpTransportContext):
                 attrib['action'] = ctx.transport.get_path()
 
@@ -200,7 +220,7 @@ class HtmlForm(HtmlFormRoot):
                 cloth=None, cloth_parser=None, polymorphic=True, hier_delim='.',
                    doctype=None, label=True, asset_paths={}, placeholder=None,
                  input_class=None, input_div_class=None,
-                 input_wrapper_class=None, label_class=None):
+                 input_wrapper_class=None, label_class=None, action=None):
 
         super(HtmlForm, self).__init__(app=app, doctype=doctype,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
@@ -208,7 +228,8 @@ class HtmlForm(HtmlFormRoot):
                     hier_delim=hier_delim, label=label, asset_paths=asset_paths,
                     placeholder=placeholder, input_class=input_class,
                     input_div_class=input_div_class,
-               input_wrapper_class=input_wrapper_class, label_class=label_class)
+               input_wrapper_class=input_wrapper_class, label_class=label_class,
+                                                                  action=action)
 
         self.serialization_handlers = cdict({
             Date: self._check_simple(self.date_to_parent),
@@ -595,6 +616,23 @@ class HtmlForm(HtmlFormRoot):
             else:
                 child_key = k
 
+            label_ctxs = []
+            if subattr.label:
+                if self.input_wrapper_class is not None:
+                    div_attrib = {'class': self.input_wrapper_class}
+
+                    div_ctx = parent.element('div', div_attrib)
+                    div_ctx.__enter__()
+                    label_ctxs.append(div_ctx)
+                    logger.debug("entering label wrapper")
+
+                label_attrib = {}
+                if self.label_class is not None:
+                    label_attrib['class'] = ' '.join((
+                                          self.label_class, self.selsafe(name)))
+                with parent.element('label', label_attrib):
+                    parent.write(self.trc(v, ctx.locale, child_key))
+
             ret = self.to_parent(ctx, v, subinst, parent, child_key, **kwargs)
             if isgenerator(ret):
                 try:
@@ -607,6 +645,10 @@ class HtmlForm(HtmlFormRoot):
                         ret.throw(b)
                     except StopIteration:
                         pass
+
+            for c in reversed(label_ctxs):
+                c.__exit__(None, None, None)
+                logger.debug("exiting label_ctxs")
 
         if fset_ctx is not None:
             fset_ctx.__exit__(None, None, None)
