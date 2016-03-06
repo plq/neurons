@@ -123,7 +123,7 @@ class DowserServices(ServiceBase):
             DowserServices.id_history.pop(0)
         DowserServices.id_history.append(new_ids)
 
-        for objtype, count in typecounts.iteritems():
+        for objtype, count in typecounts.items():
             typename = objtype.__module__ + "." + objtype.__name__
             if typename not in cls.history:
                 cls.history[typename] = [0] * cls.samples
@@ -132,14 +132,14 @@ class DowserServices(ServiceBase):
         samples = cls.samples + 1
 
         # Add dummy entries for any types which no longer exist
-        for typename, hist in cls.history.iteritems():
+        for typename, hist in cls.history.items():
             diff = samples - len(hist)
             if diff > 0:
                 hist.extend([0] * diff)
 
         # Truncate history to self.maxhistory
         if samples > cls.maxhistory:
-            for typename, hist in cls.history.iteritems():
+            for typename, hist in cls.history.items():
                 hist.pop(0)
         else:
             cls.samples = samples
@@ -419,7 +419,7 @@ class ReferrerTree(reftree.Tree):
         """Return the dict key or attribute name of obj which refers to
         referent."""
         if isinstance(obj, dict):
-            for k, v in obj.iteritems():
+            for k, v in obj.items():
                 if v is referent:
                     return " (via its %r key)" % (k,)
 

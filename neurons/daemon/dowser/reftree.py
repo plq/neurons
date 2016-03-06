@@ -34,6 +34,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+from __future__ import print_function
+
 import gc
 import sys
 
@@ -211,9 +213,9 @@ class CircularReferents(Tree):
         """Walk the object tree, pretty-printing each branch."""
         self.ignore_caller()
         for trail in self.walk(maxresults, maxdepth):
-            print trail
+            print(trail)
         if self.stops:
-            print "%s paths stopped because max depth reached" % self.stops
+            print("%s paths stopped because max depth reached" % self.stops)
 
 
 def count_objects():

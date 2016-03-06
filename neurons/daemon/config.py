@@ -571,7 +571,7 @@ class Daemon(ComplexModel):
     def get_default(cls, daemon_name):
         return cls(
             uuid=uuid1(),
-            secret=os.urandom(64),
+            secret=[os.urandom(64)],
             name=daemon_name,
             log_rss=False,
             workdir=os.getcwd(),
@@ -633,8 +633,8 @@ class Daemon(ComplexModel):
                         record.msg = '[psutil?] %s' % record.msg
                 else:
                     def _modify_record(self, record):
-                        rss, vmsize = _meminfo()
-                        record.msg = '[%.2f] %s' % (rss / 1024.0 ** 2,
+                        meminfo = _meminfo()
+                        record.msg = '[%.2f] %s' % (meminfo.rss / 1024.0 ** 2,
                                                                      record.msg)
             else:
                 def _modify_record(self, record):
@@ -800,8 +800,8 @@ class Daemon(ComplexModel):
 
         exists = isfile(file_name) and os.access(file_name, os.R_OK)
         if exists and getsize(file_name) > 0:
-            retval = yaml_loads(open(file_name).read(), cls, validator='soft',
-                                                               polymorphic=True)
+            retval = yaml_loads(open(file_name, 'rb').read(), cls,
+                                             validator='soft', polymorphic=True)
         else:
             if not access(dirname(file_name), os.R_OK | os.W_OK):
                 raise Exception("File %r can't be created in %r" %
@@ -876,7 +876,7 @@ class ServiceDaemon(Daemon):
     def get_default(cls, daemon_name):
         return cls(
             uuid=uuid1(),
-            secret=os.urandom(64),
+            secret=[os.urandom(64)],
             name=daemon_name,
             _stores=[
                 Relational(
