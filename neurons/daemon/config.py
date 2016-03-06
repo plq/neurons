@@ -688,7 +688,7 @@ class Daemon(ComplexModel):
 
         else:
             formatter = logging.Formatter(self.LOGGING_DEVEL_FORMAT)
-            log_dest = open('/dev/stdout', 'w+')
+            log_dest = sys.stdout
 
             try:
                 import colorama
