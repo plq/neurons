@@ -43,7 +43,7 @@ from os import access
 from uuid import uuid1
 from pprint import pformat
 from argparse import Action
-from os.path import isfile, abspath, dirname
+from os.path import isfile, abspath, dirname, getsize
 
 from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
     UnsignedInteger, UnsignedInteger16, Array, String, Application, \
@@ -799,7 +799,7 @@ class Daemon(ComplexModel):
                 del cli['config_file']
 
         exists = isfile(file_name) and os.access(file_name, os.R_OK)
-        if exists:
+        if exists and getsize(file_name) > 0:
             retval = yaml_loads(open(file_name).read(), cls, validator='soft',
                                                                polymorphic=True)
         else:
