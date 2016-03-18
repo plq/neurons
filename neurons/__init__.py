@@ -33,5 +33,13 @@
 
 __version__ = '0.5'
 
+
 from neurons.model import TableModel
 from neurons.application import Application
+
+
+REACTOR_THREAD = None
+
+def is_reactor_thread():
+    import threading  # to keep the neurons ns clean
+    return threading.current_thread() == REACTOR_THREAD
