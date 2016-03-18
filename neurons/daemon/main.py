@@ -53,8 +53,10 @@ def _get_version(pkg_name):
     try:
         import pkg_resources
         return pkg_resources.get_distribution(pkg_name).version
-    except Exception:
+    except Exception as e:
+        sys.stderr.write(repr(e))
         return 'unknown'
+
 
 def _print_version(config):
     myver = _get_version(config.name)
