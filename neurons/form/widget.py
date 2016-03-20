@@ -37,6 +37,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 import re
+import locale
 import collections
 
 from contextlib import closing
@@ -907,3 +908,33 @@ class MultiSelectWidget(SelectWidgetBase):
 
     def _write_empty(self, parent):
         pass
+
+
+class SimpleReadableNumberWidget(SimpleRenderWidget):
+    def __init__(self, label=True, type=None, hidden=False):
+        super(SimpleReadableNumberWidget, self).__init__(label=label,
+                                                         type=type, hidden=hidden)
+
+        self.serialization_handlers = cdict({
+            Decimal: self.number_to_parent,
+        })
+
+    def number_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        if inst is None:
+            return
+
+        locale.setlocale(locale.LC_ALL, 'en_US')
+        valstr = locale.format("%d", inst, grouping=True)
+
+        if self.label:
+            label = self._gen_label_for(ctx, cls, name)
+            attrib = self._gen_label_wrapper_class(ctx, cls, name)
+            with parent.element('div', attrib=attrib):
+                parent.write(label)
+                parent.write(valstr)
+
+        else:
+            parent.write(valstr)
+
+        if self.hidden:
+            self._gen_input_hidden(cls, inst, parent, name, **kwargs)
