@@ -936,13 +936,18 @@ class ServiceDaemon(Daemon):
             logging.getLogger('spyne.protocol.xml').setLevel(logging.DEBUG)
             logging.getLogger('spyne.protocol.dictdoc').setLevel(logging.DEBUG)
 
-        if self.log_queries:
-            logging.getLogger('sqlalchemy').setLevel(logging.INFO)
-            logging.getLogger('sqlalchemy.orm.mapper').setLevel(logging.WARNING)
+        if self.log_queries or self.log_results:
+            if self.log_results:
+                logging.getLogger('sqlalchemy').setLevel(logging.DEBUG)
 
-        if self.log_results:
-            logging.getLogger('sqlalchemy').setLevel(logging.DEBUG)
+            elif self.log_queries:
+                logging.getLogger('sqlalchemy').setLevel(logging.INFO)
+
             logging.getLogger('sqlalchemy.orm.mapper').setLevel(logging.WARNING)
+            logging.getLogger('sqlalchemy.orm.relationships').setLevel(
+                                                                logging.WARNING)
+            logging.getLogger('sqlalchemy.orm.strategies').setLevel(
+                                                                logging.WARNING)
 
     def get_main_store(self):
         return self.stores[self.main_store].itself
