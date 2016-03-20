@@ -579,7 +579,7 @@ class Daemon(ComplexModel):
                 Logger(path='.', level='DEBUG', format=cls.LOGGING_DEVEL_FORMAT),
                 # This produces too much output that's not very useful unless
                 # you're debugging *Cloth.
-                Logger(path='spyne.protocol.cloth.to_cloth.cloth', 
+                Logger(path='spyne.protocol.cloth.to_cloth.cloth',
                                   level='INFO', format=cls.LOGGING_DEVEL_FORMAT),
             ],
         )
