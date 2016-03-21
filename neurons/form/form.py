@@ -44,7 +44,7 @@ from lxml import etree, html
 from lxml.builder import E
 
 from spyne import ComplexModelBase, Unicode, Decimal, Boolean, Date, Time, \
-    DateTime, Integer, Duration, PushBase, Array, Uuid, AnyHtml, AnyXml
+    DateTime, Integer, Duration, PushBase, Array, Uuid, AnyHtml, AnyXml, Fault
 from spyne.util import coroutine, Break, six, memoize_id
 from spyne.util.cdict import cdict
 from spyne.server.http import HttpTransportContext
@@ -235,6 +235,7 @@ class HtmlForm(HtmlFormRoot):
             Date: self._check_simple(self.date_to_parent),
             Time: self._check_simple(self.time_to_parent),
             Uuid: self._check_simple(self.uuid_to_parent),
+            Fault: self.fault_to_parent,
             Array: self.array_type_to_parent,
             AnyXml: self._check_simple(self.anyxml_to_parent),
             Integer: self._check_simple(self.integer_to_parent),
@@ -682,6 +683,24 @@ class HtmlForm(HtmlFormRoot):
         with parent.element('fieldset', fieldset_attr):
             return self._render_complex(ctx, cls, inst, parent, name, True,
                                                                        **kwargs)
+
+    def fault_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls_attr = self.get_cls_attrs(cls)
+
+        with parent.element('div', {"class": cls.get_type_name()}):
+            parent.write(
+                E.div(inst.faultcode, **{"class": "faultcode"}),
+                E.div(inst.faultstring, **{"class": "faultstring"}),
+                E.div(inst.faultactor, **{"class": "faultactor"}),
+            )
+
+            if isinstance(inst.detail, etree._Element):
+                parent.write(E.pre(etree.tostring(inst.detail, pretty_print=True)))
+
+            # add other nonstandard fault subelements with get_members_etree
+            self._write_members(ctx, cls, inst, parent)
+            # no need to track the returned generator because we expect no
+            # PushBase instance here.
 
     @coroutine
     def _push_to_parent(self, ctx, cls, inst, parent, name, parent_inst=None,
