@@ -597,10 +597,10 @@ class Daemon(ComplexModel):
             elif isinstance(o, LimitedHistoryLogObserver):
                 publisher.removeObserver(o)
                 o.replayTo(observer)
-                logger.debug("Removing observer", o)
+                logger.debug("Removing observer %r", o)
 
             else:
-                logger.debug("Leaving alone observer", o)
+                logger.debug("Leaving alone observer %r", o)
 
     def sanitize(self):
         if self.logger_dest is not None:
