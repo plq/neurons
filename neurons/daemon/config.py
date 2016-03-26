@@ -61,12 +61,10 @@ from neurons.daemon.daemonize import daemonize
 from neurons.daemon.store import SqlDataStore
 from neurons.daemon.cli import spyne_to_argparse, config_overrides
 
-
 STATIC_DESC_ROOT = "Directory that contains static files for the root url."
 STATIC_DESC_URL = "Directory that contains static files for the url '%s'."
 
 _some_prot = ProtocolBase()
-
 
 _meminfo = None
 
@@ -79,9 +77,9 @@ def update_meminfo():
     try:
         import psutil
         process = psutil.Process(os.getpid())
-        try: # psutil 2
+        try:  # psutil 2
             _meminfo = process.get_memory_info
-        except AttributeError: # psutil 3
+        except AttributeError:  # psutil 3
             _meminfo = process.memory_info
 
         del process
@@ -96,7 +94,7 @@ update_meminfo()
 class _SetStaticPathAction(Action):
     def __init__(self, option_strings, dest, const=None, help=None):
         super(_SetStaticPathAction, self).__init__(nargs=1, const=const,
-                            option_strings=option_strings, dest=dest, help=help)
+            option_strings=option_strings, dest=dest, help=help)
 
     def __call__(self, parser, namespace, values, option_string=None):
         self.const.path = abspath(values[0])
@@ -107,7 +105,7 @@ def _apply_custom_attributes(cls):
     for k, v in sorted(fti.items(), key=lambda i: i[0]):
         attrs = _some_prot.get_cls_attrs(v)
         if attrs.no_config == True:
-            v.Attributes.prot_attrs={YamlDocument: dict(exc=True)}
+            v.Attributes.prot_attrs = {YamlDocument: dict(exc=True)}
 
 
 class AlertDestination(ComplexModel):
@@ -195,7 +193,7 @@ class Listener(Service):
                 _, host = a.split('=', 1)
                 self.host = host
                 logger.debug("Overriding host for service '%s' to '%s'",
-                             self.name, self.host)
+                                                           self.name, self.host)
 
                 continue
 
@@ -203,7 +201,7 @@ class Listener(Service):
                 _, port = a.split('=', 1)
                 self.port = int(port)
                 logger.debug("Overriding port for service '%s' to '%s'",
-                             self.name, self.port)
+                                                           self.name, self.port)
 
                 continue
 
@@ -263,6 +261,7 @@ class StaticFileServer(HttpApplication):
         from twisted.python.filepath import InsecurePath
 
         d_exts = self.disallowed_exts
+
         class CheckedFile(File):
             def child(self, path):
                 retval = File.child(self, path)
@@ -406,8 +405,8 @@ class Logger(ComplexModel):
             _logger = logging.getLogger(self.path)
 
         _logger.setLevel(LOGLEVEL_MAP[self.level])
-        logger.info("Setting logging level for %r to %s.",
-                                                       _logger.name, self.level)
+        logger.info("Setting logging level for %r to %s.", _logger.name,
+                                                                     self.level)
 
         return self
 
@@ -446,6 +445,7 @@ def _Twrdict(keyattr=None):
         else:
             def __setitem__(self, key, value):
                 super(_wrdict, self).__setitem__(key, value)
+
     return wrdict
 
 
@@ -466,10 +466,10 @@ class Daemon(ComplexModel):
         ('secret', ByteArray(no_cli=True, help="Secret key for signing cookies "
                                                "and other stuff.")),
         ('daemonize', Boolean(default=False,
-                              help="Daemonizes before everything else.")),
+                                    help="Daemonizes before everything else.")),
 
         ('uid', Unicode(help="The daemon user. You need to start the server as "
-                             "a priviledged user for this to work.")),
+                                       "a priviledged user for this to work.")),
         ('workdir', Unicode(help="The daemon workdir. It won't boot if this"
                                  "directory can't be created.")),
         ('gid', Unicode(help="The daemon group. You need to start the server as"
@@ -504,7 +504,7 @@ class Daemon(ComplexModel):
         ('shell', Boolean(no_config=True, default=False,
                     help="Drop to IPython shell. Useful for trying ORM stuff")),
         ('ikernel', Boolean(no_config=True, default=False,
-                    help="Start IPython kernel.")),
+                                                 help="Start IPython kernel.")),
 
         ('_services', Array(Service, sub_name='services')),
         ('_loggers', Array(Logger, sub_name='loggers')),
@@ -621,11 +621,12 @@ class Daemon(ComplexModel):
             logging.CRITICAL: LogLevel.critical,
         }
 
-        TWISTED_LOGLEVEL_MAP = {v: k for k,v in LOGLEVEL_TWISTED_MAP.items()}
+        TWISTED_LOGLEVEL_MAP = {v: k for k, v in LOGLEVEL_TWISTED_MAP.items()}
 
         loggers = {}
 
         config = self
+
         class TwistedHandler(logging.Handler):
             if config.log_rss:
                 if _meminfo is None:
@@ -718,8 +719,8 @@ class Daemon(ComplexModel):
                 text = record['log_format'].format(**record) + "\n"
                 ns = record.get('log_namespace', "???")
                 lineno = 0
-                record = logging.LogRecord(
-                                      '?', level, ns, lineno, text, None, None)
+                record = logging.LogRecord('?', level, ns, lineno, text,
+                                                                     None, None)
                 record.l = level
                 record.module = ns.split('.')[-2]
 
@@ -761,7 +762,7 @@ class Daemon(ComplexModel):
         # that work perfectly well in development environments but won't boot
         # in production ones, solely because of fork()ingw.
         assert for_testing or not ('twisted' in sys.modules), \
-                                                "Twisted is already imported!"
+                                                  "Twisted is already imported!"
 
         self.sanitize()
         if self.daemonize:
@@ -894,7 +895,8 @@ class ServiceDaemon(Daemon):
             ],
             main_store=u'sql_main',
             _loggers=[
-                Logger(path=u'.', level=u'DEBUG', format=cls.LOGGING_DEVEL_FORMAT),
+                Logger(path=u'.', level=u'DEBUG',
+                                               format=cls.LOGGING_DEVEL_FORMAT),
             ],
         )
 
