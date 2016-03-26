@@ -334,6 +334,7 @@ def main(daemon_name, argv, init, bootstrap=None,
             logger.info("Updating configuration file because new stores were "
                                                                      "detected")
 
+        # FIXME: could someone need these during bootstrap above?
         if config.uuid is None:
             config.uuid = config.gen_uuid()
             config.write_config()
