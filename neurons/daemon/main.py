@@ -322,9 +322,12 @@ def main(daemon_name, argv, init, bootstrap=None,
     finally:
         if not isfile(config.config_file):
             config.write_config()
+            logger.info("Writing configuration to: '%s'", config.config_file)
 
         elif has_services and services != config._services:
             config.write_config()
+            logger.info("Updating configuration file because new services were "
+                                                                     "detected")
 
         elif has_stores and stores != config._stores:
             config.write_config()
