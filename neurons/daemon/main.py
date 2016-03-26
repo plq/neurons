@@ -328,6 +328,20 @@ def main(daemon_name, argv, init, bootstrap=None,
 
         elif has_stores and stores != config._stores:
             config.write_config()
+            logger.info("Updating configuration file because new stores were "
+                                                                     "detected")
+
+        if config.uuid is None:
+            config.uuid = config.gen_uuid()
+            config.write_config()
+            logger.info("Updating configuration file because new uuid was "
+                                                                    "generated")
+
+        if config.secret is None:
+            config.secret = config.gen_secret()
+            config.write_config()
+            logger.info("Updating configuration file because new secret was "
+                                                                    "generated")
 
     # at this point it's safe to import the reactor (or anything else from
     # twisted) because the decision to fork or not to fork is already made.

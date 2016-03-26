@@ -568,10 +568,18 @@ class Daemon(ComplexModel):
             self.loggers = _wdict([(s.path, s) for s in what])
 
     @classmethod
+    def gen_secret(cls):
+        return [os.urandom(64)]
+
+    @classmethod
+    def gen_uuid(cls):
+        return uuid1()
+
+    @classmethod
     def get_default(cls, daemon_name):
         return cls(
-            uuid=uuid1(),
-            secret=[os.urandom(64)],
+            uuid=cls.gen_uuid(),
+            secret=cls.gen_secret(),
             name=daemon_name,
             log_rss=False,
             workdir=os.getcwd(),
@@ -876,8 +884,8 @@ class ServiceDaemon(Daemon):
     @classmethod
     def get_default(cls, daemon_name):
         return cls(
-            uuid=uuid1(),
-            secret=[os.urandom(64)],
+            uuid=cls.gen_uuid(),
+            secret=cls.gen_secret(),
             name=daemon_name,
             _stores=[
                 Relational(
