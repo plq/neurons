@@ -48,7 +48,7 @@ from spyne.store.relational.util import database_exists, create_database
 from neurons.daemon.config import ServiceDisabled, ServiceDaemon
 
 
-def _get_version(pkg_name):
+def get_package_version(pkg_name):
     try:
         import pkg_resources
         return pkg_resources.get_distribution(pkg_name).version
@@ -58,7 +58,7 @@ def _get_version(pkg_name):
 
 
 def _print_version(config):
-    myver = _get_version(config.name)
+    myver = get_package_version(config.name)
     if myver == 'unknown':
         print("Package '%s' version could not be determined. Please make "
               "sure a root package name is passed as daemon_name to the main "
@@ -68,17 +68,17 @@ def _print_version(config):
 
     print()
     print("Also:")
-    print(" * lxml-%s" % _get_version('lxml'))
-    print(" * pytz-%s" % _get_version('pytz'))
-    print(" * spyne-%s" % _get_version('spyne'))
-    print(" * pyyaml-%s" % _get_version('pyyaml'))
-    print(" * neurons-%s" % _get_version('neurons'))
-    print(" * twisted-%s" % _get_version('twisted'))
-    print(" * msgpack-%s" % _get_version('msgpack-python'))
-    print(" * pycrypto-%s" % _get_version('pycrypto'))
-    print(" * werkzeug-%s" % _get_version('werkzeug'))
-    print(" * txpostgres-%s" % _get_version('txpostgres'))
-    print(" * SQLAlchemy-%s" % _get_version('SQLAlchemy'))
+    print(" * lxml-%s" % get_package_version('lxml'))
+    print(" * pytz-%s" % get_package_version('pytz'))
+    print(" * spyne-%s" % get_package_version('spyne'))
+    print(" * pyyaml-%s" % get_package_version('pyyaml'))
+    print(" * neurons-%s" % get_package_version('neurons'))
+    print(" * twisted-%s" % get_package_version('twisted'))
+    print(" * msgpack-%s" % get_package_version('msgpack-python'))
+    print(" * pycrypto-%s" % get_package_version('pycrypto'))
+    print(" * werkzeug-%s" % get_package_version('werkzeug'))
+    print(" * txpostgres-%s" % get_package_version('txpostgres'))
+    print(" * SQLAlchemy-%s" % get_package_version('SQLAlchemy'))
     print()
 
     return True  # to force exit
@@ -206,7 +206,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
 
     config.apply()
     logger.info("Initialized '%s' version %s.", config.name,
-                                                      _get_version(config.name))
+                                                      get_package_version(config.name))
 
     # initialize main table model
     if isinstance(config, ServiceDaemon):
