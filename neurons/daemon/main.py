@@ -206,7 +206,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
 
     config.apply()
     logger.info("Initialized '%s' version %s.", config.name,
-                                                      get_package_version(config.name))
+                                               get_package_version(config.name))
 
     # initialize main table model
     if isinstance(config, ServiceDaemon):
