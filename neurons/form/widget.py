@@ -759,7 +759,13 @@ class SelectWidgetBase(ComplexRenderWidget):
                 db = ctx.app.config.stores['sql_main'].itself
                 # FIXME: this blocks the reactor
                 with closing(db.Session()) as session:
-                    q = session.query(cls.__orig__ or cls)
+                    own_outprot_ctx = ctx.outprot_ctx[self]
+
+                    # get query class either from saved cls or current cls
+                    query_class = own_outprot_ctx.old_cls or cls
+                    query_class = query_class.__orig__ or query_class
+
+                    q = session.query(query_class)
                     if self.others_order_by is not None:
                         if isinstance(self.others_order_by, (list, tuple)):
                             q = q.order_by(*self.others_order_by)
@@ -832,9 +838,17 @@ class SelectWidgetBase(ComplexRenderWidget):
             return self.nonempty_widget.to_parent(ctx, cls, inst, parent,
                                                                  name, **kwargs)
 
+        own_outprot_ctx = ctx.outprot_ctx[self]
+        own_outprot_ctx.old_cls = None
+
         if self.type is not None:
             logger.debug("ComboBoxWidget.type cls switch: %r => %r",
                                                                  cls, self.type)
+
+            # store old class in the context specific to this protocol.
+            own_outprot_ctx.old_cls = cls
+
+            # and override it with the requested one.
             cls = self.type
 
             if len(self.type_attrs) > 0:
@@ -842,7 +856,7 @@ class SelectWidgetBase(ComplexRenderWidget):
 
         if self.inst_type is not None:
             logger.debug("ComboBoxWidget.type inst switch: %r => %r",
-                                                             cls, self.type)
+                                                                 cls, self.type)
 
             inst = self.type.init_from(inst)
 
