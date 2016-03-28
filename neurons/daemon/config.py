@@ -130,13 +130,40 @@ class StorageInfo(ComplexModel):
     backend = Unicode
 
 
+class PoolConfig(ComplexModel):
+    type = Unicode
+
+
+class AsyncPoolConfig(ComplexModel):
+    type = Unicode(values=['txpostgres'])
+
+
+class SyncPoolConfig(ComplexModel):
+    type = Unicode(values=[
+            'SingletonThreadPool', 'QueuePool', 'NullPool',
+            'StaticPool', 'AssertionPool'
+        ])
+
+
 class Relational(StorageInfo):
     conn_str = Unicode
+
+    # move these to QueuePool config.
     pool_size = UnsignedInteger(default=10)
-    max_overflow = UnsignedInteger(default=3)
     pool_recycle = UnsignedInteger(default=3600)
     pool_timeout = UnsignedInteger(default=30)
+    max_overflow = UnsignedInteger(default=3)
+    echo_pool = Boolean(default=False)
+
     sync_pool = Boolean(default=True)
+    sync_pool_type = Unicode(
+        default='QueuePool',
+        values=[
+            'SingletonThreadPool', 'QueuePool', 'NullPool',
+            'StaticPool', 'AssertionPool'
+        ],
+    )
+
     async_pool = Boolean(default=True)
 
     def __init__(self, *args, **kwargs):
