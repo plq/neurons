@@ -246,7 +246,11 @@ def _inner_main(config, init, bootstrap, bootstrapper):
         if config.write_xsd:
             return _write_xsd(config)
 
-    # if requested, drop to shell if requested
+    if config.write_config:
+        config.do_write_config()
+        return True
+
+    # if requested, drop to shell
     if config.shell or config.ikernel:
         return _do_start_shell(config)
 
@@ -321,29 +325,29 @@ def main(daemon_name, argv, init, bootstrap=None,
 
     finally:
         if not isfile(config.config_file):
-            config.write_config()
+            config.do_write_config()
             logger.info("Writing configuration to: '%s'", config.config_file)
 
         elif has_services and services != config._services:
-            config.write_config()
+            config.do_write_config()
             logger.info("Updating configuration file because new services were "
                                                                      "detected")
 
         elif has_stores and stores != config._stores:
-            config.write_config()
+            config.do_write_config()
             logger.info("Updating configuration file because new stores were "
                                                                      "detected")
 
         # FIXME: could someone need these during bootstrap above?
         if config.uuid is None:
             config.uuid = config.gen_uuid()
-            config.write_config()
+            config.do_write_config()
             logger.info("Updating configuration file because new uuid was "
                                                                     "generated")
 
         if config.secret is None:
             config.secret = config.gen_secret()
-            config.write_config()
+            config.do_write_config()
             logger.info("Updating configuration file because new secret was "
                                                                     "generated")
 

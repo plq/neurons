@@ -144,7 +144,8 @@ class Relational(StorageInfo):
         self.itself = None
 
     def apply(self):
-        self.itself = SqlDataStore(self.conn_str, pool_size=self.pool_size)
+        self.itself = SqlDataStore(self.conn_str, pool_size=self.pool_size,
+            echo_pool=self.echo_pool)
         if not (self.async_pool or self.sync_pool):
             logger.debug("Store '%s' is disabled.", self.name)
 
@@ -498,6 +499,8 @@ class Daemon(ComplexModel):
         ('write_xsd', Unicode(
             help="Write Xml Schema documents to given directory. "
                                    "It is created if missing", no_config=True)),
+        ('write_config', Boolean(
+            help="Write configuration file and exit." , no_config=True)),
 
         ('alert_dests', Array(AlertDestination, default=[])),
 
@@ -824,7 +827,7 @@ class Daemon(ComplexModel):
 
         return retval
 
-    def write_config(self):
+    def do_write_config(self):
         open(self.config_file, 'wb').write(get_object_as_yaml(self,
                                               self.__class__, polymorphic=True))
 
