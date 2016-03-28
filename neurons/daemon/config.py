@@ -492,13 +492,6 @@ class Daemon(ComplexModel):
 
         ('log_rpc', Boolean(help="Log raw rpc data.")),
 
-        ('write_wsdl', Unicode(
-            help="Write WSDL documents to the given directory. "
-                                   "It is created if missing", no_config=True)),
-
-        ('write_xsd', Unicode(
-            help="Write Xml Schema documents to given directory. "
-                                   "It is created if missing", no_config=True)),
         ('write_config', Boolean(
             help="Write configuration file and exit." , no_config=True)),
 
@@ -846,6 +839,14 @@ class ServiceDaemon(Daemon):
     """This daemon needs access to one or more data stores to work."""
 
     _type_info = [
+        ('write_wsdl', Unicode(
+            help="Write Wsdl document(s) to the given directory and exit. "
+                 "It is created if missing", no_config=True)),
+
+        ('write_xsd', Unicode(
+            help="Write Xml Schema document(s) to given directory and exit. "
+                 "It is created if missing", no_config=True)),
+
         ('log_queries', Boolean(help="Log sql queries.")),
         ('log_results', Boolean(help="Log query results in addition to queries "
                                      "themselves.")),
