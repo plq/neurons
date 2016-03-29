@@ -720,7 +720,7 @@ class SelectWidgetBase(ComplexRenderWidget):
                          "how to instantiate a non-ComplexRenderWidget-subclass"
 
             self.nonempty_widget = nonempty_widget(self.text_field,
-                         id_field=self.id_field, label=False, type=self.type,
+                    id_field=self.id_field, label=self.label, type=self.type,
                          hidden_fields=(self.hidden_fields or ()) + (id_field,))
 
         self.serialization_handlers[ModelBase] = self.model_base_to_parent
