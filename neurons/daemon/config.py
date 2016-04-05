@@ -989,8 +989,11 @@ class ServiceDaemon(Daemon):
             ],
             main_store=u'sql_main',
             _loggers=[
-                Logger(path=u'.', level=u'DEBUG',
-                                               format=cls.LOGGING_DEVEL_FORMAT),
+                Logger(
+                    path=u'.',
+                    level=u'DEBUG',
+                    format=cls.LOGGING_DEVEL_FORMAT
+                ),
             ],
         )
 
