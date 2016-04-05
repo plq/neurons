@@ -37,6 +37,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 import getpass
+import resource
 import os, re, sys
 
 from os import access
@@ -47,7 +48,7 @@ from os.path import isfile, abspath, dirname, getsize
 
 from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
     UnsignedInteger, UnsignedInteger16, Array, String, Application, \
-    ComplexModelBase, M
+    ComplexModelBase, M, Double
 
 from spyne.protocol import ProtocolBase
 from spyne.protocol.yaml import YamlDocument
@@ -477,6 +478,19 @@ def _Twrdict(keyattr=None):
     return wrdict
 
 
+class Limits(ComplexModel):
+    _type_info = [
+        ('max_mem_mb', Double(rlimit=resource.RLIMIT_AS)),
+    ]
+
+
+class LimitsChoice(ComplexModel):
+    _type_info = [
+        ('soft', Limits),
+        ('hard', Limits),
+    ]
+
+
 class Daemon(ComplexModel):
     """This is a custom daemon with only pid files, forking, logging and initial
     setuid/setgid operations.
@@ -502,6 +516,7 @@ class Daemon(ComplexModel):
                                  "directory can't be created.")),
         ('gid', Unicode(help="The daemon group. You need to start the server as"
                              " a priviledged user for this to work.")),
+        ('limits', LimitsChoice.customize(help="Process limits.")),
 
         ('pid_file', String(help="The path to a text file that contains the pid"
                                  " of the daemonized process.")),
@@ -783,6 +798,45 @@ class Daemon(ComplexModel):
     def pre_logging_apply(self):
         pass
 
+    def pre_limits_apply(self):
+        pass
+
+    @classmethod
+    def apply_limits_impl(cls, limtype, limits):
+        if limits is None:
+            return
+
+        if limits.max_mem_mb is not None:
+            curr_rlimit = Limits._type_info['max_mem_mb'].Attributes.rlimit
+
+            oldlim = resource.getrlimit(curr_rlimit)
+
+            newlim = list(oldlim)
+            newlim[limtype] = int(limits.max_mem_mb * 1024 ** 2)
+            newlim = tuple(newlim)
+
+            resource.setrlimit(curr_rlimit, newlim)
+            logger.debug("RLIMIT_AS: was: %r now: %r", oldlim, newlim)
+
+    def apply_limits(self):
+        # In case a resource-intensive task needs to be done prior to daemon
+        # boot. It's a bad idea but hey, who are we to tell you what to do?..
+        self.pre_limits_apply()
+
+        if self.limits is None:
+            return
+
+        if self.limits.soft is None and self.limits.hard is None:
+            return
+
+        # Remember:
+        #     soft, hard = resource.getrlimit(whatever)
+        SOFT = 0
+        HARD = 1
+
+        self.apply_limits_impl(SOFT, self.limits.soft)
+        self.apply_limits_impl(HARD, self.limits.hard)
+
     def apply(self, for_testing=False):
         """Daemonizes the process if requested, then sets up logging and pid
         files.
@@ -806,6 +860,7 @@ class Daemon(ComplexModel):
             daemonize(workdir=workdir)
             update_meminfo()
 
+        self.apply_limits()
         self.apply_logging()
 
         if self.pid_file is not None:
