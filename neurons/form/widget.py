@@ -402,8 +402,8 @@ class PasswordWidget(HtmlWidget):
 class HrefWidget(HtmlWidget):
     supported_types = (Unicode, Decimal)
 
-    def __init__(self, href, hidden_input=False):
-        super(HrefWidget, self).__init__()
+    def __init__(self, href, hidden_input=False, label=True):
+        super(HrefWidget, self).__init__(label=label)
 
         self.href = href
         self.hidden_input = hidden_input
@@ -427,7 +427,18 @@ class HrefWidget(HtmlWidget):
         if href is not None:
             elt.attrib['href'] = href
 
-        parent.write(elt)
+        if self.label:
+            label = self._gen_label_for(ctx, cls, name)
+            attrib = self._gen_label_wrapper_class(ctx, cls, name)
+
+            with parent.element('div', attrib=attrib):
+                parent.write(label)
+
+                span_attrib = {}
+                parent.write(E.span(elt, **span_attrib))
+
+        else:
+            parent.write(elt)
 
         cls_attr = self.get_cls_attrs(cls)
         if self.hidden_input and (inst is not None or cls_attr.min_occurs >= 1):
