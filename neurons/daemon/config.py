@@ -105,7 +105,7 @@ def _apply_custom_attributes(cls):
     fti = cls.get_flat_type_info(cls)
     for k, v in sorted(fti.items(), key=lambda i: i[0]):
         attrs = _some_prot.get_cls_attrs(v)
-        if attrs.no_config == True:
+        if attrs.no_file == True:
             v.Attributes.prot_attrs = {YamlDocument: dict(exc=True)}
 
 
@@ -524,10 +524,10 @@ class Daemon(ComplexModel):
         ('logger_dest', String(help="The path to the log file. The server won't"
              " daemonize without this. Converted to an absolute path if not.")),
 
-        ('version', Boolean(help="Show version", no_config=True)),
+        ('version', Boolean(help="Show version", no_file=True)),
 
         ('bootstrap', Boolean(help="Bootstrap the application. Create schema, "
-                                  "insert initial data, etc.", no_config=True)),
+                                  "insert initial data, etc.", no_file=True)),
 
         ('log_rss', Boolean(help="Prepend current memory usage "
                                  "to all logging messages. Requires psutil")),
@@ -535,13 +535,13 @@ class Daemon(ComplexModel):
         ('log_rpc', Boolean(help="Log raw rpc data.")),
 
         ('write_config', Boolean(
-            help="Write configuration file and exit." , no_config=True)),
+            help="Write configuration file and exit." , no_file=True)),
 
         ('alert_dests', Array(AlertDestination, default=[])),
 
-        ('shell', Boolean(no_config=True, default=False,
+        ('shell', Boolean(no_file=True, default=False,
                     help="Drop to IPython shell. Useful for trying ORM stuff")),
-        ('ikernel', Boolean(no_config=True, default=False,
+        ('ikernel', Boolean(no_file=True, default=False,
                                                  help="Start IPython kernel.")),
 
         ('_services', Array(Service, sub_name='services')),
@@ -923,11 +923,11 @@ class ServiceDaemon(Daemon):
     _type_info = [
         ('write_wsdl', Unicode(
             help="Write Wsdl document(s) to the given directory and exit. "
-                 "It is created if missing", no_config=True)),
+                 "It is created if missing", no_file=True)),
 
         ('write_xsd', Unicode(
             help="Write Xml Schema document(s) to given directory and exit. "
-                 "It is created if missing", no_config=True)),
+                 "It is created if missing", no_file=True)),
 
         ('log_queries', Boolean(help="Log sql queries.")),
         ('log_results', Boolean(help="Log query results in addition to queries "
