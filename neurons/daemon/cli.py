@@ -190,6 +190,6 @@ def spyne_to_argparse(cls):
             kwargs['type'] = ARGTYPE_MAP[v]
 
         parser.add_argument(*args, **kwargs)
-        # print("add_argument", args, kwargs)
+        logger.debug("add_argument %r %r", args, kwargs)
 
     return parser
