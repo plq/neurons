@@ -167,6 +167,19 @@ def _do_bootstrap(config, init, bootstrap, bootstrapper):
     return retval
 
 
+def _do_drop_all_tables(config, init):
+    config.log_queries = True
+    config.apply()
+
+    import neurons
+    meta = neurons.TableModel.Attributes.sqla_metadata
+    meta.reflect()
+
+    meta.drop_all()
+
+    return True
+
+
 def _do_start_shell(config):
     # Import db handle, session and other useful stuff to the shell's scope
     db = None
@@ -203,6 +216,10 @@ def _inner_main(config, init, bootstrap, bootstrapper):
     # if requested, perform bootstrap and exit
     if config.bootstrap:
         return _do_bootstrap(config, init, bootstrap, bootstrapper)
+
+    # if requested, perform bootstrap and exit
+    if config.drop_all_tables:
+        return _do_drop_all_tables(config, init)
 
     config.apply()
     logger.info("Initialized '%s' version %s.", config.name,
@@ -252,7 +269,9 @@ def _inner_main(config, init, bootstrap, bootstrapper):
 
     # if requested, drop to shell
     if config.shell or config.ikernel:
-        return _do_start_shell(config)
+        retval = _do_start_shell(config)
+        if retval is None:
+            return True
 
 
 class BootStrapper(object):

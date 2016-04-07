@@ -933,6 +933,9 @@ class ServiceDaemon(Daemon):
         ('log_results', Boolean(help="Log query results in addition to queries "
                                      "themselves.")),
 
+        ('drop_all_tables', Boolean(help="Drops all tables in the database.",
+                                    no_file=True)),
+
         ('main_store', Unicode(help="The name of the store for binding "
                                     "neurons.TableModel's metadata to.")),
 
