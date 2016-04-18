@@ -48,7 +48,7 @@ from lxml import html
 from lxml.builder import E
 
 from spyne import Unicode, Decimal, Boolean, ComplexModelBase, Array, ModelBase, \
-    AnyHtml
+    AnyHtml, AnyUri
 from spyne.util import six
 from spyne.util.tdict import tdict
 from spyne.util.oset import oset
@@ -454,6 +454,7 @@ class SimpleRenderWidget(HtmlWidget):
         self.serialization_handlers = cdict({
             ModelBase: self.model_base_to_parent,
             AnyHtml: self.any_html_to_parent,
+            AnyUri: self.any_uri_to_parent,
             ComplexModelBase: self.not_supported,
         })
 
@@ -465,7 +466,7 @@ class SimpleRenderWidget(HtmlWidget):
 
         return cls
 
-    def model_base_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+    def _gen_text_str(self, cls, inst, **kwargs):
         cls = self._get_cls(cls)
 
         text_str = self.to_unicode(cls, inst, **kwargs)
@@ -475,20 +476,49 @@ class SimpleRenderWidget(HtmlWidget):
 
             cls_attr = self.get_cls_attrs(cls)
             if cls_attr.min_occurs == 0:
-                return
+                return None
+
+        return text_str
+
+    def _wrap_with_label_simple(self, ctx, cls, text_str, parent, name):
+        label = self._gen_label_for(ctx, cls, name)
+        attrib = self._gen_label_wrapper_class(ctx, cls, name)
+
+        with parent.element('div', attrib=attrib):
+            parent.write(label)
+
+            span_attrib = {}
+            parent.write(E.span(text_str, **span_attrib))
+
+    def model_base_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        text_str = self._gen_text_str(cls, inst, **kwargs)
+        if text_str is None:
+            return
 
         if self.label:
-            label = self._gen_label_for(ctx, cls, name)
-            attrib = self._gen_label_wrapper_class(ctx, cls, name)
-
-            with parent.element('div', attrib=attrib):
-                parent.write(label)
-
-                span_attrib = {}
-                parent.write(E.span(text_str, **span_attrib))
-
+            self._wrap_with_label_simple(ctx, cls, text_str, parent, name)
         else:
             parent.write(text_str)
+
+        if self.hidden:
+            self._gen_input_hidden(cls, inst, parent, name, **kwargs)
+
+    def any_uri_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        if isinstance(inst, AnyUri.Value):
+            href_str = self._gen_text_str(cls, inst.href)
+            link_str = inst.text
+        else:
+            href_str = self._gen_text_str(cls, inst)
+            if href_str is None:
+                return
+            link_str = href_str
+
+        anchor = E.a(link_str, href=href_str)
+
+        if self.label:
+            self._wrap_with_label_simple(ctx, cls, anchor, parent, name)
+        else:
+            parent.write(anchor)
 
         if self.hidden:
             self._gen_input_hidden(cls, inst, parent, name, **kwargs)
