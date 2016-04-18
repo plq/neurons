@@ -949,3 +949,58 @@ class SimpleReadableNumberWidget(SimpleRenderWidget):
 
         if self.hidden:
             self._gen_input_hidden(cls, inst, parent, name, **kwargs)
+
+
+class TrueFalseWidget(SimpleRenderWidget):
+    NONE_COLOR = E.span(u"✘", style="text-decoration: none; color:red")
+    TRUE_COLOR = E.span(u"✔", style="text-decoration: none; color:green")
+    FALSE_COLOR = E.span(u"●", style="text-decoration: none; color:gray")
+
+    NONE_DULL = E.span(u"✘", style="text-decoration: none; color:red")
+    TRUE_DULL = E.span(u"✔", style="text-decoration: none; color:green")
+    FALSE_DULL = E.span(u"●", style="text-decoration: none; color:gray")
+
+    def __init__(self, label=True, type=None, hidden=False, center=False,
+                                                                    color=True):
+        super(TrueFalseWidget, self).__init__(label=label, type=type, hidden=hidden)
+
+        self.center = center
+        self.color = color
+
+    def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        if self.type is not None:
+            cls = self.type
+
+        if self.color:
+            if inst is None:
+                elt = self.NONE_COLOR
+            elif inst:
+                elt = self.TRUE_COLOR
+            else:
+                elt = self.FALSE_COLOR
+        else:
+            if inst is None:
+                elt = self.NONE_DULL
+            elif inst:
+                elt = self.TRUE_DULL
+            else:
+                elt = self.FALSE_DULL
+
+        style = "display:inline-block; width: 100%;"
+        if self.center:
+            style += "text-align:center"
+
+        elt = E.div(elt, style=style)
+
+        if self.label:
+            label = self._gen_label_for(ctx, cls, name)
+            attrib = self._gen_label_wrapper_class(ctx, cls, name)
+            with parent.element('div', attrib=attrib):
+                parent.write(label)
+                parent.write(elt)
+
+        else:
+            parent.write(elt)
+
+        if self.hidden:
+            self._gen_input_hidden(cls, inst, parent, name, **kwargs)
