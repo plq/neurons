@@ -511,11 +511,11 @@ class Daemon(ComplexModel):
                                     help="Daemonizes before everything else.")),
 
         ('uid', Unicode(help="The daemon user. You need to start the server as "
-                                       "a priviledged user for this to work.")),
         ('workdir', Unicode(help="The daemon workdir. It won't boot if this"
                                  "directory can't be created.")),
+                                       " a privileged user for this to work.")),
         ('gid', Unicode(help="The daemon group. You need to start the server as"
-                             " a priviledged user for this to work.")),
+                                       " a privileged user for this to work.")),
         ('limits', LimitsChoice.customize(help="Process limits.")),
 
         ('pid_file', String(help="The path to a text file that contains the pid"
