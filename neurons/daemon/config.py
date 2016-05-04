@@ -510,9 +510,9 @@ class Daemon(ComplexModel):
         ('daemonize', Boolean(default=False,
                                     help="Daemonizes before everything else.")),
 
-        ('uid', Unicode(help="The daemon user. You need to start the server as "
         ('workdir', Unicode(help="The daemon workdir. It won't boot if this"
                                  "directory can't be created.")),
+        ('uid', Unicode(help="The daemon user. You need to start the server as"
                                        " a privileged user for this to work.")),
         ('gid', Unicode(help="The daemon group. You need to start the server as"
                                        " a privileged user for this to work.")),
