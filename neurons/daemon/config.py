@@ -872,9 +872,12 @@ class Daemon(ComplexModel):
 
             workdir = self.workdir
             if workdir is None:
-                workdir = os.getcwd()
+                workdir = '/'
             daemonize(workdir=workdir)
             update_meminfo()
+        else:
+            if self.workdir is not None:
+                os.chdir(self.workdir)
 
         self.apply_limits()
         self.apply_logging()
