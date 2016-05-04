@@ -502,47 +502,63 @@ class Daemon(ComplexModel):
     _type_info = [
         ('name', Unicode(no_cli=True, help="Daemon Name")),
 
-        ('uuid', Uuid(no_cli=True,
-                      help="Daemon uuid. Regenerated every time a new "
-                           "config file is written. It could come in handy.")),
-        ('secret', ByteArray(no_cli=True, help="Secret key for signing cookies "
-                                               "and other stuff.")),
-        ('daemonize', Boolean(default=False,
-                                    help="Daemonizes before everything else.")),
+        ('uuid', Uuid(
+            no_cli=True,
+            help="Daemon uuid. Regenerated every time a new config file is "
+                 "written. It could come in handy.")),
 
-        ('workdir', Unicode(help="The daemon workdir. It won't boot if this"
-                                 "directory can't be created.")),
-        ('uid', Unicode(help="The daemon user. You need to start the server as"
-                                       " a privileged user for this to work.")),
-        ('gid', Unicode(help="The daemon group. You need to start the server as"
-                                       " a privileged user for this to work.")),
-        ('limits', LimitsChoice.customize(help="Process limits.")),
+        ('secret', ByteArray(
+            no_cli=True,
+            help="Secret key for signing cookies and other stuff.")),
 
-        ('pid_file', String(help="The path to a text file that contains the pid"
-                                 " of the daemonized process.")),
+        ('daemonize', Boolean(
+            default=False,
+            help="Daemonizes before everything else.")),
 
-        ('logger_dest', String(help="The path to the log file. The server won't"
-             " daemonize without this. Converted to an absolute path if not.")),
+        ('workdir', Unicode(
+            help=u"The daemon workdir. The daemon won't boot if this doesn't "
+                   "exist and can't be " u"created.")),
+        ('uid', Unicode(
+            help=u"The daemon user. You need to start the server as a "
+                   "privileged user for this to work.")),
+        ('gid', Unicode(
+            help=u"The daemon group. You need to start the server as a "
+                   "privileged user for this to work.")),
+        ('limits', LimitsChoice.customize(help=u"Process limits.")),
 
-        ('version', Boolean(help="Show version", no_file=True)),
+        ('pid_file', String(
+            help=u"The path to a text file that contains the pid of the "
+                 u"daemonized process.")),
 
-        ('bootstrap', Boolean(help="Bootstrap the application. Create schema, "
-                                  "insert initial data, etc.", no_file=True)),
+        ('logger_dest', String(
+            help=u"The path to the log file. The server won't daemonize "
+                 u"without this. Converted to an absolute path if not.")),
 
-        ('log_rss', Boolean(help="Prepend current memory usage "
-                                 "to all logging messages. Requires psutil")),
+        ('version', Boolean(help=u"Show version", no_file=True)),
 
-        ('log_rpc', Boolean(help="Log raw rpc data.")),
+        ('bootstrap', Boolean(
+            no_file=True,
+            help=u"Bootstrap the application. Create schema, insert initial "
+                 u"data, etc.")),
+
+        ('log_rss', Boolean(
+            help=u"Prepend current memory usage to all logging messages. "
+                 u"Requires psutil")),
+
+        ('log_rpc', Boolean(help=u"Log raw rpc data.")),
 
         ('write_config', Boolean(
-            help="Write configuration file and exit." , no_file=True)),
+            no_file=True,
+            help=u"Write configuration file and exit.")),
 
         ('alert_dests', Array(AlertDestination, default=[])),
 
-        ('shell', Boolean(no_file=True, default=False,
-                    help="Drop to IPython shell. Useful for trying ORM stuff")),
-        ('ikernel', Boolean(no_file=True, default=False,
-                                                 help="Start IPython kernel.")),
+        ('shell', Boolean(
+            no_file=True, default=False,
+            help=u"Drop to IPython shell. Useful for trying ORM stuff")),
+        ('ikernel', Boolean(
+            no_file=True, default=False,
+            help=u"Start IPython kernel.")),
 
         ('_services', Array(Service, sub_name='services')),
         ('_loggers', Array(Logger, sub_name='loggers')),
