@@ -135,7 +135,7 @@ class HtmlFormRoot(HtmlWidget):
                 cloth=None, cloth_parser=None, polymorphic=True, hier_delim='.',
                      label=True, doctype=None, asset_paths={}, placeholder=None,
                input_class=None, input_div_class=None, input_wrapper_class=None,
-                                                 label_class=None, action=None):
+                                  label_class=None, action=None, method='POST'):
 
         super(HtmlFormRoot, self).__init__(app=app, doctype=doctype,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
@@ -146,6 +146,7 @@ class HtmlFormRoot(HtmlWidget):
                input_wrapper_class=input_wrapper_class, label_class=label_class)
 
         self.action = action
+        self.method = method
 
     @coroutine
     def start_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
@@ -161,7 +162,10 @@ class HtmlFormRoot(HtmlWidget):
                               isinstance(ctx.protocol.prot_stack[0], HtmlForm)):
                 name = ''
 
-            attrib = dict(method='POST', enctype="multipart/form-data")
+            attrib = dict(method=self.method)
+            if self.method == 'POST':
+                attrib['enctype'] = "multipart/form-data"
+
             if hasattr(ctx.protocol, 'form_action'):
                 fa = ctx.protocol.form_action
                 attrib['action'] = fa
@@ -232,9 +236,10 @@ class HtmlFormRoot(HtmlWidget):
 class HtmlForm(HtmlFormRoot):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
                 cloth=None, cloth_parser=None, polymorphic=True, hier_delim='.',
-                   doctype=None, label=True, asset_paths={}, placeholder=None,
-                 input_class=None, input_div_class=None,
-                 input_wrapper_class=None, label_class=None, action=None):
+                     doctype=None, label=True, asset_paths={}, placeholder=None,
+                                         input_class=None, input_div_class=None,
+                                     input_wrapper_class=None, label_class=None,
+                                                    action=None, method='POST'):
 
         super(HtmlForm, self).__init__(app=app, doctype=doctype,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
@@ -243,7 +248,7 @@ class HtmlForm(HtmlFormRoot):
                     placeholder=placeholder, input_class=input_class,
                     input_div_class=input_div_class,
                input_wrapper_class=input_wrapper_class, label_class=label_class,
-                                                                  action=action)
+                                                   action=action, method=method)
 
         self.serialization_handlers = cdict({
             Date: self._check_simple(self.date_to_parent),
