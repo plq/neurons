@@ -151,6 +151,7 @@ class HtmlFormRoot(HtmlWidget):
     def start_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         # FIXME: what a HUGE swath of copy/paste! I want yield from!
         if not getattr(ctx.outprot_ctx, 'in_form', False):
+            cls_attrs = self.get_cls_attrs(cls)
             ctx.outprot_ctx.in_form = True
 
             if not (len(ctx.outprot_ctx.prot_stack) == 1 and
@@ -161,6 +162,10 @@ class HtmlFormRoot(HtmlWidget):
             if hasattr(ctx.protocol, 'form_action'):
                 attrib['action'] = ctx.protocol.form_action
                 logger.debug("Set form action to '%s'", attrib['action'])
+            elif cls_attrs.action:
+                fa = cls_attrs.action
+                attrib['action'] = fa
+                logger.debug("Set form action to '%s' from cls_attrs", fa)
 
             elif self.action is not None:
                 attrib['action'] = self.action
