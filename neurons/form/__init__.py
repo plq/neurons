@@ -34,6 +34,7 @@
 from neurons.form.widget import HtmlWidget
 from neurons.form.widget import HrefWidget
 from neurons.form.widget import PasswordWidget
+from neurons.form.widget import TrueFalseWidget
 
 from neurons.form.widget import ComboBoxWidget
 from neurons.form.widget import MultiSelectWidget
