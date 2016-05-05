@@ -982,32 +982,23 @@ class SimpleReadableNumberWidget(SimpleRenderWidget):
 
 
 class TrueFalseWidget(SimpleRenderWidget):
-    FALSE_COLOR = E.span(u"✘", style="text-decoration: none; color:red",
-                                             **{"class": "widget-false "
-                                                         "widget-false-color"})
-    TRUE_COLOR = E.span(u"✔", style="text-decoration: none; color:green",
-                                             **{"class": "widget-true "
-                                                         "widget-true-color"})
-    NONE_COLOR = E.span(u"●", style="text-decoration: none; color:gray",
-                                             **{"class": "widget-none "
-                                                         "widget-none-color"})
-
-    FALSE_DULL = E.span(u"✘", style="text-decoration: none;",
-                                             **{"class": "widget-false "
-                                                         "widget-false-dull"})
-    TRUE_DULL = E.span(u"✔", style="text-decoration: none;",
-                                             **{"class": "widget-true "
-                                                         "widget-true-dull"})
-    NONE_DULL = E.span(u"●", style="text-decoration: none; color:gray",
-                                             **{"class": "widget-none "
-                                                         "widget-none-dull"})
+    SYM_TRUE = u"✔"
+    SYM_FALSE = u"✘"
+    SYM_NONE = u"●"
 
     def __init__(self, label=True, type=None, hidden=False, center=False,
-                                                                    color=True):
+                        color=True, color_true='green', color_false='red',
+                         color_none='gray', addtl_css="text-decoration: none;"):
         super(TrueFalseWidget, self).__init__(label=label, type=type, hidden=hidden)
 
         self.center = center
         self.color = color
+
+        self.color_true = color_true
+        self.color_false = color_false
+        self.color_none = color_none
+
+        self.addtl_css = addtl_css
 
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         if self.type is not None:
@@ -1015,18 +1006,35 @@ class TrueFalseWidget(SimpleRenderWidget):
 
         if self.color:
             if inst is None:
-                elt = self.NONE_COLOR
+                elt = E.span(self.SYM_NONE,
+                    style="{}color:{}".format(self.addtl_css, self.color_none),
+                    **{"class": "widget-none widget-none-color"}
+                )
             elif inst:
-                elt = self.TRUE_COLOR
+                elt = E.span(self.SYM_TRUE,
+                    style="{}color:{}".format(self.addtl_css, self.color_true),
+                    **{"class": "widget-true widget-true-color"}
+                )
+
             else:
-                elt = self.FALSE_COLOR
+                elt = E.span(self.SYM_FALSE,
+                    style="{}color:{}".format(self.addtl_css, self.color_false),
+                    **{"class": "widget-false widget-false-color"}
+                )
         else:
             if inst is None:
-                elt = self.NONE_DULL
+                elt = E.span(self.SYM_NONE,
+                    style=self.addtl_css,
+                    **{"class": "widget-none widget-none-dull"})
+
             elif inst:
-                elt = self.TRUE_DULL
+                elt = E.span(self.SYM_TRUE,
+                    style=self.addtl_css,
+                    **{"class": "widget-true widget-true-dull"})
             else:
-                elt = self.FALSE_DULL
+                elt = E.span(self.SYM_FALSE,
+                    style=self.addtl_css,
+                    **{"class": "widget-false widget-false-dull"})
 
         style = "display:inline-block; width: 100%; background: transparent"
         if self.center:
