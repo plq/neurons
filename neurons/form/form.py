@@ -150,8 +150,11 @@ class HtmlFormRoot(HtmlWidget):
     @coroutine
     def start_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         # FIXME: what a HUGE swath of copy/paste! I want yield from!
+
+        # if we are already in a form, don't open a <form> tag
         if not getattr(ctx.outprot_ctx, 'in_form', False):
             cls_attrs = self.get_cls_attrs(cls)
+
             ctx.outprot_ctx.in_form = True
 
             if not (len(ctx.outprot_ctx.prot_stack) == 1 and
@@ -160,18 +163,24 @@ class HtmlFormRoot(HtmlWidget):
 
             attrib = dict(method='POST', enctype="multipart/form-data")
             if hasattr(ctx.protocol, 'form_action'):
-                attrib['action'] = ctx.protocol.form_action
-                logger.debug("Set form action to '%s'", attrib['action'])
+                fa = ctx.protocol.form_action
+                attrib['action'] = fa
+                logger.debug("Set form action to '%s' from ctx", fa)
+
             elif cls_attrs.action:
                 fa = cls_attrs.action
                 attrib['action'] = fa
                 logger.debug("Set form action to '%s' from cls_attrs", fa)
 
             elif self.action is not None:
-                attrib['action'] = self.action
+                fa = self.action
+                attrib['action'] = fa
+                logger.debug("Set form action to '%s' from protocol", fa)
 
             elif isinstance(ctx.transport, HttpTransportContext):
-                attrib['action'] = ctx.transport.get_path()
+                fa = ctx.transport.get_path()
+                attrib['action'] = fa
+                logger.debug("Set form action to '%s' from request path", fa)
 
             self.event_manager.fire_event("before_form", ctx, cls, inst, parent,
                                                   name, attrib=attrib, **kwargs)
