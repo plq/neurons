@@ -982,13 +982,25 @@ class SimpleReadableNumberWidget(SimpleRenderWidget):
 
 
 class TrueFalseWidget(SimpleRenderWidget):
-    NONE_COLOR = E.span(u"✘", style="text-decoration: none; color:red")
-    TRUE_COLOR = E.span(u"✔", style="text-decoration: none; color:green")
-    FALSE_COLOR = E.span(u"●", style="text-decoration: none; color:gray")
+    FALSE_COLOR = E.span(u"✘", style="text-decoration: none; color:red",
+                                             **{"class": "widget-false "
+                                                         "widget-false-color"})
+    TRUE_COLOR = E.span(u"✔", style="text-decoration: none; color:green",
+                                             **{"class": "widget-true "
+                                                         "widget-true-color"})
+    NONE_COLOR = E.span(u"●", style="text-decoration: none; color:gray",
+                                             **{"class": "widget-none "
+                                                         "widget-none-color"})
 
-    NONE_DULL = E.span(u"✘", style="text-decoration: none; color:red")
-    TRUE_DULL = E.span(u"✔", style="text-decoration: none; color:green")
-    FALSE_DULL = E.span(u"●", style="text-decoration: none; color:gray")
+    FALSE_DULL = E.span(u"✘", style="text-decoration: none;",
+                                             **{"class": "widget-false "
+                                                         "widget-false-dull"})
+    TRUE_DULL = E.span(u"✔", style="text-decoration: none;",
+                                             **{"class": "widget-true "
+                                                         "widget-true-dull"})
+    NONE_DULL = E.span(u"●", style="text-decoration: none; color:gray",
+                                             **{"class": "widget-none "
+                                                         "widget-none-dull"})
 
     def __init__(self, label=True, type=None, hidden=False, center=False,
                                                                     color=True):
@@ -1016,7 +1028,7 @@ class TrueFalseWidget(SimpleRenderWidget):
             else:
                 elt = self.FALSE_DULL
 
-        style = "display:inline-block; width: 100%;"
+        style = "display:inline-block; width: 100%; background: transparent"
         if self.center:
             style += "text-align:center"
 
