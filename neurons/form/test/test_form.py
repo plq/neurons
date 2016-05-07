@@ -362,9 +362,8 @@ class TestSimpleHrefWidget(object):
     def test_simple(self):
         v = Integer(prot=HrefWidget(href="/some_href?id={}"))
         elt = _test_type(v, 5)
-
-        assert elt.xpath('a/text()') == ['5']
-        assert elt.xpath('a/@href') == ['/some_href?id=5']
+        assert elt.xpath('div/span/a/text()') == ['5']
+        assert elt.xpath('div/span/a/@href') == ['/some_href?id=5']
 
 
 class TestComplexHrefWidget(object):
