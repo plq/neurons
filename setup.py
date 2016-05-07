@@ -84,6 +84,10 @@ class Tox(TestCommand):
 # testing stuff
 ##################
 
+# try the fix in:
+# http://scipy-dev.scipy.narkive.com/pAiap0yr/scikits-contribution#post14
+# if python setup.py sdist upload fails
+
 setup(
     name='neurons',
     packages=find_packages(),
