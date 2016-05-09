@@ -48,7 +48,7 @@ from lxml import html
 from lxml.builder import E
 
 from spyne import Unicode, Decimal, Boolean, ComplexModelBase, Array, ModelBase, \
-    AnyHtml, AnyUri
+    AnyHtml, AnyUri, Integer
 from spyne.util import six
 from spyne.util.tdict import tdict
 from spyne.util.oset import oset
@@ -953,19 +953,20 @@ class MultiSelectWidget(SelectWidgetBase):
 
 class SimpleReadableNumberWidget(SimpleRenderWidget):
     def __init__(self, label=True, type=None, hidden=False):
-        super(SimpleReadableNumberWidget, self).__init__(label=label,
-                                                         type=type, hidden=hidden)
+        super(SimpleReadableNumberWidget, self).__init__(
+                                          label=label, type=type, hidden=hidden)
 
         self.serialization_handlers = cdict({
-            Decimal: self.number_to_parent,
+            Decimal: self.decimal_to_parent,
+            Integer: self.integer_to_parent,
         })
 
-    def number_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+    def number_to_parent(self, ctx, cls, inst, parent, name, fstr, **kwargs):
         if inst is None:
             return
 
         locale.setlocale(locale.LC_ALL, 'en_US')
-        valstr = locale.format("%d", inst, grouping=True)
+        valstr = locale.format(fstr, inst, grouping=True)
 
         if self.label:
             label = self._gen_label_for(ctx, cls, name)
@@ -979,6 +980,28 @@ class SimpleReadableNumberWidget(SimpleRenderWidget):
 
         if self.hidden:
             self._gen_input_hidden(cls, inst, parent, name, **kwargs)
+
+    def integer_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls_attrs = self.get_cls_attrs(cls)
+
+        fstring = cls_attrs.format
+        if fstring is None:
+            fstring = "%d"
+
+        self.number_to_parent(ctx, cls, inst, parent, name, fstring, **kwargs)
+
+    def decimal_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls_attrs = self.get_cls_attrs(cls)
+
+        fstring = cls_attrs.format
+        if fstring is None:
+            fstring = "%f"
+
+            fd = cls_attrs.fraction_digits
+            if fd is not None:
+                fstring = "%%.%df" % fd
+
+        self.number_to_parent(ctx, cls, inst, parent, name, fstring, **kwargs)
 
 
 class TrueFalseWidget(SimpleRenderWidget):

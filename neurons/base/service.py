@@ -40,6 +40,7 @@ from neurons.base.context import WriteContext, ReadContext
 
 @memoize
 def TReaderServiceBase(_LogEntry=None):
+    # TODO: implement logging
     class ReaderServiceBase(ServiceBase):
         @classmethod
         def get_context(cls, ctx):
