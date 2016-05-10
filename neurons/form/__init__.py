@@ -41,6 +41,7 @@ from neurons.form.widget import MultiSelectWidget
 
 from neurons.form.widget import SimpleRenderWidget
 from neurons.form.widget import ComplexRenderWidget
+from neurons.form.widget import SimpleReadableNumberWidget
 
 from neurons.form.widget import ComplexHrefWidget
 
