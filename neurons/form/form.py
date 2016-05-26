@@ -135,7 +135,7 @@ class HtmlFormRoot(HtmlWidget):
                 cloth=None, cloth_parser=None, polymorphic=True, hier_delim='.',
                      label=True, doctype=None, asset_paths={}, placeholder=None,
                input_class=None, input_div_class=None, input_wrapper_class=None,
-                                  label_class=None, action=None, method='POST'):
+              label_class=None, action=None, method='POST', before_form=None):
 
         super(HtmlFormRoot, self).__init__(app=app, doctype=doctype,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
@@ -147,6 +147,8 @@ class HtmlFormRoot(HtmlWidget):
 
         self.action = action
         self.method = method
+        if before_form is not None:
+            self.event_manager.add_listener("before_form", before_form)
 
     @coroutine
     def start_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
@@ -239,7 +241,7 @@ class HtmlForm(HtmlFormRoot):
                      doctype=None, label=True, asset_paths={}, placeholder=None,
                                          input_class=None, input_div_class=None,
                                      input_wrapper_class=None, label_class=None,
-                                                    action=None, method='POST'):
+                                  action=None, method='POST', before_form=None):
 
         super(HtmlForm, self).__init__(app=app, doctype=doctype,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
@@ -248,7 +250,7 @@ class HtmlForm(HtmlFormRoot):
                     placeholder=placeholder, input_class=input_class,
                     input_div_class=input_div_class,
                input_wrapper_class=input_wrapper_class, label_class=label_class,
-                                                   action=action, method=method)
+                          action=action, method=method, before_form=before_form)
 
         self.serialization_handlers = cdict({
             Date: self._check_simple(self.date_to_parent),
