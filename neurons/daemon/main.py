@@ -370,6 +370,10 @@ def main(daemon_name, argv, init, bootstrap=None,
             logger.info("Updating configuration file because new secret was "
                                                                     "generated")
 
+    logger.debug("Compiling object mappers...")
+    from sqlalchemy.orm import compile_mappers
+    compile_mappers()
+
     # at this point it's safe to import the reactor (or anything else from
     # twisted) because the decision to fork or not to fork is already made.
     from twisted.internet import reactor
