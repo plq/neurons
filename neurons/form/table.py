@@ -59,7 +59,7 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
                    input_wrapper_class=None, label_class=None, action=None,
                  table_class=None, field_name_attr='class', border=0,
                  row_class=None, cell_class=None, header_cell_class=None,
-                 can_add=True, can_remove=True, label=False, before_table=None):
+                 can_add=True, can_remove=True, label=True, before_table=None):
 
         super(HtmlFormTable, self).__init__(app=app,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
@@ -133,8 +133,10 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
         if name == "":
             name = cls.get_type_name()
 
-        ret = self._gen_table(ctx, cls, inst, parent, name, gen_rows,
-                                                                   **kwargs)
+        if self.label:
+            parent.write(E.label(self.trc(cls, ctx.locale, name)))
+
+        ret = self._gen_table(ctx, cls, inst, parent, name, gen_rows, **kwargs)
 
         if isgenerator(ret):
             try:
