@@ -173,8 +173,8 @@ class HtmlFormRoot(HtmlWidget):
                 attrib['action'] = fa
                 logger.debug("Set form action to '%s' from ctx", fa)
 
-            elif cls_attrs.action:
-                fa = cls_attrs.action
+            elif cls_attrs.form_action:
+                fa = cls_attrs.form_action
                 attrib['action'] = fa
                 logger.debug("Set form action to '%s' from cls_attrs", fa)
 
