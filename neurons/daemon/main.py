@@ -251,6 +251,8 @@ def _inner_main(config, init, bootstrap, bootstrapper):
             continue
 
         try:
+            logger.info("Initializing service %s...", k)
+
             handles[k] = v(config)
         except ServiceDisabled:
             logger.info("Service '%s' is disabled.", k)
@@ -370,7 +372,7 @@ def main(daemon_name, argv, init, bootstrap=None,
             logger.info("Updating configuration file because new secret was "
                                                                     "generated")
 
-    logger.debug("Compiling object mappers...")
+    logger.info("Compiling object mappers...")
     from sqlalchemy.orm import compile_mappers
     compile_mappers()
 
@@ -380,7 +382,7 @@ def main(daemon_name, argv, init, bootstrap=None,
     from twisted.internet.task import deferLater
 
     gc.collect()
-    logger.info("Starting reactor... RSS: %f",
+    logger.info("Starting reactor... Max. RSS: %f",
                     resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000.0)
 
     deferLater(reactor, 0, _set_reactor_thread)
