@@ -982,6 +982,7 @@ class SimpleReadableNumberWidget(SimpleRenderWidget):
             self._gen_input_hidden(cls, inst, parent, name, **kwargs)
 
     def integer_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls = self._get_cls(cls)
         cls_attrs = self.get_cls_attrs(cls)
 
         fstring = cls_attrs.format
@@ -991,6 +992,7 @@ class SimpleReadableNumberWidget(SimpleRenderWidget):
         self.number_to_parent(ctx, cls, inst, parent, name, fstring, **kwargs)
 
     def decimal_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls = self._get_cls(cls)
         cls_attrs = self.get_cls_attrs(cls)
 
         fstring = cls_attrs.format
