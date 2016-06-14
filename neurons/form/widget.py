@@ -952,9 +952,12 @@ class MultiSelectWidget(SelectWidgetBase):
 
 
 class SimpleReadableNumberWidget(SimpleRenderWidget):
-    def __init__(self, label=True, type=None, hidden=False):
+    def __init__(self, label=True, type=None, hidden=False,
+                                                           locale='en_US.utf8'):
         super(SimpleReadableNumberWidget, self).__init__(
                                           label=label, type=type, hidden=hidden)
+
+        self.locale = locale
 
         self.serialization_handlers = cdict({
             Decimal: self.decimal_to_parent,
@@ -965,7 +968,7 @@ class SimpleReadableNumberWidget(SimpleRenderWidget):
         if inst is None:
             return
 
-        locale.setlocale(locale.LC_ALL, 'en_US')
+        locale.setlocale(locale.LC_ALL, self.locale)
         valstr = locale.format(fstr, inst, grouping=True)
 
         if self.label:
