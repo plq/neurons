@@ -961,7 +961,7 @@ class SimpleReadableNumberWidget(SimpleRenderWidget):
             Integer: self.integer_to_parent,
         })
 
-    def number_to_parent(self, ctx, cls, inst, parent, name, fstr, **kwargs):
+    def write_number(self, ctx, cls, inst, parent, name, fstr, **kwargs):
         if inst is None:
             return
 
@@ -989,7 +989,7 @@ class SimpleReadableNumberWidget(SimpleRenderWidget):
         if fstring is None:
             fstring = "%d"
 
-        self.number_to_parent(ctx, cls, inst, parent, name, fstring, **kwargs)
+        self.write_number(ctx, cls, inst, parent, name, fstring, **kwargs)
 
     def decimal_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls = self._get_cls(cls)
@@ -1003,7 +1003,7 @@ class SimpleReadableNumberWidget(SimpleRenderWidget):
             if fd is not None:
                 fstring = "%%.%df" % fd
 
-        self.number_to_parent(ctx, cls, inst, parent, name, fstring, **kwargs)
+        self.write_number(ctx, cls, inst, parent, name, fstring, **kwargs)
 
 
 class TrueFalseWidget(SimpleRenderWidget):
