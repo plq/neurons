@@ -999,7 +999,11 @@ class SimpleReadableNumberWidget(SimpleRenderWidget):
         if fstring is None:
             fstring = "%f"
 
-            fd = cls_attrs.fraction_digits
+            if cls_attrs.fraction_digits == D('inf'):
+                fd = 20  # FIXME: chosen by fair dice roll
+            else:
+                fd = int(cls_attrs.fraction_digits)
+
             if fd is not None:
                 fstring = "%%.%df" % fd
 
