@@ -547,6 +547,7 @@ class Daemon(ComplexModel):
 
         ('log_rpc', Boolean(help=u"Log raw rpc data.")),
         ('log_cust', Boolean(help=u"Log customization operations.")),
+        ('log_interface', Boolean(help=u"Log interface build process.")),
 
         ('write_config', Boolean(
             no_file=True,
@@ -1058,6 +1059,11 @@ class ServiceDaemon(Daemon):
             logging.getLogger('spyne.model').setLevel(logging.DEBUG)
         else:
             logging.getLogger('spyne.model').setLevel(logging.INFO)
+
+        if self.log_interface:
+            logging.getLogger('spyne.interface').setLevel(logging.DEBUG)
+        else:
+            logging.getLogger('spyne.interface').setLevel(logging.INFO)
 
         if self.log_rpc:
             logging.getLogger('spyne.protocol').setLevel(logging.DEBUG)
