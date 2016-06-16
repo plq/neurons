@@ -546,6 +546,7 @@ class Daemon(ComplexModel):
                  u"Requires psutil")),
 
         ('log_rpc', Boolean(help=u"Log raw rpc data.")),
+        ('log_cust', Boolean(help=u"Log customization operations.")),
 
         ('write_config', Boolean(
             no_file=True,
@@ -1052,6 +1053,11 @@ class ServiceDaemon(Daemon):
     def pre_logging_apply(self):
         if self.log_rpc or self.log_queries or self.log_results:
             logging.getLogger().setLevel(logging.DEBUG)
+
+        if self.log_cust:
+            logging.getLogger('spyne.model').setLevel(logging.DEBUG)
+        else:
+            logging.getLogger('spyne.model').setLevel(logging.INFO)
 
         if self.log_rpc:
             logging.getLogger('spyne.protocol').setLevel(logging.DEBUG)
