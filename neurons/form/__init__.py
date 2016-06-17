@@ -33,6 +33,7 @@
 
 from neurons.form.widget import HtmlWidget
 from neurons.form.widget import HrefWidget
+from neurons.form.widget import ParentHrefWidget
 from neurons.form.widget import PasswordWidget
 from neurons.form.widget import TrueFalseWidget
 

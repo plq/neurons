@@ -398,8 +398,8 @@ class PasswordWidget(HtmlWidget):
         parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
 
 
-# TODO: Make label optional
 class HrefWidget(HtmlWidget):
+    """Render current object as a link"""
     supported_types = (Unicode, Decimal)
 
     def __init__(self, href, hidden_input=False, label=True):
@@ -414,16 +414,21 @@ class HrefWidget(HtmlWidget):
         })
 
     def model_base_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        id_str = self.to_unicode(cls, inst)
-        if id_str is None:
-            id_str = ''
+        anchor_str = self.to_unicode(cls, inst)
+        if anchor_str is None:
+            anchor_str = ''
 
         try:
             href = self.href.format(inst)
         except:
             href = self.href
 
-        elt = E.a(id_str)
+        self.render_anchor(ctx, cls, inst, parent, name, anchor_str, href,
+                                                                      **kwargs)
+
+    def render_anchor(self, ctx, cls, inst, parent, name, anchor_str, href,
+                                                                      **kwargs):
+        elt = E.a(anchor_str)
         if href is not None:
             elt.attrib['href'] = href
 
@@ -443,6 +448,46 @@ class HrefWidget(HtmlWidget):
         cls_attr = self.get_cls_attrs(cls)
         if self.hidden_input and (inst is not None or cls_attr.min_occurs >= 1):
             self._gen_input_hidden(cls, inst, parent, name, **kwargs)
+
+
+class ParentHrefWidget(HrefWidget):
+    """Render current object as a link using information from its parent
+    object"""
+    supported_types = (Unicode, Decimal)
+
+    def __init__(self, href, field_names, hidden_input=False, label=True):
+        super(HrefWidget, self).__init__(label=label)
+
+        self.href = href
+        self.hidden_input = hidden_input
+        self.field_names = field_names
+
+        self.serialization_handlers = cdict({
+            ModelBase: self.model_base_to_parent,
+            ComplexModelBase: self.not_supported,
+        })
+
+    def model_base_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        anchor_str = self.to_unicode(cls, inst)
+        if anchor_str is None:
+            anchor_str = ''
+
+        inst_stack = ctx.protocol.inst_stack
+        if len(inst_stack) < 2:
+            logger.debug("No parent instance found.")
+            field_values = ()
+        else:
+            _, parent_inst, _ = inst_stack[-2]
+            field_values = {k: getattr(parent_inst, k)
+                                                      for k in self.field_names}
+
+        try:
+            href = self.href.format(**field_values)
+        except:
+            href = self.href
+
+        self.render_anchor(ctx, cls, inst, parent, name, anchor_str, href,
+                                                                      **kwargs)
 
 
 class SimpleRenderWidget(HtmlWidget):
