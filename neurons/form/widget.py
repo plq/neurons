@@ -500,7 +500,7 @@ class SimpleRenderWidget(HtmlWidget):
             ModelBase: self.model_base_to_parent,
             AnyHtml: self.any_html_to_parent,
             AnyUri: self.any_uri_to_parent,
-            ComplexModelBase: self.not_supported,
+            ComplexModelBase: self.complex_model_to_parent,
         })
 
     def _get_cls(self, cls):
@@ -594,6 +594,12 @@ class SimpleRenderWidget(HtmlWidget):
 
         if self.hidden:
             self._gen_input_hidden(cls, inst, parent, name, **kwargs)
+
+    def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        newcls = self._get_cls(cls)
+        if newcls is cls:
+            return self.not_supported(ctx, cls)
+        return self.to_parent(ctx, newcls, inst, parent, name, **kwargs)
 
 
 class ComplexRenderWidget(HtmlWidget):
