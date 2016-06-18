@@ -381,6 +381,12 @@ class HtmlWidget(HtmlBase):
             if cls_attrs.lt != Decimal.Attributes.lt:
                 elt.attrib['max'] = str(cls_attrs.lt)
 
+    def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        newcls = self._get_cls(cls)
+        if newcls is cls:
+            return self.not_supported(ctx, cls)
+        return self.to_parent(ctx, newcls, inst, parent, name, **kwargs)
+
 
 # TODO: Make label optional
 class PasswordWidget(HtmlWidget):
@@ -389,7 +395,7 @@ class PasswordWidget(HtmlWidget):
 
         self.serialization_handlers = cdict({
             Unicode: self.unicode_to_parent,
-            ComplexModelBase: self.not_supported,
+            ComplexModelBase: self.complex_model_to_parent,
         })
 
     def unicode_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
@@ -594,12 +600,6 @@ class SimpleRenderWidget(HtmlWidget):
 
         if self.hidden:
             self._gen_input_hidden(cls, inst, parent, name, **kwargs)
-
-    def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        newcls = self._get_cls(cls)
-        if newcls is cls:
-            return self.not_supported(ctx, cls)
-        return self.to_parent(ctx, newcls, inst, parent, name, **kwargs)
 
 
 class ComplexRenderWidget(HtmlWidget):
@@ -1013,6 +1013,7 @@ class SimpleReadableNumberWidget(SimpleRenderWidget):
         self.serialization_handlers = cdict({
             Decimal: self.decimal_to_parent,
             Integer: self.integer_to_parent,
+            ComplexModelBase: self.complex_model_to_parent,
         })
 
     def write_number(self, ctx, cls, inst, parent, name, fstr, **kwargs):
