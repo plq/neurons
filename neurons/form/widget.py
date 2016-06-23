@@ -426,7 +426,8 @@ class HrefWidget(HtmlWidget):
 
         try:
             href = self.href.format(inst)
-        except:
+        except Exception as e:
+            logger.warning("Error generating href: %r", e)
             href = self.href
 
         self.render_anchor(ctx, cls, inst, parent, name, anchor_str, href,
@@ -489,7 +490,8 @@ class ParentHrefWidget(HrefWidget):
 
         try:
             href = self.href.format(**field_values)
-        except:
+        except Exception as e:
+            logger.warning("Error generating href: %r", e)
             href = self.href
 
         self.render_anchor(ctx, cls, inst, parent, name, anchor_str, href,
