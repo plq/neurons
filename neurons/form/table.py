@@ -137,6 +137,14 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
         if self.label:
             parent.write(E.label(self.trc(cls, ctx.locale, name)))
 
+        cls_attr = self.get_cls_attrs(cls)
+        if cls_attr.write is False:
+            ctx.protocol.can_add = False
+            ctx.protocol.can_remove = False
+        else:
+            ctx.protocol.can_add = self.can_add
+            ctx.protocol.can_remove = self.can_remove
+
         ret = self._gen_table(ctx, cls, inst, parent, name, gen_rows, **kwargs)
 
         if isgenerator(ret):
@@ -151,7 +159,7 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
                     pass
 
     def extend_header_row(self, ctx, cls, parent, name, **kwargs):
-        if self.can_add or self.can_remove:
+        if ctx.protocol.can_add or self.can_remove:
             parent.write(E.th(**{'class': 'array-button'}))
 
     def extend_data_row(self, ctx, cls, inst, parent, name, array_index=None,
@@ -159,7 +167,7 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
         if array_index is None:
             return
 
-        if not (self.can_remove or self.can_add):
+        if not (ctx.protocol.can_remove or ctx.protocol.can_add):
             return
 
         td = E.td(style='white-space: nowrap;')
@@ -188,7 +196,7 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
             )
 
     def extend_table(self, ctx, cls, parent, name, **kwargs):
-        if not self.can_add:
+        if not ctx.protocol.can_add:
             return
 
         # FIXME: just fix me.
