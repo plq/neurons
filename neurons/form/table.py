@@ -50,6 +50,7 @@ from neurons.form import HtmlFormRoot
 
 SOME_COUNTER = [0]
 
+
 # FIXME: Could NOTHING be done about the horrendous number of arguments here?
 class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=True,
