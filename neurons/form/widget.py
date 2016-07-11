@@ -1074,8 +1074,10 @@ class TrueFalseWidget(SimpleRenderWidget):
 
     def __init__(self, label=True, type=None, hidden=False, center=False,
                         color=True, color_true='green', color_false='red',
-                         color_none='gray', addtl_css="text-decoration: none;"):
-        super(TrueFalseWidget, self).__init__(label=label, type=type, hidden=hidden)
+                        color_none='gray', display='inline-block', width="100%",
+                                            addtl_css="text-decoration: none;"):
+        super(TrueFalseWidget, self).__init__(label=label, type=type,
+                                                                  hidden=hidden)
 
         self.center = center
         self.color = color
@@ -1084,6 +1086,8 @@ class TrueFalseWidget(SimpleRenderWidget):
         self.color_false = color_false
         self.color_none = color_none
 
+        self.display = display
+        self.width = width
         self.addtl_css = addtl_css
 
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
@@ -1122,11 +1126,15 @@ class TrueFalseWidget(SimpleRenderWidget):
                     style=self.addtl_css,
                     **{"class": "widget-false widget-false-dull"})
 
-        style = "display:inline-block; width: 100%; background: transparent"
+        styles = ["background: transparent"]
+        if self.width:
+            styles.append("width: 100%")
+        if self.display:
+            styles.append("display: %s" % (self.display,))
         if self.center:
-            style += "text-align:center"
+            styles.append("text-align:center;")
 
-        elt = E.div(elt, style=style)
+        elt = E.div(elt, style=';'.join(styles))
 
         if self.label:
             label = self._gen_label_for(ctx, cls, name)
