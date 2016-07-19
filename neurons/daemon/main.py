@@ -280,6 +280,12 @@ class BootStrapper(object):
     def __init__(self, init):
         self.init = init
 
+    def before_tables(self, config):
+        pass
+
+    def after_tables(self, config):
+        pass
+
     def __call__(self, config):
         for store in config.stores.values():
             if database_exists(store.conn_str):
@@ -298,7 +304,12 @@ class BootStrapper(object):
         from neurons.model import TableModel
         TableModel.Attributes.sqla_metadata.bind = \
                                                   config.get_main_store().engine
+
+        self.before_tables(config)
+
         TableModel.Attributes.sqla_metadata.create_all(checkfirst=True)
+
+        self.after_tables(config)
 
 
 def _set_reactor_thread():
