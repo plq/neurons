@@ -209,6 +209,20 @@ class TestFormPrimitive(unittest.TestCase):
         elt = _test_type(Integer, v).xpath('div/input')[0]
         assert elt.attrib['value'] == str(v)
 
+    def test_integer_constraints(self):
+        elt = _test_type(Integer(gt=0), None).xpath('div/input')[0]
+        assert elt.attrib['min'] == '1'
+
+        elt = _test_type(Integer(ge=0), None).xpath('div/input')[0]
+        assert elt.attrib['min'] == '0'
+
+    def test_decimal_constraints(self):
+        elt = _test_type(Decimal(ge=0), None).xpath('div/input')[0]
+        assert elt.attrib['min'] == '0'
+
+        elt = _test_type(Decimal(gt=0), None).xpath('div/input')[0]
+        assert elt.attrib['min'] == '1E-308'
+
     def test_integer_none(self):
         v = None
         elt = _test_type(Integer, v).xpath('div/input')[0]

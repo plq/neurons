@@ -347,11 +347,14 @@ class HtmlForm(HtmlFormRoot):
         elt.attrib['type'] = 'number'
 
         if D(cls.Attributes.fraction_digits).is_infinite():
+            epsilon = self.HTML5_EPSILON
             elt.attrib['step'] = 'any'
-        else:
-            elt.attrib['step'] = str(10**(-int(cls.Attributes.fraction_digits)))
 
-        self._apply_number_constraints(cls_attrs, elt)
+        else:
+            epsilon = 10 ** (-int(cls.Attributes.fraction_digits))
+            elt.attrib['step'] = str(epsilon)
+
+        self._apply_number_constraints(cls_attrs, elt, epsilon)
 
         parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
 
@@ -524,7 +527,7 @@ class HtmlForm(HtmlFormRoot):
         elt = self._gen_input(ctx, cls, inst, name, cls_attrs, **kwargs)
         elt.attrib['type'] = 'number'
 
-        self._apply_number_constraints(cls_attrs, elt)
+        self._apply_number_constraints(cls_attrs, elt, epsilon=1)
 
         parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
 

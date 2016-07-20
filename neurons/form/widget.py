@@ -71,12 +71,21 @@ def camel_case_to_uscore_gen(string):
 camel_case_to_uscore = lambda s: ''.join(camel_case_to_uscore_gen(s))
 
 
+def _gen_html5_epsilon():
+    import math
+    return D('1e%s' % int(math.log(2 ** (-1024)) / math.log(10)))
+
+
 class HtmlWidget(HtmlBase):
     DEFAULT_INPUT_WRAPPER_CLASS = 'label-input-wrapper'
     DEFAULT_ANCHOR_WRAPPER_CLASS = 'label-anchor-wrapper'
 
     WRAP_FORWARD = type("WRAP_FORWARD", (object,), {})
     WRAP_REVERSED = type("WRAP_REVERSED", (object,), {})
+
+    # see paragraph 17 at:
+    # https://www.w3.org/TR/2012/WD-html5-20121025/common-microsyntaxes.html#rules-for-parsing-floating-point-number-values
+    HTML5_EPSILON = _gen_html5_epsilon()
 
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
                 cloth=None, cloth_parser=None, polymorphic=True, hier_delim='.',
@@ -364,22 +373,21 @@ class HtmlWidget(HtmlBase):
         return cls_attrs, elt
 
     @staticmethod
-    def _apply_number_constraints(cls_attrs, elt):
+    def _apply_number_constraints(cls_attrs, elt, epsilon):
         if cls_attrs.max_str_len != Decimal.Attributes.max_str_len:
             elt.attrib['maxlength'] = str(cls_attrs.max_str_len)
 
-        if elt.attrib['type'] == 'range':
-            if cls_attrs.ge != Decimal.Attributes.ge:
-                elt.attrib['min'] = str(cls_attrs.ge)
+        if cls_attrs.ge != Decimal.Attributes.ge:
+            elt.attrib['min'] = str(cls_attrs.ge)
 
-            if cls_attrs.gt != Decimal.Attributes.gt:
-                elt.attrib['min'] = str(cls_attrs.gt)
+        if cls_attrs.gt != Decimal.Attributes.gt:
+            elt.attrib['min'] = str(cls_attrs.gt + epsilon)
 
-            if cls_attrs.le != Decimal.Attributes.le:
-                elt.attrib['max'] = str(cls_attrs.le)
+        if cls_attrs.le != Decimal.Attributes.le:
+            elt.attrib['max'] = str(cls_attrs.le)
 
-            if cls_attrs.lt != Decimal.Attributes.lt:
-                elt.attrib['max'] = str(cls_attrs.lt)
+        if cls_attrs.lt != Decimal.Attributes.lt:
+            elt.attrib['max'] = str(cls_attrs.lt - epsilon)
 
     def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         newcls = self._get_cls(cls)
