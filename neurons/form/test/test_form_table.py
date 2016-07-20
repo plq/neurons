@@ -82,11 +82,11 @@ def _test_type(cls, inst, prot_cls=HtmlFormTable):
 class TestFormTable(unittest.TestCase):
     def test_simple_array(self):
         v = range(5)
-        elt = _test_type(Array(Integer), v)[0]
+        elt = _test_type(Array(Integer), v)
 
-        assert elt.xpath('tbody/tr/td/div/input/@value') == \
+        assert elt.xpath('table/tbody/tr/td/div/input/@value') == \
                                                        ['0', '1', '2', '3', '4']
-        assert elt.xpath('tbody/tr/td/button/text()') == ['-'] * 5 + ['+']
+        assert elt.xpath('table/tbody/tr/td/button/text()') == ['-'] * 5 + ['+']
         for i, name in enumerate(elt.xpath('div/div/input/@name')):
             assert re.match(r'ints\[0*%d\]' % i, name)
 

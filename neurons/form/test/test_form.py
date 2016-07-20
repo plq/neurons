@@ -359,7 +359,11 @@ class TestFormComplex(unittest.TestCase):
         assert elt.xpath('div/div/div/input/@value') == \
                                                        ['0', '1', '2', '3', '4']
         assert elt.xpath('div/div/button/text()') == ['+', '-'] * 5
-        for i, name in enumerate(elt.xpath('div/div/input/@name')):
+
+        names = elt.xpath('div/div/div/input/@name')
+        assert len(names) > 0
+
+        for i, name in enumerate(names):
             assert re.match(r'ints\[0*%d\]' % i, name)
 
 
