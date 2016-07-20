@@ -304,7 +304,6 @@ class BootStrapper(object):
         from neurons.model import TableModel
         TableModel.Attributes.sqla_metadata.bind = \
                                                   config.get_main_store().engine
-
         self.before_tables(config)
 
         TableModel.Attributes.sqla_metadata.create_all(checkfirst=True)

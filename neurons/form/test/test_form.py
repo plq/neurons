@@ -162,7 +162,9 @@ class TestFormPrimitive(unittest.TestCase):
 
     # FIXME: enable this after fixing the relevant Spyne bug
     def _test_decimal_step(self):
-        elt = _test_type(Decimal(fraction_digits=4), D('0.1')).xpath('div/input')[0]
+        elt = _test_type(Decimal(fraction_digits=4), D('0.1'))
+        elt = elt.xpath('div/input')[0]
+
         assert elt.attrib['step'] == '0.0001'
 
     def test_boolean_true(self):
@@ -336,7 +338,8 @@ class TestFormComplex(unittest.TestCase):
         assert elt.xpath('div/input/@name') == ['i0']
 
         assert elt.xpath('div/ul/li/a/text()') == [tab1.legend, tab2.legend]
-        assert elt.xpath('div/ul/li/a/@href') == ["#" + tab1.htmlid, "#" + tab2.htmlid]
+        assert elt.xpath('div/ul/li/a/@href') == \
+                                          ["#" + tab1.htmlid, "#" + tab2.htmlid]
         assert elt.xpath('div/div/@id') == [tab1.htmlid, tab2.htmlid]
         assert elt.xpath('div/div[@id]/div/input/@name') == ['i1', 'i2']
         assert elt.xpath('div/div[@id]/div/input/@value') == ['28', '56']
@@ -352,7 +355,9 @@ class TestFormComplex(unittest.TestCase):
 
         v = SomeObject(ints=range(5))
         elt = _test_type(SomeObject, v)[0]
-        assert elt.xpath('div/div/div/input/@value') == ['0', '1', '2', '3', '4']
+
+        assert elt.xpath('div/div/div/input/@value') == \
+                                                       ['0', '1', '2', '3', '4']
         assert elt.xpath('div/div/button/text()') == ['+', '-'] * 5
         for i, name in enumerate(elt.xpath('div/div/input/@name')):
             assert re.match(r'ints\[0*%d\]' % i, name)
