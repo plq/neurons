@@ -51,7 +51,7 @@ docs/_build/
 /assets/bootstrap-*
 
 # test output
-/test_html
+test_html
 
 # config files
 *.yaml
