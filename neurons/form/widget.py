@@ -169,8 +169,14 @@ class HtmlWidget(HtmlBase):
             input = E.div(input, **{'class': self.input_div_class})
 
         attrib = self._gen_label_wrapper_class(ctx, cls, name)
-        if (no_label or not self.label) and wrap_label is not None:
-            retval = E.div(input, **attrib)
+
+        cls_attrs = self.get_cls_attrs(cls)
+        wants_no_label = cls_attrs.label is False or no_label or not self.label
+        if wants_no_label:
+            if wrap_label is None:
+                retval = input
+            else:
+                retval = E.div(input, **attrib)
 
         else:
             label_attrib = {'for': input_id}
