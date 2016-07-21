@@ -133,7 +133,7 @@ class TestFormPrimitive(unittest.TestCase):
         assert elt.xpath("option[@selected]/text()") == [v]
 
     def test_integer_values(self):
-        v = 3
+        v = 4
         cls = Integer(type_name="tn", values=list(range(5)))
         assert not cls.get_type_name() is Unicode.Empty
         elt = _test_type(cls, v).xpath('div/select')[0]
@@ -188,13 +188,14 @@ class TestFormPrimitive(unittest.TestCase):
     def test_datetime(self):
         v = datetime(2013, 12, 11, 10, 9, 8)
         script = _test_type(DateTime, v).xpath('div/script/text()')[0]
-        assert v.isoformat() in script
+        assert str(v) in script
         # FIXME: Need to find a better way to test the generated js
 
     def test_array_datetime(self):
         v = datetime(2013, 12, 11, 10, 9, 8)
-        _ = _test_type(Array(DateTime), [v]).xpath('div/script/text()')[0]
-        # FIXME: test something!
+        dtarr = _test_type(DateTime, v).xpath('div/script/text()')[0]
+        assert str(v) in dtarr
+
 
     def test_datetime_format_split(self):
         ret = HtmlForm._split_datetime_format('%Y-%m-%d %H:%M:%S')

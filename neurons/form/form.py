@@ -509,10 +509,10 @@ class HtmlForm(HtmlFormRoot):
             script = self._format_js(code, field_name=elt.attrib['id'],
                                date_format=date_format, time_format=time_format)
         else:
-            value = self.to_unicode(cls, inst)
+            value = inst
 
             code.append(
-                "t.datetimepicker('setTime', '%(value)s');")
+                "t.datetimepicker('setDate', '%(value)s');")
 
             script = self._format_js(code, field_name=elt.attrib['id'],
                   date_format=date_format, time_format=time_format, value=value)

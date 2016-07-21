@@ -1,0 +1,10 @@
+Collecting spyne
+  Downloading spyne-2.12.11.tar.gz (299kB)
+Collecting pytz (from spyne)
+  Downloading pytz-2016.6.1-py2.py3-none-any.whl (481kB)
+Building wheels for collected packages: spyne
+  Running setup.py bdist_wheel for spyne
+  Stored in directory: /Users/alicanyilmaz/Library/Caches/pip/wheels/1a/84/c7/60de4f99d194750b2353ca7af97629176d2c1fdb989920c416
+Successfully built spyne
+Installing collected packages: pytz, spyne
+Successfully installed pytz-2016.6.1 spyne-2.12.11
