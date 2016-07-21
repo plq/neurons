@@ -446,9 +446,8 @@ class HtmlForm(HtmlFormRoot):
 
     @staticmethod
     def _split_datetime_format(f):
-        """this is actually a pathetic attempt at splitting datetime
-        format to date and time formats. assumes date and time fields are
-        not mixed"""
+        # this is actually a pathetic attempt at splitting datetime format
+        # to date and time formats. assumes date and time fields are not mixed
 
         lf = len(f)
         date_start_idx = min(
