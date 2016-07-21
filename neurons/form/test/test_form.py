@@ -191,6 +191,11 @@ class TestFormPrimitive(unittest.TestCase):
         assert v.isoformat() in script
         # FIXME: Need to find a better way to test the generated js
 
+    def test_array_datetime(self):
+        v = datetime(2013, 12, 11, 10, 9, 8)
+        _ = _test_type(Array(DateTime), [v]).xpath('div/script/text()')[0]
+        # FIXME: test something!
+
     def test_datetime_format_split(self):
         ret = HtmlForm._split_datetime_format('%Y-%m-%d %H:%M:%S')
         assert ret == ('yy-mm-dd', 'HH:mm:ss')
