@@ -17,4 +17,4 @@ bootstrap-%:
 	    unzip $@.zip; mv $@*/* .; rm -rf $@*
 
 clean:
-	-rm -rf jquery-*
+	-rm -rf jquery-* bootstrap-*
