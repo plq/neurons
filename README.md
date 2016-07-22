@@ -13,17 +13,18 @@ First, create a virtualenv:
     virtualenv -p python2.7 virt-2.7
     source virt-2.7/bin/activate
 
-If you want to work on Spyne's development version, clone spyne:
+If you want to work on Spyne's development version, clone and install spyne
+before neurons' setup script:
 
     git clone git://github.com/plq/spyne
     (cd spyne; python setup.py develop)
 
-Now clone neurons:
+Now clone and install neurons:
 
     git clone git://github.com/plq/neurons
     (cd neurons; python setup.py develop)
 
-Install useful packages:
+Install additional useful packages:
 
     pip install ipython\<5 pytest ipdb pytest-twisted
 
