@@ -45,6 +45,8 @@ from os.path import isfile, join, dirname
 from spyne.util.six import StringIO
 from spyne.store.relational.util import database_exists, create_database
 
+from sqlalchemy import MetaData
+
 from neurons.daemon.config import ServiceDisabled, ServiceDaemon
 
 
@@ -279,6 +281,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
 class BootStrapper(object):
     def __init__(self, init):
         self.init = init
+        self.meta_reflect = MetaData()
 
     def before_tables(self, config):
         pass
@@ -298,12 +301,17 @@ class BootStrapper(object):
         config.log_results = True
         config.apply()
 
+        main_engine = config.get_main_store().engine
+
+        # reflect database just in case -- can be useful while bootstrapping
+        self.meta_reflect.reflect(bind=main_engine)
+
         # Run init so that all relevant models get imported
         self.init(config)
 
         from neurons.model import TableModel
-        TableModel.Attributes.sqla_metadata.bind = \
-                                                  config.get_main_store().engine
+        TableModel.Attributes.sqla_metadata.bind = main_engine
+
         self.before_tables(config)
 
         TableModel.Attributes.sqla_metadata.create_all(checkfirst=True)
