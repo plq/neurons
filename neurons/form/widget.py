@@ -513,9 +513,10 @@ class ParentHrefWidget(HrefWidget):
 
 
 class SimpleRenderWidget(HtmlWidget):
-    def __init__(self, label=True, type=None, hidden=False):
+    def __init__(self, label=True, type=None, hidden=False, elt=None):
         super(SimpleRenderWidget, self).__init__(label=label)
 
+        self.elt = elt
         self.type = type
         self.hidden = hidden
         self.serialization_handlers = cdict({
@@ -565,7 +566,10 @@ class SimpleRenderWidget(HtmlWidget):
         if self.label:
             self._wrap_with_label_simple(ctx, cls, text_str, parent, name)
         else:
-            parent.write(text_str)
+            if self.elt is not None:
+                parent.write(E(self.elt.tag, text_str, **self.elt.attrib))
+            else:
+                parent.write(text_str)
 
         if self.hidden:
             self._gen_input_hidden(cls, inst, parent, name, **kwargs)
