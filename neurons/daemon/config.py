@@ -48,7 +48,7 @@ from os.path import isfile, abspath, dirname, getsize
 
 from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
     UnsignedInteger, UnsignedInteger16, Array, String, Application, \
-    ComplexModelBase, M, Double
+    ComplexModelBase, M, Double, Decimal, UnsignedInteger
 
 from spyne.protocol import ProtocolBase
 from spyne.protocol.yaml import YamlDocument
@@ -150,11 +150,82 @@ DistinguishedName = Unicode
 
 
 class LdapStore(StorageInfo):
-    host = Unicode
-    port = UnsignedInteger16
+    method = M(Unicode(values=['simple', 'gssapi']))
+    backend = M(Unicode(values=['python-ldap']))
+
+    host = M(Unicode)
+    port = UnsignedInteger16(default=389)
     base_dn = DistinguishedName
     bind_dn = DistinguishedName
     password = Unicode
+    timeout = Decimal(gt=0, default=10)
+    version = UnsignedInteger(default=3, vaues=[2, 3])
+    use_tls = Boolean(default=False)
+    referrals = Boolean(default=False)
+
+    def __init__(self, *args, **kwargs):
+        super(LdapStore, self).__init__(*args, **kwargs)
+        self.itself = None
+
+    def apply_python_ldap(self):
+        import ldap
+
+        port = self.port
+        if port is None:
+            port = 389
+
+        base_dn = self.base_dn
+        if base_dn is None:
+            base_dn = ''
+
+        bind_dn = self.bind_dn
+        if base_dn is None:
+            bind_dn = ''
+
+        if self.method == 'simple':
+            if self.itself is not None:
+                self.close()
+
+            if self.use_tls:
+                uri = "ldaps://%s:%d" % (self.host, port)
+                self.itself = ldap.initialize(uri)
+
+                self.itself.set_option(ldap.OPT_X_TLS, ldap.OPT_X_TLS_DEMAND)
+                self.itself.set_option(ldap.OPT_X_TLS_DEMAND, True)
+
+            else:
+                uri = "ldap://%s:%d" % (self.host, port)
+                self.itself = ldap.initialize(uri)
+
+            self.itself.set_option(ldap.OPT_NETWORK_TIMEOUT, self.timeout)
+
+            if not self.referrals:
+                self.itself.set_option(ldap.OPT_REFERRALS, 0)
+
+            if self.version == 3:
+                self.itself.protocol_version = ldap.VERSION3
+
+            elif self.version == 2:
+                self.itself.protocol_version = ldap.VERSION2
+
+            else:
+                raise ValueError(self.version)
+
+            self.itself.simple_bind_s(bind_dn, self.password)
+
+            logger.info("Ldap connection success: %r",
+                                           self.itself.get_option(ldap.OPT_URI))
+
+        elif self.method == 'gssapi':
+            raise NotImplementedError(self.method)
+
+        else:
+            raise ValueError(self.method)
+
+    def apply(self):
+        if self.backend == 'python-ldap':
+            return self.apply_python_ldap()
+        raise ValueError(self.backend)
 
 
 class RelationalStore(StorageInfo):
