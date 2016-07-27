@@ -146,7 +146,7 @@ class SyncPoolConfig(ComplexModel):
         ])
 
 
-class Relational(StorageInfo):
+class RelationalStore(StorageInfo):
     conn_str = Unicode
 
     # move these to QueuePool config.
@@ -168,7 +168,7 @@ class Relational(StorageInfo):
     async_pool = Boolean(default=True)
 
     def __init__(self, *args, **kwargs):
-        super(Relational, self).__init__(*args, **kwargs)
+        super(RelationalStore, self).__init__(*args, **kwargs)
         self.itself = None
 
     def apply(self):
@@ -999,7 +999,7 @@ class ServiceDaemon(Daemon):
             secret=cls.gen_secret(),
             name=daemon_name,
             _stores=[
-                Relational(
+                RelationalStore(
                     name=u"sql_main",
                     backend=u"sqlalchemy",
                     pool_size=10,
