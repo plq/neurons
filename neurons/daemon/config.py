@@ -146,6 +146,17 @@ class SyncPoolConfig(ComplexModel):
         ])
 
 
+DistinguishedName = Unicode
+
+
+class LdapStore(StorageInfo):
+    host = Unicode
+    port = UnsignedInteger16
+    base_dn = DistinguishedName
+    bind_dn = DistinguishedName
+    password = Unicode
+
+
 class RelationalStore(StorageInfo):
     conn_str = Unicode
 
