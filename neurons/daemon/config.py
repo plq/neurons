@@ -553,7 +553,7 @@ class Daemon(ComplexModel):
                  u"data, etc.")),
 
         ('log_rss', Boolean(
-            help=u"Prepend current memory usage to all logging messages. "
+            help=u"Prepend resident set size to all logging messages. "
                  u"Requires psutil")),
 
         ('log_rpc', Boolean(help=u"Log raw rpc data.")),
@@ -961,9 +961,9 @@ class ServiceDaemon(Daemon):
             help="Write Xml Schema document(s) to given directory and exit. "
                  "It is created if missing", no_file=True)),
 
-        ('log_queries', Boolean(help="Log sql queries.")),
-        ('log_results', Boolean(help="Log query results in addition to queries "
-                                     "themselves.")),
+        ('log_queries', Boolean(help="Log SQL queries.")),
+        ('log_results', Boolean(help="Log SQL query results in addition to "
+                                     "queries.")),
 
         ('drop_all_tables', Boolean(help="Drops all tables in the database.",
                                     no_file=True)),
