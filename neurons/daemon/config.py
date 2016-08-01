@@ -58,13 +58,14 @@ from spyne.util.color import B, YEL, R, DARK_R
 from spyne.util import six
 from spyne.util.dictdoc import yaml_loads, get_object_as_yaml
 
+from neurons import __version__ as NEURONS_VERSION
 from neurons.daemon.daemonize import daemonize
 from neurons.daemon.store import SqlDataStore
 from neurons.daemon.cli import spyne_to_argparse, config_overrides
 
+FILE_VERSION_KEY = 'file-version'
 STATIC_DESC_ROOT = "Directory that contains static files for the root url."
 STATIC_DESC_URL = "Directory that contains static files for the url '%s'."
-
 _some_prot = ProtocolBase()
 
 _meminfo = None
@@ -583,7 +584,8 @@ class Daemon(ComplexModel):
 
     _type_info = [
         ('name', Unicode(no_cli=True, help="Daemon Name")),
-
+        ('file_version', Unicode(no_cli=True, sub_name=FILE_VERSION_KEY,
+                                                      default=NEURONS_VERSION)),
         ('uuid', Uuid(
             no_cli=True,
             help="Daemon uuid. Regenerated every time a new config file is "
@@ -990,8 +992,10 @@ class Daemon(ComplexModel):
 
         exists = isfile(file_name) and os.access(file_name, os.R_OK)
         if exists and getsize(file_name) > 0:
-            retval = yaml_loads(open(file_name, 'rb').read(), cls,
-                                             validator='soft', polymorphic=True)
+            s = open(file_name, 'rb').read()
+            s = retval._migrate_impl(s)
+            retval = yaml_loads(s, cls, validator='soft', polymorphic=True)
+
         else:
             if not access(dirname(file_name), os.R_OK | os.W_OK):
                 raise Exception("File %r can't be created in %r" %
@@ -1018,6 +1022,57 @@ class Daemon(ComplexModel):
                     retval.extend(dest.recipients)
 
         return retval
+
+    def _migrate_impl(self, s):
+        """Migrates old config files to new ones. Takes old config file as
+        string and returns the new one.
+
+        This is not supposed to be overridden. Override migrate_dict if you
+        want add migration
+        """
+
+        import yaml
+        config_dict = yaml.load(s)
+        key, = config_dict.keys()
+
+        config_root = config_dict[key]
+        config_version = config_root.get(FILE_VERSION_KEY, None)
+
+        if config_version is None:
+            # Perform relational store migration
+            try:
+                z = config_root['stores'][0]['Relational']
+
+            except KeyError:
+                pass
+
+            else:
+                del config_root['stores'][0]['Relational']
+                config_root['stores'][0]['RelationalStore'] = z
+
+        else:
+            config_version = [int(ver_tuple)
+                                     for ver_tuple in config_version.split(".")]
+            while len(config_version) < 3:
+                config_version.append(0)
+            config_version = tuple(config_version)
+
+            self.migrate(config_dict, config_version)
+
+        config_root[FILE_VERSION_KEY] = NEURONS_VERSION
+        return yaml.dump(config_dict, indent=4, default_flow_style=False)
+
+    def migrate(self, config_dict, config_version):
+        """Makes in-place changes in the config_dict before it's parsed and
+        applied by the configuration engine."""
+
+        # example
+        if config_version < (0, 6, 0):
+            key, = config_dict.keys()
+            _ = config_dict[key]
+            # do something with the dict
+
+        pass
 
 
 class ServiceDaemon(Daemon):
