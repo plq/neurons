@@ -34,6 +34,9 @@
 from __future__ import print_function
 
 import logging
+
+import warnings
+
 logger = logging.getLogger(__name__)
 
 import os, gc, sys
@@ -47,7 +50,8 @@ from spyne.store.relational.util import database_exists, create_database
 
 from sqlalchemy import MetaData
 
-from neurons.daemon.config import ServiceDisabled, ServiceDaemon
+from neurons.daemon.config import ServiceDisabled, ServiceDaemon, \
+    RelationalStore, LdapStore
 
 
 def get_package_version(pkg_name):
@@ -279,6 +283,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
 
 
 class BootStrapper(object):
+    """Creates all databases """
     def __init__(self, init):
         self.init = init
         self.meta_reflect = MetaData()
@@ -289,14 +294,24 @@ class BootStrapper(object):
     def after_tables(self, config):
         pass
 
+    def create_relational(self, store):
+        if database_exists(store.conn_str):
+            print(store.conn_str, "already exists.")
+            return
+
+        create_database(store.conn_str)
+        print(store.conn_str, "did not exist, created.")
+
     def __call__(self, config):
         for store in config.stores.values():
-            if database_exists(store.conn_str):
-                print(store.conn_str, "already exists.")
-                continue
+            if isinstance(store, RelationalStore):
+                self.create_relational(store)
 
-            create_database(store.conn_str)
-            print(store.conn_str, "did not exist, created.")
+            elif isinstance(store, LdapStore):
+                warnings.warn("LDAP bootstrap is not implemented.")
+
+            else:
+                raise ValueError(store)
 
         config.log_results = True
         config.apply()

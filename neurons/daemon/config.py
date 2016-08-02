@@ -60,7 +60,7 @@ from spyne.util.dictdoc import yaml_loads, get_object_as_yaml
 
 from neurons import __version__ as NEURONS_VERSION
 from neurons.daemon.daemonize import daemonize
-from neurons.daemon.store import SqlDataStore
+from neurons.daemon.store import SqlDataStore, PythonLdapStore
 from neurons.daemon.cli import spyne_to_argparse, config_overrides
 
 FILE_VERSION_KEY = 'file-version'
@@ -168,65 +168,12 @@ class LdapStore(StorageInfo):
         super(LdapStore, self).__init__(*args, **kwargs)
         self.itself = None
 
-    def apply_python_ldap(self):
-        import ldap
-
-        port = self.port
-        if port is None:
-            port = 389
-
-        base_dn = self.base_dn
-        if base_dn is None:
-            base_dn = ''
-
-        bind_dn = self.bind_dn
-        if base_dn is None:
-            bind_dn = ''
-
-        if self.method == 'simple':
-            if self.itself is not None:
-                self.close()
-
-            if self.use_tls:
-                uri = "ldaps://%s:%d" % (self.host, port)
-                self.itself = ldap.initialize(uri)
-
-                self.itself.set_option(ldap.OPT_X_TLS, ldap.OPT_X_TLS_DEMAND)
-                self.itself.set_option(ldap.OPT_X_TLS_DEMAND, True)
-
-            else:
-                uri = "ldap://%s:%d" % (self.host, port)
-                self.itself = ldap.initialize(uri)
-
-            self.itself.set_option(ldap.OPT_NETWORK_TIMEOUT, self.timeout)
-
-            if not self.referrals:
-                self.itself.set_option(ldap.OPT_REFERRALS, 0)
-
-            if self.version == 3:
-                self.itself.protocol_version = ldap.VERSION3
-
-            elif self.version == 2:
-                self.itself.protocol_version = ldap.VERSION2
-
-            else:
-                raise ValueError(self.version)
-
-            self.itself.simple_bind_s(bind_dn, self.password)
-
-            logger.info("Ldap connection success: %r",
-                                           self.itself.get_option(ldap.OPT_URI))
-
-        elif self.method == 'gssapi':
-            raise NotImplementedError(self.method)
-
-        else:
-            raise ValueError(self.method)
-
     def apply(self):
         if self.backend == 'python-ldap':
-            return self.apply_python_ldap()
-        raise ValueError(self.backend)
+            self.itself = PythonLdapStore(self)
+
+        else:
+            raise ValueError(self.backend)
 
 
 class RelationalStore(StorageInfo):
@@ -256,7 +203,7 @@ class RelationalStore(StorageInfo):
 
     def apply(self):
         self.itself = SqlDataStore(self.conn_str, pool_size=self.pool_size,
-            echo_pool=self.echo_pool)
+                                                       echo_pool=self.echo_pool)
         if not (self.async_pool or self.sync_pool):
             logger.debug("Store '%s' is disabled.", self.name)
 

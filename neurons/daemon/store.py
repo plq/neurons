@@ -41,37 +41,59 @@ class DataStoreBase(object):
         self.type = type
 
 
-class LdapDataStore(DataStoreBase):
-    def __init__(self, host, base_dn, bind_dn, password, port=389):
+class PythonLdapStore(DataStoreBase):
+    def __init__(self, parent):
         DataStoreBase.__init__(self, type='ldap')
 
-        self.host = host
-        self.port = port
-        self.base_dn = base_dn
-        self.bind_dn = bind_dn
-        self.password = password
         self.conn = None
+        self.parent = parent
 
-    def simple_bind(self):
+    def apply_simple(self):
         import ldap
 
+        parent = self.parent
+        if parent.use_tls:
+            uri = "ldaps://%s:%d" % (parent.host, parent.port)
+            retval = ldap.initialize(uri)
+
+            retval.set_option(ldap.OPT_X_TLS, ldap.OPT_X_TLS_DEMAND)
+            retval.set_option(ldap.OPT_X_TLS_DEMAND, True)
+
+        else:
+            uri = "ldap://%s:%d" % (parent.host, parent.port)
+            retval = ldap.initialize(uri)
+
+        retval.set_option(ldap.OPT_NETWORK_TIMEOUT, parent.timeout)
+
+        if not parent.referrals:
+            retval.set_option(ldap.OPT_REFERRALS, 0)
+
+        if parent.version == 3:
+            retval.protocol_version = ldap.VERSION3
+
+        elif parent.version == 2:
+            retval.protocol_version = ldap.VERSION2
+
+        else:
+            raise ValueError(parent.version)
+
+        retval.simple_bind_s(parent.bind_dn, parent.password)
+
+        logger.info("Ldap connection success: %r",
+                                                retval.get_option(ldap.OPT_URI))
+
+    def apply(self):
         if self.conn is not None:
-            self.close()
+            self.conn.close()
 
-        self.conn = ldap.open(self.host, port=self.port)
-        self.conn.set_option(ldap.OPT_NETWORK_TIMEOUT, 10.0)
-        self.conn.protocol_version = ldap.VERSION3
-        self.conn.simple_bind_s(self.bind_dn, self.password)
+        if self.parent.method == 'simple':
+            self.conn = self.apply_python_ldap_simple()
 
-        return self.conn
+        elif self.parent.method == 'sasl':
+            raise NotImplementedError(self.parent.method)
 
-    def connect(self):
-        return self.simple_bind()
-
-    def close(self):
-        retval = self.conn.unbind_s()
-        self.conn = None
-        return retval
+        else:
+            raise ValueError(self.parent.method)
 
 
 # FIXME: get rid of the overly complicated property setters.
