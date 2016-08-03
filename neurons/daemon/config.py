@@ -1091,7 +1091,7 @@ class ServiceDaemon(Daemon):
                     pool_recycle=3600,
                     pool_timeout=30,
                     max_overflow=3,
-                    conn_str=u'postgres://postgres:@localhost:5432/%s_%s' %
+                    conn_str=u'postgres://postgres:@/%s_%s' %
                                                (daemon_name, getpass.getuser()),
                     sync_pool=True,
                     async_pool=True,
