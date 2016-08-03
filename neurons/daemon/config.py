@@ -171,6 +171,7 @@ class LdapStore(StorageInfo):
     def apply(self):
         if self.backend == 'python-ldap':
             self.itself = PythonLdapStore(self)
+            self.itself.apply()
 
         else:
             raise ValueError(self.backend)

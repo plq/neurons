@@ -48,10 +48,16 @@ class PythonLdapStore(DataStoreBase):
         self.conn = None
         self.parent = parent
 
-    def apply_simple(self):
+    def apply_simple(self, bind_dn=None, password=None):
         import ldap
-
         parent = self.parent
+
+        if bind_dn is None:
+            bind_dn = parent.bind_dn
+
+        if password is None:
+            password = parent.password
+
         if parent.use_tls:
             uri = "ldaps://%s:%d" % (parent.host, parent.port)
             retval = ldap.initialize(uri)
@@ -77,17 +83,19 @@ class PythonLdapStore(DataStoreBase):
         else:
             raise ValueError(parent.version)
 
-        retval.simple_bind_s(parent.bind_dn, parent.password)
+        retval.simple_bind_s(bind_dn, password)
 
-        logger.info("Ldap connection success: %r",
+        logger.info("Ldap connection to %s successful.",
                                                 retval.get_option(ldap.OPT_URI))
+
+        return retval
 
     def apply(self):
         if self.conn is not None:
             self.conn.close()
 
         if self.parent.method == 'simple':
-            self.conn = self.apply_python_ldap_simple()
+            self.conn = self.apply_simple()
 
         elif self.parent.method == 'sasl':
             raise NotImplementedError(self.parent.method)
