@@ -420,4 +420,9 @@ def main(daemon_name, argv, init, bootstrap=None,
 
     deferLater(reactor, 0, _set_reactor_thread)
 
+    if config.autoreload:
+        from neurons.daemon.autorel import AutoReloader
+        assert AutoReloader().start() is not None
+        logger.info("Auto reloader init success.")
+
     return reactor.run()
