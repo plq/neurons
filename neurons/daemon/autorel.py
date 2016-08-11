@@ -53,9 +53,6 @@ import os, re, sys
 
 from spyne.util.color import YEL
 
-from twisted.internet import reactor
-from twisted.internet.task import LoopingCall
-
 # _module__file__base is used by Autoreload to make
 # absolute any filenames retrieved from sys.modules which are not
 # already absolute paths.  This is to work around Python's quirk
@@ -124,6 +121,8 @@ class AutoReloader(object):
         """The interval in seconds at which to poll for modified files."""
 
     def start(self):
+        from twisted.internet.task import LoopingCall
+
         retval = LoopingCall(self.run)
         retval.start(self.frequency)
         return retval # oh no
@@ -174,6 +173,7 @@ class AutoReloader(object):
                         # The file has been deleted or modified.
                         logger.info("Restarting because '%s' changed." % filename)
 
+                        from twisted.internet import reactor
                         reactor.stop()
                         self._do_execv()
                         return

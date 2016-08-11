@@ -35,3 +35,4 @@ from neurons.daemon.main import main
 from neurons.daemon.config import Daemon
 from neurons.daemon.config import ServiceDaemon
 from neurons.daemon import dowser
+from neurons.daemon import autorel
