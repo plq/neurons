@@ -44,7 +44,7 @@ from lxml import etree, html
 from lxml.builder import E
 
 from spyne import ComplexModelBase, Unicode, Decimal, Boolean, Date, Time, \
-    DateTime, Integer, Duration, PushBase, Array, Uuid, AnyHtml, AnyXml, Fault
+    DateTime, Integer, Duration, PushBase, Array, Uuid, AnyHtml, AnyXml, Fault, File
 from spyne.util import coroutine, Break, six, memoize_id
 from spyne.util.cdict import cdict
 from spyne.server.http import HttpTransportContext
@@ -256,6 +256,7 @@ class HtmlForm(HtmlFormRoot):
             Date: self._check_simple(self.date_to_parent),
             Time: self._check_simple(self.time_to_parent),
             Uuid: self._check_simple(self.uuid_to_parent),
+            File: self.file_to_parent,
             Fault: self.fault_to_parent,
             Array: self.array_type_to_parent,
             AnyXml: self._check_simple(self.anyxml_to_parent),
@@ -528,6 +529,13 @@ class HtmlForm(HtmlFormRoot):
         elt.attrib['type'] = 'number'
 
         self._apply_number_constraints(cls_attrs, elt, epsilon=1)
+
+        parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
+
+    def file_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls_attrs = self.get_cls_attrs(cls)
+        elt = self._gen_input(ctx, cls, inst, name, cls_attrs, **kwargs)
+        elt.attrib['type'] = 'file'
 
         parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
 
