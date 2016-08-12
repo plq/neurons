@@ -78,9 +78,13 @@ class ScreenBase(ComplexModel):
             self._have_hide_empty_columns = True
         return self
 
-    def with_datatables(self, data, hide_empty_columns=False):
+    def with_datatables(self, data=None, hide_empty_columns=False):
+        if data is None:
+            data = self.datatables
+
         if hide_empty_columns:
             self.with_hide_empty_columns()
+
         self.with_setup_datatables()
 
         retval = [

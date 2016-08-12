@@ -36,6 +36,7 @@ __version__ = '0.6'
 
 from neurons.model import TableModel
 from neurons.application import Application
+from neurons import daemon
 
 
 REACTOR_THREAD = None

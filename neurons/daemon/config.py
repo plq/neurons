@@ -594,6 +594,10 @@ class Daemon(ComplexModel):
             no_file=True, default=False,
             help=u"Start IPython kernel.")),
 
+        ('autoreload', Boolean(
+            default=False, help=u"Auto-relaunch daemon process when one of "
+                                u"the source files change.")),
+
         ('_services', Array(Service, sub_name='services')),
         ('_loggers', Array(Logger, sub_name='loggers')),
     ]
