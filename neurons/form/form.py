@@ -48,6 +48,10 @@ from spyne import ComplexModelBase, Unicode, Decimal, Boolean, Date, Time, \
 from spyne.util import coroutine, Break, six, memoize_id
 from spyne.util.cdict import cdict
 from spyne.server.http import HttpTransportContext
+try:
+    from spyne.store.relational.document import FileData
+except ImportError:
+    FileData = type('__ignored', (object,), {})
 
 from neurons.form.widget import HtmlWidget, SimpleRenderWidget
 
@@ -534,10 +538,29 @@ class HtmlForm(HtmlFormRoot):
 
     def file_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
-        elt = self._gen_input(ctx, cls, inst, name, cls_attrs, **kwargs)
-        elt.attrib['type'] = 'file'
 
-        parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
+        elt = self._gen_input(ctx, cls, '', name, cls_attrs, **kwargs)
+        elt.attrib['type'] = 'file'
+        elt.attrib['style'] = 'display:inline-block'
+
+        wrapped_elt = self._wrap_with_label(ctx, cls, name, elt, **kwargs)
+
+        if inst is None:
+            inst = ''
+
+        elif isinstance(inst, (File.Value, FileData)):
+            inst = '<data type="%s" size="%d">' % \
+                                   (inst.type, sum([len(d) for d in inst.data]))
+
+        else:
+            inst = '<data size="%d">' % sum([len(d) for d in inst])
+
+        if len(inst) > 0:
+            parelt = elt.getparent()
+            parelt.append(E.span(inst, " | ", elt,
+                                               style="font-family: monospace;"))
+
+        parent.write(wrapped_elt)
 
     # TODO: finish this
     def duration_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
