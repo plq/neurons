@@ -2,6 +2,8 @@
 __pycache__/
 *.py[cod]
 
+virt-*
+
 # C extensions
 *.so
 
@@ -35,6 +37,7 @@ test_result.*.xml
 coverage.xml
 .data
 Python-*
+test_html
 
 # Translations
 *.mo
@@ -49,9 +52,6 @@ docs/_build/
 # Ignore downloaded assets
 /assets/jquery-*
 /assets/bootstrap-*
-
-# test output
-test_html
 
 # config files
 *.yaml

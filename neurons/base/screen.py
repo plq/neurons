@@ -1,8 +1,7 @@
 
 import json
 
-from spyne import ComplexModel, Array, Unicode
-
+from spyne import ComplexModel, Array, Unicode, XmlAttribute, AnyUri, XmlData
 
 SETUP_DATATABLES = """neurons.setup_datatables = function(data, hide) {
     var $table = $(data.selector);
@@ -31,17 +30,31 @@ HIDE_EMPTY_COLUMNS = """neurons.hide_empty_columns = function ($table) {
 """
 
 
+class Link(ComplexModel):
+    href = XmlAttribute(AnyUri)
+    rel = XmlAttribute(Unicode(values=["stylesheet"]))
+
+
+class CascadingStyleSheet(ComplexModel):
+    data = XmlData(Unicode)
+    type = XmlAttribute(Unicode(values=["text/css"]))
+    title = XmlAttribute(Unicode)
+
+
 class ScreenBase(ComplexModel):
     class Attributes(ComplexModel.Attributes):
         logged = False
 
     datatables = None
+
+    links = Array(Link, wrapped=False)
+    styles = Array(CascadingStyleSheet, wrapped=False)
     scripts = Array(Unicode, wrapped=False)
-    styles = Array(Unicode, wrapped=False)
 
     def __init__(self, ctx, *args, **kwargs):
         ComplexModel.__init__(self, *args, **kwargs)
 
+        self._link_hrefs = set()
         self._have_namespace = False
         self._have_hide_empty_columns = False
         self._have_setup_datatables = False
@@ -61,6 +74,19 @@ class ScreenBase(ComplexModel):
             self.append_script("window.neurons = {}")
 
             self._have_namespace = True
+
+    def with_own_stylesheet(self, base='/assets/css/screen'):
+        if self.links is None:
+            self.links = []
+
+        class_name = self.__class__.get_type_name()
+        href = "%s/%s.css" % (base, class_name)
+
+        if not (href in self._link_hrefs):
+            self._link_hrefs.add(href)
+            self.links.append(Link(rel="stylesheet", href=href))
+
+        return self
 
     def with_setup_datatables(self):
         self.with_namespace()
