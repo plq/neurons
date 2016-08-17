@@ -579,6 +579,7 @@ class Daemon(ComplexModel):
 
         ('log_rpc', Boolean(help=u"Log raw rpc data.")),
         ('log_model', Boolean(help=u"Log model operations.")),
+        ('log_cloth', Boolean(help=u"Log cloth generation.")),
         ('log_interface', Boolean(help=u"Log interface build process.")),
 
         ('write_config', Boolean(
@@ -1141,7 +1142,9 @@ class ServiceDaemon(Daemon):
         return self
 
     def pre_logging_apply(self):
-        if self.log_rpc or self.log_queries or self.log_results:
+        if self.log_rpc or self.log_queries or self.log_results or \
+                self.log_model or self.log_interface or self.log_rpc or \
+                self.log_cloth:
             logging.getLogger().setLevel(logging.DEBUG)
 
         if self.log_model:
@@ -1158,6 +1161,25 @@ class ServiceDaemon(Daemon):
             logging.getLogger('spyne.protocol').setLevel(logging.DEBUG)
             logging.getLogger('spyne.protocol.xml').setLevel(logging.DEBUG)
             logging.getLogger('spyne.protocol.dictdoc').setLevel(logging.DEBUG)
+            logging.getLogger('spyne.protocol.cloth.to_parent') \
+                                                        .setLevel(logging.DEBUG)
+            logging.getLogger('spyne.protocol.cloth.to_cloth.serializer') \
+                                                        .setLevel(logging.DEBUG)
+        else:
+            logging.getLogger('spyne.protocol').setLevel(logging.INFO)
+            logging.getLogger('spyne.protocol.xml').setLevel(logging.INFO)
+            logging.getLogger('spyne.protocol.dictoc').setLevel(logging.INFO)
+            logging.getLogger('spyne.protocol.cloth.to_parent') \
+                                                         .setLevel(logging.INFO)
+            logging.getLogger('spyne.protocol.cloth.to_cloth.serializer') \
+                                                         .setLevel(logging.INFO)
+
+        if self.log_cloth:
+            logging.getLogger('spyne.protocol.cloth.to_cloth.cloth') \
+                                                        .setLevel(logging.DEBUG)
+        else:
+            logging.getLogger('spyne.protocol.cloth.to_cloth.cloth') \
+                                                         .setLevel(logging.INFO)
 
         if self.log_queries or self.log_results:
             if self.log_results:
