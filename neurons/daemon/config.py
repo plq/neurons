@@ -579,6 +579,7 @@ class Daemon(ComplexModel):
 
         ('log_rpc', Boolean(help=u"Log raw rpc data.")),
         ('log_model', Boolean(help=u"Log model operations.")),
+        ('log_cloth', Boolean(help=u"Log cloth generation.")),
         ('log_interface', Boolean(help=u"Log interface build process.")),
 
         ('write_config', Boolean(
@@ -1158,6 +1159,12 @@ class ServiceDaemon(Daemon):
             logging.getLogger('spyne.protocol').setLevel(logging.DEBUG)
             logging.getLogger('spyne.protocol.xml').setLevel(logging.DEBUG)
             logging.getLogger('spyne.protocol.dictdoc').setLevel(logging.DEBUG)
+        if self.log_cloth:
+            logging.getLogger('spyne.protocol.cloth.to_cloth.cloth') \
+                                                        .setLevel(logging.DEBUG)
+        else:
+            logging.getLogger('spyne.protocol.cloth.to_cloth.cloth') \
+                                                         .setLevel(logging.INFO)
 
         if self.log_queries or self.log_results:
             if self.log_results:
