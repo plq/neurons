@@ -714,7 +714,7 @@ class ComplexRenderWidget(HtmlWidget):
 
 class ComplexHrefWidget(ComplexRenderWidget):
     def __init__(self, text_field, id_field, type=None, hidden_fields=None,
-                                       empty_widget=None, label=True, url=None):
+                   empty_widget=None, label=True, url=None, id_field_name=None):
         """Widget that renders complex objects as links. Hidden fields are
         skipped then the given instance has the value of `id_field` is `None`.
 
@@ -726,6 +726,7 @@ class ComplexHrefWidget(ComplexRenderWidget):
         super(ComplexHrefWidget, self).__init__(text_field, id_field,
                             type=type, hidden_fields=hidden_fields, label=label)
 
+        self.id_field_name = id_field_name
         self.empty_widget = empty_widget
         self.url = url
 
@@ -756,7 +757,12 @@ class ComplexHrefWidget(ComplexRenderWidget):
             if tn_url is None:
                 tn = cls.get_type_name()
                 tn_url = camel_case_to_uscore(tn)
-            attrib['href'] = tn_url + "?" + urlencode({self.id_field: id_str})
+
+            id_field_name = self.id_field_name
+            if id_field_name is None:
+                id_field_name = self.id_field
+
+            attrib['href'] = tn_url + "?" + urlencode({id_field_name: id_str})
 
             a_tag = E.a(text_str, **attrib)
             if self.label:
