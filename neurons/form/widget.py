@@ -48,7 +48,7 @@ from lxml import html
 from lxml.builder import E
 
 from spyne import Unicode, Decimal, Boolean, ComplexModelBase, Array, ModelBase, \
-    AnyHtml, AnyUri, Integer
+    AnyHtml, AnyUri, Integer, File
 from spyne.util import six
 from spyne.util.tdict import tdict
 from spyne.util.oset import oset
@@ -1089,6 +1089,18 @@ class SimpleReadableNumberWidget(SimpleRenderWidget):
                 fstring = "%%.%df" % fd
 
         self.write_number(ctx, cls, inst, parent, name, fstring, **kwargs)
+
+
+class JQFileUploadWidget(SimpleRenderWidget):
+    def __init__(self, label=True):
+        super(JQFileUploadWidget, self).__init__(label=label)
+
+        self.serialization_handlers = cdict({
+            File: self.file_to_parent,
+        })
+
+    def file_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        pass
 
 
 class TrueFalseWidget(SimpleRenderWidget):
