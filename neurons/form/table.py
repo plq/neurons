@@ -274,7 +274,8 @@ var remove = function (e) {
 
     if (pa.find("tr:visible").length == 1) {
         var form = pa.closest('form');
-        $('<input>').attr({'type':'hidden', 'name': root_name, 'value': 'empty', 'id': root_name + '-empty'}).appendTo(form);
+        $('<input>').attr({'type':'hidden', 'name': root_name, 'value': 'empty',
+                                    'id': root_name + '-empty'}).appendTo(form);
     }
 
     e.preventDefault();
@@ -321,4 +322,5 @@ for (var children = row.children(), i=0, l=children.length-1; i < l; ++i) {
 }
 
 row.attr('null-widget', true);
-var null_widget = row.clone(true);"""]
+var null_widget = row.clone(true);
+"""]
