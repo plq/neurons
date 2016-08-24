@@ -55,6 +55,8 @@ from spyne.util.oset import oset
 from spyne.util.cdict import cdict
 from spyne.util.six.moves.urllib.parse import urlencode
 
+from spyne.store.relational.document import FileData
+
 from spyne.protocol.html import HtmlBase
 
 
@@ -1093,14 +1095,182 @@ class SimpleReadableNumberWidget(SimpleRenderWidget):
 
 class JQFileUploadWidget(SimpleRenderWidget):
     def __init__(self, label=True):
-        super(SimpleReadableNumberWidget, self).__init__(label=label)
+        super(SimpleRenderWidget, self).__init__(label=label)
 
         self.serialization_handlers = cdict({
             File: self.file_to_parent,
         })
 
         def file_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-            pass
+            elt = E.div(
+                E.h1("File Manager"),
+                E.form(
+                    E.noscript(
+                        E.input(
+                            **{"type": "hidden",
+                               "id": "input_id",
+                               "name": "redirect",
+                               "value": "/files"}
+                        ),
+                    ),
+                    E.div(
+                        E.div(
+                            E.span(
+                                E.i(
+                                    **{"class": "glyphicon glyphicon-plus"}
+                                ),
+                                E.span(
+                                    "Add files...",
+                                ),
+                                E.input(
+                                    **{"type": "file",
+                                       "name": "files",
+                                       "multiple": ""}
+                                ),
+                                **{"class": "btn btn-success fileinput-button"}
+                            ),
+                            E.button(
+                                E.i(
+                                    **{"class": "glyphicon glyphicon-upload"}
+                                ),
+                                E.span(
+                                    "Start upload"
+                                ),
+                                **{"type": "submit",
+                                   "class": "btn btn-primary start"}
+                            ),
+                            E.button(
+                                E.i(
+                                    **{"class": "glyphicon glyphicon-ban-circle"}
+                                ),
+                                E.span(
+                                    "Cancel upload"
+                                ),
+                                **{"type": "reset",
+                                   "class": "btn btn-warning cancel"}
+                            ),
+                            E.button(
+                                E.i(
+                                    **{"class": "glyphicon glyphicon-trash"}
+                                ),
+                                E.span(
+                                    "Delete"
+                                ),
+                                **{"type": "button",
+                                   "class": "btn btn-danger delete"}
+                            ),
+                            E.input(
+                                **{"type": "checkbox",
+                                   "class": "toggle"}
+                            ),
+                            E.span(
+                                **{"class": "fileupload-process"}
+                            ),
+                            **{"class": "col-lg-7"}
+                        ),
+                        E.div(
+                            E.div(
+                                E.div(
+                                    **{"class": "progress-bar progress-bar-success",
+                                       "style": "width:0%;"}
+                                ),
+                                **{"class": "progress progress-striped active",
+                                   "role": "progressbar",
+                                   "aria-valuemin": "0",
+                                   "aria-valuemax": "100"}
+                            ),
+                            E.div(
+                                **{"class": "progress-extended"}
+                            ),
+                            **{"class": "col-lg-5 fileupload-progress fade"}
+                        ),
+                        **{"class": "row fileupload-buttonbar"}
+                    ),
+                    E.table(
+                        E.tbody(
+                            **{"class": "files"}
+                        ),
+                        **{"role": "presentation",
+                           "class": "table table-striped"}
+                    ),
+                    **{"id": "fileupload",
+                       "action": "/media/add",
+                       "method": "POST",
+                       "enctype": "multipart/form-data"}
+                ),
+                E.script(
+                    **{"src": "assets/fmgr/prod/jquery/1.11.1/jquery.min.js"}
+                ),
+                E.script(
+                    **{"src": "assets/fmgr/jQfu/js/vendor/jquery.ui.widget.js"}
+                ),
+                E.script(
+                    **{"src": "assets/fmgr/jQfu/js/tmpl.min.js"}
+                ),
+                E.script(
+                    **{"src": "assets/fmgr/jQfu/js/load-image.min.js"}
+                ),
+                E.script(
+                    **{"src": "assets/fmgr/jQfu/js/canvas-to-blob.min.js"}
+                ),
+                E.script(
+                    **{"src": "assets/fmgr/prod/bs3/js/bootstrap.min.js"}
+                ),
+                E.script(
+                    **{"src": "assets/fmgr/jQfu/js/jquery.blueimp-gallery.min.js"}
+                ),
+                E.script(
+                    **{"src": "assets/fmgr/jQfu/js/jquery.iframe-transport.js"}
+                ),
+                E.script(
+                    **{"src": "assets/fmgr/jQfu/js/jquery.fileupload.js"}
+                ),
+                E.script(
+                    **{"src": "assets/fmgr/jQfu/js/jquery.fileupload-process.js"}
+                ),
+                E.script(
+                    **{"src": "assets/fmgr/jQfu/js/jquery.fileupload-image.js"}
+                ),
+                E.script(
+                    **{"src": "assets/fmgr/jQfu/js/jquery.fileupload-audio.js"}
+                ),
+                E.script(
+                    **{"src": "assets/fmgr/jQfu/js/jquery.fileupload-video.js"}
+                ),
+                E.script(
+                    **{"src": "assets/fmgr/jQfu/js/jquery.fileupload-validate.js"}
+                ),
+                E.script(
+                    **{"src": "assets/fmgr/jQfu/js/jquery.fileupload-ui.js"}
+                ),
+                E.script(
+                    **{"src": "assets/fmgr/jQfu/js/main.js"}
+                ),
+                E.script(
+                    **{"src": "assets/fmgr/jQfu/js/cors/jquery.xdr-transport.js"}
+                ),
+                **{"id": "rempack.id"}
+            )
+
+            wrapped_elt = self._wrap_with_label(ctx, cls, name, elt, **kwargs)
+
+            if inst is None:
+                inst = ''
+
+            elif isinstance(inst, (File.Value, FileData)):
+                inst = '<data type="%s" size="%d">' % \
+                       (inst.type, sum([len(d) for d in inst.data]))
+
+            else:
+                inst = '<data size="%d">' % sum([len(d) for d in inst])
+
+            if len(inst) > 0:
+                parelt = elt.getparent()
+                parelt.append(E.span(inst, " | ", elt,
+                                     style="font-family: monospace;"))
+
+            parent.write(wrapped_elt)
+
 
 
 class TrueFalseWidget(SimpleRenderWidget):
