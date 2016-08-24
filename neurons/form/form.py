@@ -539,10 +539,7 @@ class HtmlForm(HtmlFormRoot):
     def file_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
 
-        elt = self._gen_input(ctx, cls, '', name, cls_attrs, **kwargs)
-        elt.attrib['type'] = 'file'
-        elt.attrib['style'] = 'display:inline-block'
-
+        elt = E.div("Drag & Drop Files Here", **{"id": "dragandrophandler"})
         wrapped_elt = self._wrap_with_label(ctx, cls, name, elt, **kwargs)
 
         if inst is None:
