@@ -41,6 +41,12 @@ class CascadingStyleSheet(ComplexModel):
     title = XmlAttribute(Unicode)
 
 
+class ScriptElement(ComplexModel):
+    data = XmlData(Unicode)
+    type = XmlAttribute(Unicode(values=["text/javascript"]))
+    href = XmlAttribute(Unicode)
+
+
 class ScreenBase(ComplexModel):
     class Attributes(ComplexModel.Attributes):
         logged = False
@@ -49,20 +55,26 @@ class ScreenBase(ComplexModel):
 
     links = Array(Link, wrapped=False)
     styles = Array(CascadingStyleSheet, wrapped=False)
-    scripts = Array(Unicode, wrapped=False)
+    scripts = Array(ScriptElement, wrapped=False)
 
     def __init__(self, ctx, *args, **kwargs):
         ComplexModel.__init__(self, *args, **kwargs)
 
         self._link_hrefs = set()
+        self._have_jquery = False
         self._have_namespace = False
         self._have_hide_empty_columns = False
         self._have_setup_datatables = False
 
+    def append_script_href(self, what, lang='text/javascript'):
+        if self.scripts is None:
+            self.scripts = []
+        self.scripts.append(ScriptElement(href=what, lang=lang))
+
     def append_script(self, what):
         if self.scripts is None:
             self.scripts = []
-        self.scripts.append(what)
+        self.scripts.append(ScriptElement(what))
 
     def append_style(self, what):
         if self.styles is None:
@@ -74,6 +86,13 @@ class ScreenBase(ComplexModel):
             self.append_script("window.neurons = {}")
 
             self._have_namespace = True
+
+    def with_jquery(self):
+        if not self._have_jquery:
+            self.append_script_href(
+                                 "https://code.jquery.com/jquery-1.12.4.min.js")
+
+            self._have_jquery = True
 
     def with_own_stylesheet(self, base='/assets/css/screen'):
         if self.links is None:
@@ -112,6 +131,7 @@ class ScreenBase(ComplexModel):
             self.with_hide_empty_columns()
 
         self.with_setup_datatables()
+        self.with_jquery()
 
         retval = [
             "$(document).ready(function() {",
