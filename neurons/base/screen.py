@@ -36,12 +36,15 @@ class Link(ComplexModel):
 
 
 class CascadingStyleSheet(ComplexModel):
+    id = Unicode
     data = XmlData(Unicode)
     type = XmlAttribute(Unicode(values=["text/css"]))
+    media = XmlAttribute(Unicode(values=["text/css"]))
     title = XmlAttribute(Unicode)
 
 
 class ScriptElement(ComplexModel):
+    id = XmlAttribute(Unicode)
     data = XmlData(Unicode)
     type = XmlAttribute(Unicode(values=["text/javascript"]))
     href = XmlAttribute(Unicode)
@@ -66,20 +69,20 @@ class ScreenBase(ComplexModel):
         self._have_hide_empty_columns = False
         self._have_setup_datatables = False
 
-    def append_script_href(self, what, lang='text/javascript'):
+    def append_script_href(self, what, type='text/javascript'):
         if self.scripts is None:
             self.scripts = []
-        self.scripts.append(ScriptElement(href=what, lang=lang))
+        self.scripts.append(ScriptElement(href=what, type=type))
 
-    def append_script(self, what):
+    def append_script(self, what, type='text/javascript', id=None):
         if self.scripts is None:
             self.scripts = []
-        self.scripts.append(ScriptElement(what))
+        self.scripts.append(ScriptElement(what, type=type, id=id))
 
-    def append_style(self, what):
+    def append_style(self, what, media=None):
         if self.styles is None:
             self.styles = []
-        self.styles.append(what)
+        self.styles.append(CascadingStyleSheet(what, media=media))
 
     def with_namespace(self):
         if not self._have_namespace:
