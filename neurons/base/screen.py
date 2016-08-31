@@ -1,4 +1,7 @@
 
+import logging
+logger = logging.getLogger(__name__)
+
 import json
 
 from spyne import ComplexModel, Array, Unicode, XmlAttribute, AnyUri, XmlData
@@ -130,11 +133,15 @@ class ScreenBase(ComplexModel):
         if data is None:
             data = self.datatables
 
+        if data is None:
+            data = {}
+
+        self.with_jquery()
+
         if hide_empty_columns:
             self.with_hide_empty_columns()
 
         self.with_setup_datatables()
-        self.with_jquery()
 
         retval = [
             "$(document).ready(function() {",
