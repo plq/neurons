@@ -4,7 +4,15 @@ logger = logging.getLogger(__name__)
 
 import json
 
-from spyne import ComplexModel, Array, Unicode, XmlAttribute, AnyUri, XmlData
+from lxml.html.builder import E
+
+from spyne import ComplexModel, Array, Unicode, XmlAttribute, AnyUri, \
+    XmlData, Integer, UnsignedInteger
+from spyne.protocol.html import HtmlCloth
+from spyne.store.relational import get_pk_columns
+from spyne.util.dictdoc import get_object_as_simple_dict
+from spyne.util.six.moves.urllib.parse import urlencode
+
 
 SETUP_DATATABLES = """neurons.setup_datatables = function(data, hide) {
     var $table = $(data.selector);
@@ -53,6 +61,112 @@ class ScriptElement(ComplexModel):
     href = XmlAttribute(Unicode)
 
 
+class ViewRenderer(HtmlCloth):
+    def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        view_name, = (k for k,v in ctx.in_object._type_info.items()
+                                                     if issubclass(v, ViewBase))
+
+        path = ctx.transport.get_path()
+        qs_dict = dict(ctx.in_body_doc.items())
+        if name == 'prev':
+            for k, v in qs_dict.items():
+                if k.endswith('.start'):
+                    del qs_dict[k]
+                    break
+
+        elif name == 'next':
+            for k, v in qs_dict.items():
+                if k.endswith('.end'):
+                    del qs_dict[k]
+                    break
+
+        qs_dict.update(get_object_as_simple_dict(inst, prefix=(view_name,)))
+
+        anchor_text = name
+        anchor_href = "{}?{}".format(path, urlencode(qs_dict))
+
+        parent.write(E.a(anchor_text, href=anchor_href))
+
+
+class ViewBase(ComplexModel):
+    LIMIT_MAX = 100
+    START_MIN = 0
+
+    _type_info = [
+        ('end', Integer),
+        ('start', Integer),
+        ('limit', UnsignedInteger),
+        ('offset', UnsignedInteger),
+    ]
+
+    def __init__(self, *args, **kwargs):
+        self._limit = None
+
+        super(ViewBase, self).__init__(*args, **kwargs)
+
+    @property
+    def limit(self):
+        if self._limit is None:
+            return None
+
+        return min(self._limit, self.LIMIT_MAX)
+
+    @limit.setter
+    def limit(self, limit):
+        self._limit = limit
+
+    def apply(self, ctx, cls, q):
+        if self is None:
+            return q
+
+        # TODO: What do we do for objects with multiple pk columns?
+        (pk_field_name, pk_field_type), = get_pk_columns(cls)
+        pk_field = getattr(cls, pk_field_name)
+
+        start = self.start
+        if start is not None:
+            q = q.filter(pk_field > start)
+
+        end = self.end
+        if end is not None:
+            q = q.filter(pk_field < end)
+
+        if self.sort_params is not None and len(self.sort_params) > 0:
+            order_by = []
+
+            for param in self.sort_params:
+                field = getattr(cls, param.column)
+                if param.is_descending():
+                    field = field.desc()
+
+                order_by.append(field)
+                logger.debug("Order by %s", param.column)
+
+            q = q.order_by(*order_by)
+
+        else:
+            logger.debug("Order by pk")
+            if end is not None:
+                q = q.order_by(pk_field.desc())
+            else:
+                q = q.order_by(pk_field)
+
+        limit = self.limit
+        if limit is not None:
+            if limit > self.LIMIT_MAX:
+                limit = self.LIMIT_MAX
+
+            logger.debug("Limit %d", limit)
+            q = q.limit(limit)
+
+        offset = self.offset
+        if offset is not None:
+            logger.debug("Offset %d", offset)
+            q = q.offset(offset)
+
+        return q
+
+
 class ScreenBase(ComplexModel):
     class Attributes(ComplexModel.Attributes):
         logged = False
@@ -71,6 +185,10 @@ class ScreenBase(ComplexModel):
         self._have_namespace = False
         self._have_hide_empty_columns = False
         self._have_setup_datatables = False
+
+        assert ctx.protocol.screen is None, \
+                          "We are supposed to have only one screen per context."
+        ctx.protocol.screen = self
 
     def append_script_href(self, what, type='text/javascript'):
         if self.scripts is None:
