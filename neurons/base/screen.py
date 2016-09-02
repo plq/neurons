@@ -63,9 +63,19 @@ class ScriptElement(ComplexModel):
 
 class ViewRenderer(HtmlCloth):
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        view_name, = (k for k,v in ctx.in_object._type_info.items()
-                                                     if issubclass(v, ViewBase))
+        if inst is None:
+            return
 
+        in_message = ctx.descriptor.in_message
+        if not issubclass(in_message, ViewBase):
+            return
+
+        view_names = tuple((k for k, v in in_message._type_info.items()
+                                                    if issubclass(v, ViewBase)))
+        if len(view_names) == 0:
+            return
+
+        view_name, = view_names
         path = ctx.transport.get_path()
         qs_dict = dict(ctx.in_body_doc.items())
         if name == 'prev':
