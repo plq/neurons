@@ -129,7 +129,9 @@ class ViewBase(ComplexModel):
         if self is None:
             return q
 
-        # TODO: What do we do for objects with multiple pk columns?
+        # FIXME: Support compound columns
+        # FIXME: Actually we don't need the primary key. Just a unique column
+        #        should be enough
         (pk_field_name, pk_field_type), = get_pk_columns(cls)
         pk_field = getattr(cls, pk_field_name)
 
