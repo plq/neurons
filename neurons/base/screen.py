@@ -67,7 +67,7 @@ class ViewRenderer(HtmlCloth):
             return
 
         in_message = ctx.descriptor.in_message
-        if not issubclass(in_message, ViewBase):
+        if not issubclass(in_message, ComplexModelBase):
             return
 
         view_names = tuple((k for k, v in in_message._type_info.items()
