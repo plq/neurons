@@ -7,7 +7,7 @@ import json
 from lxml.html.builder import E
 
 from spyne import ComplexModel, Array, Unicode, XmlAttribute, AnyUri, \
-    XmlData, Integer, UnsignedInteger
+    XmlData, Integer, UnsignedInteger, ComplexModelBase
 from spyne.protocol.html import HtmlCloth
 from spyne.store.relational import get_pk_columns
 from spyne.util.dictdoc import get_object_as_simple_dict
