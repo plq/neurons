@@ -171,7 +171,8 @@ class AutoReloader(object):
                 else:
                     if mtime is None or mtime > oldtime:
                         # The file has been deleted or modified.
-                        logger.info("Restarting because '%s' changed." % filename)
+                        logger.info("Restarting because '%s' has changed." %
+                                                                       filename)
 
                         from twisted.internet import reactor
                         reactor.stop()
