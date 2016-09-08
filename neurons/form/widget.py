@@ -875,28 +875,42 @@ class SelectWidgetBase(ComplexRenderWidget):
             if is_autogen:
                 logger.debug("Auto-generating combobox contents for %r", cls)
                 db = ctx.app.config.stores['sql_main'].itself
+
                 # FIXME: this blocks the reactor
                 with closing(db.Session()) as session:
-                    q = session.query(cls.__orig__ or cls)
-                    if self.others_order_by is not None:
-                        if isinstance(self.others_order_by, (list, tuple)):
-                            q = q.order_by(*self.others_order_by)
-                        else:
-                            q = q.order_by(self.others_order_by)
+                    # Get class
+                    subval_cls = cls.__orig__
+                    if subval_cls is None:
+                        subval_cls = cls
 
-                    selected = self._write_options(cls, parent, fti, q, data)
+                    q = session.query(cls.__orig__ or cls)
+
+                    # Apply ordering parameters if possible
+                    oob = self.others_order_by
+                    oob_id = id(oob)
+                    if oob is not None:
+                        if not isinstance(oob, (list, tuple)):
+                            oob = (oob,)
+
+                        q = q.order_by(*oob)
+
+                    cache_key = (cls.__orig__ or cls, oob_id)
+                    selected = self._write_options(ctx, cls, parent, fti, q,
+                                                                data, cache_key)
 
             elif is_iterable or is_callable:
                 insts = self.others
                 if is_callable:
-                    insts = self.others(ctx, self)
                     logger.debug("Generating select contents from callable "
                                                                   "for %r", cls)
+                    insts = self.others(ctx, self)
+
                 else:
                     logger.debug("Generating select contents from iterable "
                                                                   "for %r", cls)
 
-                selected = self._write_options(cls, parent, fti, insts, data)
+                selected = self._write_options(ctx, cls, parent, fti, insts,
+                                                           data, cache_key=None)
 
             else:
                 raise Exception("This should not be possible")
@@ -904,9 +918,36 @@ class SelectWidgetBase(ComplexRenderWidget):
             if not (we_have_empty or selected):
                 self._write_empty(parent)
 
-    def _write_options(self, cls, parent, fti, insts, data):
+    def _write_options(self, ctx, cls, parent, fti, insts, data, cache_key):
         selected = False
         data = set((i for (i,t) in data))
+
+        # Generate cache entry
+        cache_entry = None
+        if cache_key is not None:
+            objcache = ctx.protocol.objcache
+            cache_entry = objcache.get(cache_key, None)
+            if cache_entry is not None:
+                logger.debug("Using cache key %r to fill <select> for %r",
+                                                                 cache_key, cls)
+                for id_str, text_str in cache_entry:
+                    elt = E.option(text_str, value=id_str)
+
+                    if id_str in data:
+                        elt.attrib['selected'] = ""
+                        selected = True
+
+                    parent.write(elt)
+
+                return selected
+
+            logger.debug("Generated cache entry for key %r to fill <select> "
+                                                       "for %r", cache_key, cls)
+
+            cache_entry = objcache[cache_key] = []
+
+
+        # FIXME: this iteration blocks the reactor
         for o in insts:
             id_str, text_str = self._prep_inst(cls, o, fti)
 
@@ -916,6 +957,8 @@ class SelectWidgetBase(ComplexRenderWidget):
                 selected = True
 
             parent.write(elt)
+            if cache_entry is not None:
+                cache_entry.append( (id_str, text_str) )
 
         return selected
 
