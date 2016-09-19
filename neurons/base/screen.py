@@ -14,14 +14,15 @@ from spyne.util.dictdoc import get_object_as_simple_dict
 from spyne.util.six.moves.urllib.parse import urlencode
 
 
-SETUP_DATATABLES = """neurons.setup_datatables = function(data, hide) {
-    var $table = $(data.selector);
+SETUP_DATATABLES = """neurons.setup_datatables = function(selector, data, hide)
+{
+    var $table = $(selector);
     if (hide) {
         neurons.hide_empty_columns($table);
     }
     if ($table.length) {
         setTimeout(function () {
-            $table.dataTable(data.dt_dict);
+            $table.dataTable(data);
         }, 1);
     }
 };
@@ -273,14 +274,17 @@ class ScreenBase(ComplexModel):
 
         self.with_setup_datatables()
 
-        retval = [
-            "$(document).ready(function() {",
-                "neurons.setup_datatables(",
-                    json.dumps(data), ",", json.dumps(hide_empty_columns),
-                ");",
-            "});",
-        ]
+        for selector, data in data.items():
+            retval = [
+                "$(document).ready(function() {",
+                    "neurons.setup_datatables(",
+                        json.dumps(selector), ",",
+                        json.dumps(data), ",",
+                        json.dumps(hide_empty_columns),
+                    ");",
+                "});",
+            ]
 
-        self.append_script(''.join(retval))
+            self.append_script(''.join(retval))
 
         return self
