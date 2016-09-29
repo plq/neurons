@@ -44,7 +44,8 @@ from lxml import etree, html
 from lxml.builder import E
 
 from spyne import ComplexModelBase, Unicode, Decimal, Boolean, Date, Time, \
-    DateTime, Integer, Duration, PushBase, Array, Uuid, AnyHtml, AnyXml, Fault, File
+    DateTime, Integer, Duration, PushBase, Array, Uuid, AnyHtml, AnyXml, \
+    AnyUri, Fault, File
 from spyne.util import coroutine, Break, six, memoize_id
 from spyne.util.cdict import cdict
 from spyne.server.http import HttpTransportContext
@@ -263,6 +264,7 @@ class HtmlForm(HtmlFormRoot):
             File: self.file_to_parent,
             Fault: self.fault_to_parent,
             Array: self.array_type_to_parent,
+            AnyUri: self._check_simple(self.anyuri_to_parent),
             AnyXml: self._check_simple(self.anyxml_to_parent),
             Integer: self._check_simple(self.integer_to_parent),
             Unicode: self._check_simple(self.unicode_to_parent),
@@ -313,6 +315,12 @@ class HtmlForm(HtmlFormRoot):
     def unicode_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs, elt = self._gen_input_unicode(ctx, cls, inst, name, **kwargs)
         parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
+
+    def anyuri_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        if isinstance(inst, AnyUri.Value):
+            # FIXME: this could have beeen handled *way* better.
+            inst = inst.href
+        self.unicode_to_parent(ctx, cls, inst, parent, name, **kwargs)
 
     @staticmethod
     @memoize_id

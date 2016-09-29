@@ -419,21 +419,35 @@ class PasswordWidget(HtmlWidget):
 
 
 class HrefWidget(HtmlWidget):
-    """Render current object as a link"""
     supported_types = (Unicode, Decimal)
 
-    def __init__(self, href, hidden_input=False, label=True):
+    def __init__(self, href=None, hidden_input=False, label=True,
+                                                             anchor_class=None):
+        """Render current object (inst) as an anchor (the <a> tag)
+
+        :param href: Base HREF for Anchor. Can only be None when
+            inst is an instance of AnyUri.Value
+        :param hidden_input: If True, generate hidden <input> with inst as value
+        :param label: If True, Generate <label> element.
+        :param anchor_class: If not None, goes into the "class" attribute of
+            the <a> tag.
+        """
+
         super(HrefWidget, self).__init__(label=label)
 
         self.href = href
         self.hidden_input = hidden_input
+        self.anchor_class = anchor_class
 
         self.serialization_handlers = cdict({
             ModelBase: self.model_base_to_parent,
+            AnyUri: self.anyuri_to_parent,
             ComplexModelBase: self.not_supported,
         })
 
     def model_base_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        assert self.href is not None
+
         anchor_str = self.to_unicode(cls, inst)
         if anchor_str is None:
             anchor_str = ''
@@ -453,6 +467,9 @@ class HrefWidget(HtmlWidget):
         if href is not None:
             elt.attrib['href'] = href
 
+        if self.anchor_class is not None:
+            elt.attrib['class'] = self.anchor_class
+
         if self.label:
             label = self._gen_label_for(ctx, cls, name)
             attrib = self._gen_label_wrapper_class(ctx, cls, name)
@@ -469,6 +486,10 @@ class HrefWidget(HtmlWidget):
         cls_attr = self.get_cls_attrs(cls)
         if self.hidden_input and (inst is not None or cls_attr.min_occurs >= 1):
             self._gen_input_hidden(cls, inst, parent, name, **kwargs)
+
+    def anyuri_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        retval = self.gen_anchor(cls, inst, name, self.anchor_class)
+        parent.write(retval)
 
 
 class ParentHrefWidget(HrefWidget):
