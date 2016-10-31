@@ -41,6 +41,7 @@ from neurons.form.widget import ComboBoxWidget
 from neurons.form.widget import MultiSelectWidget
 
 from neurons.form.widget import SimpleRenderWidget
+from neurons.form.widget import ConditionalRendererBase
 from neurons.form.widget import ComplexRenderWidget
 from neurons.form.widget import SimpleReadableNumberWidget
 

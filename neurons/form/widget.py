@@ -40,6 +40,7 @@ import re
 import locale
 import collections
 
+from random import choice
 from contextlib import closing
 from inspect import isclass, getargspec
 from decimal import Decimal as D
@@ -400,6 +401,40 @@ class HtmlWidget(HtmlBase):
         if newcls is cls:
             return self.not_supported(ctx, cls)
         return self.to_parent(ctx, newcls, inst, parent, name, **kwargs)
+
+
+class ConditionalRendererBase(HtmlWidget):
+    def __init__(self):
+        super(ConditionalRendererBase, self).__init__()
+
+        self.serialization_handlers = cdict({
+            ModelBase: self.model_base_to_parent,
+        })
+
+    def switch_to_subprot(self, ctx, cls, inst, parent, name, subprot=None,
+                                                                      **kwargs):
+        if subprot is None:
+            subprot = ctx.protocol.prot_stack[-2]
+
+        logger.debug("Subprot switch from %r back to parent prot %r",
+                                                                  self, subprot)
+
+        return self.to_subprot(ctx, cls, inst, parent, name, subprot, **kwargs)
+
+    def model_base_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        if self.cond(ctx, cls, inst):
+            return self.true(ctx, cls, inst, parent, name, **kwargs)
+        else:
+            return self.false(ctx, cls, inst, parent, name, **kwargs)
+
+    def cond(self, ctx, cls, inst):
+        return choice([True, False])
+
+    def true(self, ctx, cls, inst, parent, name, **kwargs):
+        return self.switch_to_subprot(ctx, cls, inst, parent, name, **kwargs)
+
+    def false(self, ctx, cls, inst, parent, name, **kwargs):
+        return self.switch_to_subprot(ctx, cls, inst, parent, name, **kwargs)
 
 
 # TODO: Make label optional
