@@ -40,16 +40,16 @@ import re
 import locale
 import collections
 
+from spyne import D
 from random import choice
 from contextlib import closing
 from inspect import isclass, getargspec
-from decimal import Decimal as D
 
 from lxml import html
 from lxml.builder import E
 
-from spyne import Unicode, Decimal, Boolean, ComplexModelBase, Array, ModelBase, \
-    AnyHtml, AnyUri, Integer, File
+from spyne import Unicode, Decimal, Boolean, ComplexModelBase, Array, File, \
+    ModelBase, AnyHtml, AnyUri, Integer
 from spyne.util import six
 from spyne.util.tdict import tdict
 from spyne.util.oset import oset
