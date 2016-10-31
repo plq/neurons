@@ -31,7 +31,7 @@ SETUP_DATATABLES = """neurons.setup_datatables = function(selector, data, hide)
 HIDE_EMPTY_COLUMNS = """neurons.hide_empty_columns = function ($table) {
     $($table.find("tr")[1]).find("td").each(function (_, elt) {
         setTimeout(function () {
-            var cc = $(elt).attr("class");
+            var cc = $(elt).attr("class").split(" ")[0];
             if ($table.find("td." + cc).text() == "") {
                 $table.find("td." + cc).hide();
                 $table.find("th." + cc).hide();
