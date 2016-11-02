@@ -1180,7 +1180,7 @@ class SimpleReadableNumberWidget(SimpleRenderWidget):
             fstring = "%f"
 
             if cls_attrs.fraction_digits == D('inf'):
-                fd = 20  # FIXME: chosen by fair dice roll
+                fd = 2  # FIXME: chosen by fair dice roll
             else:
                 fd = int(cls_attrs.fraction_digits)
 
