@@ -292,16 +292,20 @@ class HttpApplication(ComplexModel):
         from spyne.server.twisted import TwistedWebResource
         from spyne.server.wsgi import WsgiApplication
         from spyne.util.wsgi_wrapper import WsgiMounter
+
         from twisted.internet import reactor
         from twisted.web.resource import Resource
         from twisted.web.wsgi import WSGIResource
 
         if isinstance(self.app, Resource):
             return self.app
-        elif isinstance(self.app, Application):
+
+        if isinstance(self.app, Application):
             return TwistedWebResource(self.app)
-        elif isinstance(self.app, (WsgiApplication, WsgiMounter)):
+
+        if isinstance(self.app, (WsgiApplication, WsgiMounter)):
             return WSGIResource(reactor, reactor.getThreadPool(), self.app)
+
         raise ValueError(self.app)
 
 
