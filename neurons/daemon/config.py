@@ -448,6 +448,7 @@ LOGLEVEL_MAP = dict(zip(
                                                                logging.CRITICAL]
 ))
 
+LOGLEVEL_STR_MAP = {v: k for k, v in LOGLEVEL_MAP.items()}
 
 LOGLEVEL_MAP_ABB = {
     logging.DEBUG: 'D',
@@ -469,8 +470,11 @@ class Logger(ComplexModel):
             _logger = logging.getLogger(self.path)
 
         _logger.setLevel(LOGLEVEL_MAP[self.level])
-        logger.info("Setting logging level for %r to %s.", _logger.name,
-                                                                     self.level)
+
+        if self.path == '.':
+            logger.info("Root Logger level override: %s", self.level)
+        else:
+            logger.info("Logger level override %s = %s", self.path, self.level)
 
         return self
 
@@ -1145,58 +1149,82 @@ class ServiceDaemon(Daemon):
 
         return self
 
+    @staticmethod
+    def _set_log_level(ns, level):
+        logging.getLogger(ns).setLevel(level)
+        logging.info("Sublogger level initialized for '%s' as %s", ns,
+                                                        LOGLEVEL_STR_MAP[level])
+
+    @staticmethod
+    def hello_darkness_my_old_friend():
+        logger.info("Quis custodiet ipsos custodes?")
+
+    def boot_message(self):
+        import spyne
+        import neurons
+        import twisted
+        import sqlalchemy
+
+        logging.info("Booting daemon '%s'. We have spyne-%s, neurons-%s, "
+                     "sqlalchemy-%s and twisted-%s.",
+                        self.name, B(spyne.__version__), B(neurons.__version__),
+                          B(sqlalchemy.__version__), B(twisted.version.short()))
+
     def pre_logging_apply(self):
         if self.log_rpc or self.log_queries or self.log_results or \
-                self.log_model or self.log_interface or self.log_rpc or \
-                self.log_cloth:
+                    self.log_model or self.log_interface or self.log_rpc or \
+                                                                self.log_cloth:
             logging.getLogger().setLevel(logging.DEBUG)
 
+        logging.info("Root logger level = %s",
+                                    LOGLEVEL_STR_MAP[logging.getLogger().level])
+
+        self.hello_darkness_my_old_friend()
+        self.boot_message()
+
         if self.log_model:
-            logging.getLogger('spyne.model').setLevel(logging.DEBUG)
+            self._set_log_level('spyne.model', logging.DEBUG)
+
         else:
-            logging.getLogger('spyne.model').setLevel(logging.INFO)
+            self._set_log_level('spyne.model', logging.INFO)
 
         if self.log_interface:
-            logging.getLogger('spyne.interface').setLevel(logging.DEBUG)
+            self._set_log_level('spyne.interface', logging.DEBUG)
         else:
-            logging.getLogger('spyne.interface').setLevel(logging.INFO)
+            self._set_log_level('spyne.interface', logging.INFO)
 
         if self.log_rpc:
-            logging.getLogger('spyne.protocol').setLevel(logging.DEBUG)
-            logging.getLogger('spyne.protocol.xml').setLevel(logging.DEBUG)
-            logging.getLogger('spyne.protocol.dictdoc').setLevel(logging.DEBUG)
-            logging.getLogger('spyne.protocol.cloth.to_parent') \
-                                                        .setLevel(logging.DEBUG)
-            logging.getLogger('spyne.protocol.cloth.to_cloth.serializer') \
-                                                        .setLevel(logging.DEBUG)
+            self._set_log_level('spyne.protocol', logging.DEBUG)
+            self._set_log_level('spyne.protocol.xml', logging.DEBUG)
+            self._set_log_level('spyne.protocol.dictdoc', logging.DEBUG)
+            self._set_log_level('spyne.protocol.cloth.to_parent', logging.DEBUG)
+            self._set_log_level('spyne.protocol.cloth.to_cloth.serializer',
+                                                                  logging.DEBUG)
         else:
-            logging.getLogger('spyne.protocol').setLevel(logging.INFO)
-            logging.getLogger('spyne.protocol.xml').setLevel(logging.INFO)
-            logging.getLogger('spyne.protocol.dictoc').setLevel(logging.INFO)
-            logging.getLogger('spyne.protocol.cloth.to_parent') \
-                                                         .setLevel(logging.INFO)
-            logging.getLogger('spyne.protocol.cloth.to_cloth.serializer') \
-                                                         .setLevel(logging.INFO)
+            self._set_log_level('spyne.protocol', logging.INFO)
+            self._set_log_level('spyne.protocol.xml', logging.INFO)
+            self._set_log_level('spyne.protocol.dictoc', logging.INFO)
+            self._set_log_level('spyne.protocol.cloth.to_parent', logging.INFO)
+            self._set_log_level('spyne.protocol.cloth.to_cloth.serializer',
+                                                                   logging.INFO)
 
         if self.log_cloth:
-            logging.getLogger('spyne.protocol.cloth.to_cloth.cloth') \
-                                                        .setLevel(logging.DEBUG)
+            self._set_log_level('spyne.protocol.cloth.to_cloth.cloth',
+                                                                  logging.DEBUG)
         else:
-            logging.getLogger('spyne.protocol.cloth.to_cloth.cloth') \
-                                                         .setLevel(logging.INFO)
+            self._set_log_level('spyne.protocol.cloth.to_cloth.cloth',
+                                                                   logging.INFO)
 
         if self.log_queries or self.log_results:
             if self.log_results:
-                logging.getLogger('sqlalchemy').setLevel(logging.DEBUG)
+                self._set_log_level('sqlalchemy', logging.DEBUG)
 
             elif self.log_queries:
-                logging.getLogger('sqlalchemy').setLevel(logging.INFO)
+                self._set_log_level('sqlalchemy', logging.INFO)
 
-            logging.getLogger('sqlalchemy.orm.mapper').setLevel(logging.WARNING)
-            logging.getLogger('sqlalchemy.orm.relationships').setLevel(
-                                                                logging.WARNING)
-            logging.getLogger('sqlalchemy.orm.strategies').setLevel(
-                                                                logging.WARNING)
+            self._set_log_level('sqlalchemy.orm.mapper', logging.WARNING)
+            self._set_log_level('sqlalchemy.orm.relationships', logging.WARNING)
+            self._set_log_level('sqlalchemy.orm.strategies', logging.WARNING)
 
     def get_main_store(self):
         return self.stores[self.main_store].itself
