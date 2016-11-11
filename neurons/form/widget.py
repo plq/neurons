@@ -699,36 +699,64 @@ class ComplexRenderWidget(HtmlWidget):
 
         super(ComplexRenderWidget, self).__init__(label=label)
 
-        self.id_field = id_field
+        if not six.PY2:
+            str_types = (str,)
+        else:
+            str_types = (str, unicode)
+
         self.text_field = text_field
-        self.hidden_fields = hidden_fields
+        if isinstance(self.text_field, str_types):
+            self.text_field = tuple([s for s in self.text_field.split('.')
+                                                                 if len(s) > 0])
+
+        self.id_field = id_field
+        if isinstance(self.id_field, str_types):
+            self.id_field = tuple([s for s in self.id_field.split('.')
+                                                                 if len(s) > 0])
+
         self.type = type
+        self.hidden_fields = hidden_fields
         self.null_str = null_str
 
         self.serialization_handlers = cdict({
             ComplexModelBase: self.complex_model_to_parent,
         })
 
+    def _get_type(self, cls, field_name):
+        assert len(field_name) > 0
+
+        for field_name_fragment in field_name:
+            fti = cls.get_flat_type_info(cls)
+            cls = fti[field_name_fragment]
+
+        return cls
+
+    def _get_value_str(self, inst_type, inst, field_name):
+        assert len(field_name) > 0
+
+        for field_name_fragment in field_name:
+            inst = getattr(inst, field_name_fragment)
+
+        return self.to_unicode(inst_type, inst)
+
     def _prep_inst(self, cls, inst, fti):
         id_name = id_type = id_str = None
         if self.id_field is not None:
             id_name = self.id_field
-            id_type = fti[id_name]
+            id_type = self._get_type(cls, id_name)
 
         text_str = text_type = None
         text_name = self.text_field
         if text_name is not None:
             text_str = self.null_str
-            text_type = fti[text_name]
+            text_type = self._get_type(cls, text_name)
 
         if inst is not None:
             if id_name is not None:
-                id_val = getattr(inst, id_name)
-                id_str = self.to_unicode(id_type, id_val)
+                id_str = self._get_value_str(id_type, inst, id_name)
 
             if text_name is not None:
-                text_val = getattr(inst, text_name)
-                text_str = self.to_unicode(text_type, text_val)
+                text_str = self._get_value_str(text_type, inst, text_name)
 
         if id_str is None:
             id_str = ""
