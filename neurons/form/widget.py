@@ -456,7 +456,7 @@ class PasswordWidget(HtmlWidget):
 class HrefWidget(HtmlWidget):
     supported_types = (Unicode, Decimal)
 
-    def __init__(self, href=None, hidden_input=False, label=True,
+    def __init__(self, href=None, hidden_input=False, label=True, quote=None,
                                                              anchor_class=None):
         """Render current object (inst) as an anchor (the <a> tag)
 
@@ -464,6 +464,9 @@ class HrefWidget(HtmlWidget):
             inst is an instance of AnyUri.Value
         :param hidden_input: If True, generate hidden <input> with inst as value
         :param label: If True, Generate <label> element.
+        :param quote: If not None, should be a callable like ``quote_plus``
+            to make sure arbitrary strings get properly escaped as query string
+            parameters.
         :param anchor_class: If not None, goes into the "class" attribute of
             the <a> tag.
         """
@@ -473,6 +476,7 @@ class HrefWidget(HtmlWidget):
         self.href = href
         self.hidden_input = hidden_input
         self.anchor_class = anchor_class
+        self.quote = quote
 
         self.serialization_handlers = cdict({
             ModelBase: self.model_base_to_parent,
@@ -488,7 +492,11 @@ class HrefWidget(HtmlWidget):
             anchor_str = ''
 
         try:
+            if self.quote is not None:
+                inst = self.quote(inst)
+
             href = self.href.format(inst)
+
         except Exception as e:
             logger.warning("Error generating href: %r", e)
             href = self.href
