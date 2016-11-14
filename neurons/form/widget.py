@@ -709,9 +709,9 @@ class ComplexRenderWidget(HtmlWidget):
             self.text_field = tuple([s for s in self.text_field.split('.')
                                                                  if len(s) > 0])
 
-        self.id_field = id_field
-        if isinstance(self.id_field, str_types):
-            self.id_field = tuple([s for s in self.id_field.split('.')
+        self.id_fields = id_field
+        if isinstance(self.id_fields, str_types):
+            self.id_fields = tuple([s for s in self.id_fields.split('.')
                                                                  if len(s) > 0])
 
         self.type = type
@@ -741,8 +741,8 @@ class ComplexRenderWidget(HtmlWidget):
 
     def _prep_inst(self, cls, inst, fti):
         id_name = id_type = id_str = None
-        if self.id_field is not None:
-            id_name = self.id_field
+        if self.id_fields is not None:
+            id_name = self.id_fields
             id_type = self._get_type(cls, id_name)
 
         text_str = text_type = None
@@ -818,7 +818,7 @@ class ComplexHrefWidget(ComplexRenderWidget):
             assert issubclass(empty_widget, ComplexRenderWidget), "I don't know" \
                          "how to instantiate a non-ComplexRenderWidget-subclass"
 
-            self.empty_widget = empty_widget(self.text_field, self.id_field,
+            self.empty_widget = empty_widget(self.text_field, self.id_fields,
                       others=True, others_order_by=self.text_field, label=False)
 
     def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
@@ -844,7 +844,7 @@ class ComplexHrefWidget(ComplexRenderWidget):
 
             id_field_name = self.id_field_name
             if id_field_name is None:
-                id_field_name = self.id_field
+                id_field_name = '.'.join(self.id_fields)
 
             attrib['href'] = tn_url + "?" + urlencode({id_field_name: id_str})
 
@@ -922,7 +922,7 @@ class SelectWidgetBase(ComplexRenderWidget):
                          "how to instantiate a non-ComplexRenderWidget-subclass"
 
             self.nonempty_widget = nonempty_widget(self.text_field,
-                    id_field=self.id_field, label=self.label, type=self.type,
+                    id_field=self.id_fields, label=self.label, type=self.type,
                          hidden_fields=(self.hidden_fields or ()) + (id_field,))
 
         self.serialization_handlers[ModelBase] = self.model_base_to_parent
@@ -1116,7 +1116,7 @@ class ComboBoxWidget(SelectWidgetBase):
 
         v_id_str, v_text_str = self._prep_inst(cls, inst, fti)
 
-        sub_name = self.hier_delim.join((name, self.id_field))
+        sub_name = self.hier_delim.join((name,) + self.id_fields)
         elt_attrs = self._gen_input_attrs_novalue(ctx, cls, sub_name, cls_attrs,
                                                                        **kwargs)
         data = ((v_id_str, v_text_str),)
@@ -1144,7 +1144,7 @@ class MultiSelectWidget(SelectWidgetBase):
         if self.override_parent:
             name = name.rsplit(self.hier_delim)[0]
 
-        sub_name = self.hier_delim.join((name, self.id_field))
+        sub_name = self.hier_delim.join((name,) + self.id_fields)
         tag_attrib = self._gen_input_attrs_novalue(ctx, cls, sub_name, cls_attr,
                                                                        **kwargs)
 

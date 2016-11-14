@@ -411,6 +411,28 @@ class TestComplexHrefWidget(object):
         assert elt.xpath('div/a/text()') == ['Arthur']
         assert elt.xpath('div/a/@href') == ['some_object?i=42']
 
+    def test_granchild(self):
+        class SomeOtherObject(ComplexModel):
+            _type_info = [
+                ('d', Decimal),
+            ]
+
+        class SomeObject(ComplexModel):
+            class Attributes(ComplexModel.Attributes):
+                prot = ComplexHrefWidget('c.d', 'i')
+
+            _type_info = [
+                ('i', Integer),
+                ('c', SomeOtherObject),
+            ]
+
+        v = SomeObject(i=42, c=SomeOtherObject(d=3.14))
+        elt = _test_type(SomeObject, v)
+
+        assert elt.xpath('div/a/text()') == ['3.14']
+        assert elt.xpath('div/a/@href') == ['some_object?i=42']
+
+
 
 class TestComboBoxWidget(object):
     def test_simple_label(self):
