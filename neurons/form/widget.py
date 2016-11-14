@@ -861,10 +861,10 @@ class ComplexHrefWidget(ComplexRenderWidget):
                 with parent.element('div', attrib=label_div_attrib):
                     parent.write(label)
                     self.empty_widget \
-                        .to_parent(ctx, cls, inst, parent, name, **kwargs)
+                              .to_parent(ctx, cls, inst, parent, name, **kwargs)
             else:
                 self.empty_widget \
-                    .to_parent(ctx, cls, inst, parent, name, **kwargs)
+                              .to_parent(ctx, cls, inst, parent, name, **kwargs)
 
 
 # FIXME: We need a better explanation for the very simple thing that
