@@ -48,9 +48,10 @@ from spyne import Application, NullServer, Unicode, ServiceBase, rpc, Decimal, \
     Boolean, Date, Time, DateTime, Integer, ComplexModel, Array, Double, \
     Mandatory as M, AnyHtml, AnyXml
 from spyne.util.test import show
+from spyne.protocol.html import HtmlMicroFormat
 
 from neurons.form import HtmlForm, PasswordWidget, Tab, HrefWidget, \
-    ComboBoxWidget, ComplexHrefWidget
+    ComboBoxWidget, ComplexHrefWidget, ParentHrefWidget
 from neurons.form.test import strip_ns
 from neurons.form.const import T_TEST
 from neurons.form.form import Fieldset
@@ -432,6 +433,25 @@ class TestComplexHrefWidget(object):
         assert elt.xpath('div/a/text()') == ['3.14']
         assert elt.xpath('div/a/@href') == ['some_object?i=42']
 
+
+class TestParentHrefWidget(object):
+    def test_simple(self):
+        class SomeObject(ComplexModel):
+            class Attributes(ComplexModel.Attributes):
+                prot = HtmlMicroFormat()
+
+            _type_info = [
+                ('i', Integer),
+                ('s', Unicode(prot=ParentHrefWidget('some_object?i={0.i}',
+                    anchor_class="some_class"))),
+            ]
+
+        v = SomeObject(i=42, s="Arthur")
+        elt = _test_type(SomeObject, v)
+
+        assert elt.xpath('.//a[@class="some_class"]/text()') == ['Arthur']
+        assert elt.xpath('.//a[@class="some_class"]/@href') == \
+                                                            ['some_object?i=42']
 
 
 class TestComboBoxWidget(object):
