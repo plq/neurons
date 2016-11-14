@@ -537,20 +537,16 @@ class HrefWidget(HtmlWidget):
 
 class ParentHrefWidget(HrefWidget):
     """Render current object as a link using information from its parent
-    object"""
+    object.
+
+    An example href value:
+        "/some_slug?id={0.id}&name={0.name}
+
+    **FIXME:** This needs to be made to use urlencode instead of plain string
+    formatting.
+    """
+
     supported_types = (Unicode, Decimal)
-
-    def __init__(self, href, field_names, hidden_input=False, label=True):
-        super(HrefWidget, self).__init__(label=label)
-
-        self.href = href
-        self.hidden_input = hidden_input
-        self.field_names = field_names
-
-        self.serialization_handlers = cdict({
-            ModelBase: self.model_base_to_parent,
-            ComplexModelBase: self.not_supported,
-        })
 
     def model_base_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         anchor_str = self.to_unicode(cls, inst)
@@ -559,18 +555,17 @@ class ParentHrefWidget(HrefWidget):
 
         inst_stack = ctx.protocol.inst_stack
         if len(inst_stack) < 2:
-            logger.debug("No parent instance found.")
-            field_values = ()
+            logger.warning("No parent instance found.")
+            href = self.href
+
         else:
             _, parent_inst, _ = inst_stack[-2]
-            field_values = {k: getattr(parent_inst, k)
-                                                      for k in self.field_names}
 
-        try:
-            href = self.href.format(**field_values)
-        except Exception as e:
-            logger.warning("Error generating href: %r", e)
-            href = self.href
+            try:
+                href = self.href.format(parent_inst)
+            except Exception as e:
+                logger.warning("Error generating href: %r", e)
+                href = self.href
 
         self.render_anchor(ctx, cls, inst, parent, name, anchor_str, href,
                                                                       **kwargs)
