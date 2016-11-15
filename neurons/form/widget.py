@@ -57,6 +57,7 @@ from spyne.util.cdict import cdict
 from spyne.util.six.moves.urllib.parse import urlencode
 
 from spyne.protocol.html import HtmlBase
+from spyne.protocol.html.table.column import HtmlColumnTableRowProtocol
 
 
 def camel_case_to_uscore_gen(string):
@@ -799,7 +800,7 @@ class ComplexRenderWidget(HtmlWidget):
         self._write_hidden_fields(ctx, cls, inst, parent, name, fti, **kwargs)
 
 
-class ComplexHrefWidget(ComplexRenderWidget):
+class ComplexHrefWidget(ComplexRenderWidget, HtmlColumnTableRowProtocol):
     def __init__(self, text_field, id_field, type=None, hidden_fields=None,
                    empty_widget=None, label=True, url=None, id_field_name=None):
         """Widget that renders complex objects as links. Hidden fields are
@@ -823,6 +824,30 @@ class ComplexHrefWidget(ComplexRenderWidget):
 
             self.empty_widget = empty_widget(self.text_field, self.id_fields,
                       others=True, others_order_by=self.text_field, label=False)
+
+    def column_table_before_row(self, ctx, cls, inst, parent, name, **kwargs):
+        # the ctxstack here is lxml element context, has nothing to do with
+        # spyne contexts.
+
+        ctxstack = getattr(ctx.protocol[self], 'array_subprot_ctxstack', [])
+
+        tr_ctx = parent.element('tr')
+        tr_ctx.__enter__()
+        ctxstack.append(tr_ctx)
+
+        td_ctx = parent.element('td')
+        td_ctx.__enter__()
+        ctxstack.append(td_ctx)
+
+        ctx.protocol[self].array_subprot_ctxstack = ctxstack
+
+    def column_table_after_row(self, ctx, cls, inst, parent, name, **kwargs):
+        ctxstack = ctx.protocol[self].array_subprot_ctxstack
+
+        for elt_ctx in reversed(ctxstack):
+            elt_ctx.__exit__(None, None, None)
+
+        del ctxstack[:]
 
     def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         fti = cls.get_flat_type_info(cls)
