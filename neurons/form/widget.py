@@ -268,6 +268,7 @@ class HtmlWidget(HtmlBase):
     def _gen_input(self, ctx, cls, inst, name, cls_attrs, **kwargs):
         elt_attrs = self._gen_input_attrs(ctx, cls, inst, name, cls_attrs,
                                                                        **kwargs)
+        field_name = name.split('.')[-1]
 
         tag = 'input'
         values = cls_attrs.values
@@ -295,7 +296,7 @@ class HtmlWidget(HtmlBase):
         if cls_attrs.write is False and inststr is not None:
             inst_label = values_dict.get(inst, inststr)
             if isinstance(inst_label, dict):
-                inst_label = self.trd(inst_label, ctx.locale, inststr)
+                inst_label = self.trd(inst_label, ctx.locale, field_name)
             logger.debug("\t\tinst %r label %r", inst_label, inst)
             elt.append(E.option(inst_label, value=inststr))
 
@@ -323,7 +324,7 @@ class HtmlWidget(HtmlBase):
                 val_label = values_dict.get(v, valstr)
                 logger.debug("\t\tother values inst %r label %r", v, val_label)
                 if isinstance(val_label, dict):
-                    val_label = self.trd(val_label, ctx.locale, inststr)
+                    val_label = self.trd(val_label, ctx.locale, field_name)
 
                 elt.append(E.option(val_label, **attrib))
 
