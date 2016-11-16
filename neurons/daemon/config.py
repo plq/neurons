@@ -47,8 +47,8 @@ from argparse import Action
 from os.path import isfile, abspath, dirname, getsize
 
 from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
-    UnsignedInteger, UnsignedInteger16, Array, String, Application, \
-    ComplexModelBase, M, Double, Decimal, UnsignedInteger
+    UnsignedInteger16, Array, String, Application, ComplexModelBase, M, Double,\
+    Decimal, UnsignedInteger
 
 from spyne.protocol import ProtocolBase
 from spyne.protocol.yaml import YamlDocument
@@ -121,7 +121,7 @@ class EmailAlert(AlertDestination):
     host = Unicode(default='localhost')
     port = UnsignedInteger16(default=25)
     user = Unicode
-    sender = Unicode(default='Random Developer <robot@spyne.io>')
+    sender = Unicode(default='Joe Developer <robot@spyne.io>')
     envelope_from = EmailAddress
     password = Unicode
     recipients = M(Array(M(EmailAddress)))
