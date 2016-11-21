@@ -89,6 +89,11 @@ class HtmlWidget(HtmlBase):
     # https://www.w3.org/TR/2012/WD-html5-20121025/common-microsyntaxes.html#rules-for-parsing-floating-point-number-values
     HTML5_EPSILON = _gen_html5_epsilon()
 
+    HTML_INPUT = 'input'
+    HTML_TEXTAREA = 'textarea'
+    HTML_SELECT = 'select'
+    HTML_OPTION = 'option'
+
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
                 cloth=None, cloth_parser=None, polymorphic=True, hier_delim='.',
                      label=True, doctype=None, asset_paths={}, placeholder=None,
@@ -270,14 +275,14 @@ class HtmlWidget(HtmlBase):
                                                                        **kwargs)
         field_name = name.split('.')[-1]
 
-        tag = 'input'
+        tag = self.HTML_INPUT
         values = cls_attrs.values
         values_dict = cls_attrs.values_dict
         if values_dict is None:
             values_dict = {}
 
         if values is not None and len(values) > 0:
-            tag = 'select'
+            tag = self.HTML_SELECT
             if 'value' in elt_attrs:
                 del elt_attrs['value']
             if 'type' in elt_attrs:
@@ -298,14 +303,14 @@ class HtmlWidget(HtmlBase):
             if isinstance(inst_label, dict):
                 inst_label = self.trd(inst_label, ctx.locale, field_name)
             logger.debug("\t\tinst %r label %r", inst_label, inst)
-            elt.append(E.option(inst_label, value=inststr))
+            elt.append(E(self.HTML_OPTION, inst_label, value=inststr))
 
         else:
             selected = False
             we_have_empty = False
 
             if cls_attrs.nullable or cls_attrs.min_occurs == 0:
-                elt.append(E.option("", dict(value='')))
+                elt.append(E(self.HTML_OPTION, "", dict(value='')))
                 we_have_empty = True
                 # if none are selected, this will be the default anyway, so
                 # no need to add selected attribute to the option tag.
@@ -326,10 +331,10 @@ class HtmlWidget(HtmlBase):
                 if isinstance(val_label, dict):
                     val_label = self.trd(val_label, ctx.locale, valstr)
 
-                elt.append(E.option(val_label, **attrib))
+                elt.append(E(self.HTML_OPTION, val_label, **attrib))
 
             if not (selected or we_have_empty):
-                elt.append(E.option("", dict(value='', selected='')))
+                elt.append(E(self.HTML_OPTION, "", dict(value='', selected='')))
 
         return elt
 
@@ -354,7 +359,7 @@ class HtmlWidget(HtmlBase):
         values = attr_override.get('values', cls_attrs.values)
 
         if len(values) == 0 and max_len >= D('inf'):
-            tag = 'textarea'
+            tag = self.HTML_TEXTAREA
 
             elt_attrs = self._gen_input_attrs_novalue(ctx, cls, name, cls_attrs)
             if (cls_attrs.write_once and inst is not None) or \
@@ -376,6 +381,7 @@ class HtmlWidget(HtmlBase):
 
             if max_len < Unicode.Attributes.max_len:
                 elt.attrib['maxlength'] = str(int(max_len))
+
             if min_len > Unicode.Attributes.min_len:
                 elt.attrib['minlength'] = str(int(min_len))
 
@@ -957,7 +963,7 @@ class SelectWidgetBase(ComplexRenderWidget):
         self.serialization_handlers[ModelBase] = self.model_base_to_parent
 
     def _write_empty(self, parent):
-        parent.write(E.option())
+        parent.write(E(self.HTML_OPTION))
 
     def _write_select(self, ctx, cls, inst, parent, name, fti, **kwargs):
         raise NotImplementedError()
@@ -968,7 +974,8 @@ class SelectWidgetBase(ComplexRenderWidget):
         with parent.element("select", attrib=tag_attrib):
             if self.others is None:
                 for v_id_str, v_text_str in data:
-                    elt = E.option(v_text_str, value=v_id_str, selected="")
+                    elt = E(self.HTML_OPTION, v_text_str, value=v_id_str,
+                                                                    selected="")
                     parent.write(elt)
                 return
 
@@ -1044,7 +1051,7 @@ class SelectWidgetBase(ComplexRenderWidget):
                 logger.debug("Using cache key %r to fill <select> for %r",
                                                                  cache_key, cls)
                 for id_str, text_str in cache_entry:
-                    elt = E.option(text_str, value=id_str)
+                    elt = E(self.HTML_OPTION, text_str, value=id_str)
 
                     if id_str in data:
                         elt.attrib['selected'] = ""
@@ -1064,7 +1071,7 @@ class SelectWidgetBase(ComplexRenderWidget):
         for o in insts:
             id_str, text_str = self._prep_inst(cls, o, fti)
 
-            elt = E.option(text_str, value=id_str)
+            elt = E(self.HTML_OPTION, text_str, value=id_str)
             if id_str in data:
                 elt.attrib['selected'] = ""
                 selected = True
