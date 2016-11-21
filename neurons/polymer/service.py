@@ -1,6 +1,8 @@
 
 import re, json
 
+from itertools import chain
+
 from spyne import ServiceBase, rpc
 
 from .model import DomModule, HtmlImport
@@ -36,11 +38,8 @@ def TComponentGeneratorService(cls, prefix=None, locale=None,
             _in_message_name=method_name)
         def gen_form(self):
             init_data = _gen_init_data(cls, component_name)
-            deps = [
-                HtmlImport(
-                    href="/static/bower_components/polymer/polymer.html"
-                ),
-            ]
+            deps = ['polymer', 'paper-input', 'paper-input/paper-textarea',
+                'paper-dropdown-menu']
 
             styles = []
             if gen_css_imports:
@@ -49,7 +48,20 @@ def TComponentGeneratorService(cls, prefix=None, locale=None,
 
             retval = DetailScreen(dom_module_id=component_name, main=cls())
             retval.definition = "Polymer({})".format(json.dumps(init_data))
-            retval.dependencies = deps
+            retval.dependencies = chain(
+                [
+                    HtmlImport(
+                        href="/static/bower_components/{0}/{0}.html".format(comp)
+                    )
+                    for comp in deps if not '/' in comp
+                ],
+                [
+                    HtmlImport(
+                        href="/static/bower_components/{0}.html".format(comp)
+                    )
+                    for comp in deps if '/' in comp
+                ])
+
             if len(styles) > 0 :
                 retval.style = '\n'.join(styles)
 
