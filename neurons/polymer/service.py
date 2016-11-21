@@ -17,7 +17,7 @@ def _gen_init_data(cls, method_name):
     }
 
 
-def TComponentGeneratorService(cls, prefix=None):
+def TComponentGeneratorService(cls, prefix=None, locale=None):
     type_name = cls.get_type_name()
     component_name = _to_snake_case(type_name)
 
@@ -47,5 +47,13 @@ def TComponentGeneratorService(cls, prefix=None):
             ]
 
             return retval
+
+    if locale is not None:
+        def _fix_locale(ctx):
+            ctx.locale = 'tr_TR'
+
+        ComponentGeneratorService.event_manager \
+                                       .add_listener('method_call', _fix_locale)
+
 
     return ComponentGeneratorService
