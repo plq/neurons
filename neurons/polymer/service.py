@@ -17,7 +17,8 @@ def _gen_init_data(cls, method_name):
     }
 
 
-def TComponentGeneratorService(cls, prefix=None, locale=None):
+def TComponentGeneratorService(cls, prefix=None, locale=None,
+                                                         gen_css_imports=False):
     type_name = cls.get_type_name()
     component_name = _to_snake_case(type_name)
 
@@ -34,17 +35,23 @@ def TComponentGeneratorService(cls, prefix=None, locale=None):
         @rpc(_returns=DetailScreen, _body_style='bare',
             _in_message_name=method_name)
         def gen_form(self):
-            retval = DetailScreen(dom_module_id=component_name, main=cls())
-
             init_data = _gen_init_data(cls, component_name)
-
-            retval.definition = "Polymer({})".format(json.dumps(init_data))
-
-            retval.dependencies = [
+            deps = [
                 HtmlImport(
                     href="/static/bower_components/polymer/polymer.html"
                 ),
             ]
+
+            styles = []
+            if gen_css_imports:
+                styles.append('@import url("/static/screen/{}.css")'
+                                                        .format(component_name))
+
+            retval = DetailScreen(dom_module_id=component_name, main=cls())
+            retval.definition = "Polymer({})".format(json.dumps(init_data))
+            retval.dependencies = deps
+            if len(styles) > 0 :
+                retval.style = '\n'.join(styles)
 
             return retval
 

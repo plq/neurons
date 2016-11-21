@@ -6,13 +6,14 @@ from spyne.protocol.http import HttpRpc
 from .const import T_DOM_MODULE
 
 
-def gen_components_app(config, prefix, classes, locale=None):
+def gen_components_app(config, prefix, classes, locale=None,
+        gen_css_imports=False):
     from neurons.polymer.service import TComponentGeneratorService
 
     return \
         Application(
             [
-                TComponentGeneratorService(cls, prefix, locale)
+                TComponentGeneratorService(cls, prefix, locale, gen_css_imports)
                                                               for cls in classes
             ],
             tns='ruzgar.web', name='Components',
