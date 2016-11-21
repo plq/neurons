@@ -324,7 +324,7 @@ class HtmlWidget(HtmlBase):
                 val_label = values_dict.get(v, valstr)
                 logger.debug("\t\tother values inst %r label %r", v, val_label)
                 if isinstance(val_label, dict):
-                    val_label = self.trd(val_label, ctx.locale, field_name)
+                    val_label = self.trd(val_label, ctx.locale, valstr)
 
                 elt.append(E.option(val_label, **attrib))
 
