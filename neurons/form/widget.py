@@ -292,9 +292,9 @@ class HtmlWidget(HtmlBase):
         if values is None or len(values) == 0:
             return elt
 
-        return self._gen_select(ctx, cls, inst, name, cls_attrs, elt, **kwargs)
+        return self._gen_options(ctx, cls, inst, name, cls_attrs, elt, **kwargs)
 
-    def _gen_select(self, ctx, cls, inst, name, cls_attrs, elt, **kwargs):
+    def _gen_options(self, ctx, cls, inst, name, cls_attrs, elt, **kwargs):
         field_name = name.split('.')[-1]
 
         values_dict = cls_attrs.values_dict
@@ -308,27 +308,28 @@ class HtmlWidget(HtmlBase):
                 inst_label = self.trd(inst_label, ctx.locale, field_name)
 
             logger.debug("\t\tinst %r label %r", inst_label, inst)
-            elt.append(E(self.HTML_OPTION, inst_label, value=inststr))
+            self._append_option(elt, inst_label, inststr)
 
         else:
-            selected = False
+            ever_selected = False
             we_have_empty = False
 
             if cls_attrs.nullable or cls_attrs.min_occurs == 0:
-                elt.append(E(self.HTML_OPTION, "", dict(value='')))
+                self._append_option(elt, '', value='')
                 we_have_empty = True
                 # if none are selected, this will be the default anyway, so
                 # no need to add selected attribute to the option tag.
 
             # FIXME: cache this!
-            for v in cls_attrs.values:
+            i = 0
+            for i, v in enumerate(cls_attrs.values):
+                selected = False
                 valstr = self.to_unicode(cls, v)
                 if valstr is None:
                     valstr = ""
 
-                attrib = dict(value=valstr)
                 if inst == v:
-                    attrib['selected'] = ''
+                    ever_selected = True
                     selected = True
 
                 val_label = values_dict.get(v, valstr)
@@ -336,12 +337,21 @@ class HtmlWidget(HtmlBase):
                 if isinstance(val_label, dict):
                     val_label = self.trd(val_label, ctx.locale, valstr)
 
-                elt.append(E(self.HTML_OPTION, val_label, **attrib))
+                self._append_option(elt, val_label, valstr,
+                                                     selected=selected, index=i)
 
-            if not (selected or we_have_empty):
-                elt.append(E(self.HTML_OPTION, "", dict(value='', selected='')))
+            if not (ever_selected or we_have_empty):
+                self._append_option(elt, label='', value='', selected=True,
+                                                                        index=i)
 
-        return elt
+            return elt
+
+    def _append_option(self, parent, label, value, selected=False, index=-1):
+        attrib = dict(value=value)
+        if selected:
+            attrib['selected'] = ''
+
+        parent.append(E(self.HTML_OPTION, label, **attrib))
 
     def _gen_input_textarea(self, ctx, cls, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
