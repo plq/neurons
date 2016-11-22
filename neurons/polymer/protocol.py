@@ -61,9 +61,9 @@ class PolymerForm(HtmlForm):
     def _append_option(self, parent, label, value, selected=False, index=-1):
         assert (not selected) or index >= 0
 
-        if selected:
-            import ipdb; ipdb.set_trace()
-            parent.getparent().attrib['selected'] = str(index)
+        # waiting for https://github.com/lxml/lxml/pull/210
+        # if selected:
+        #     parent.attrib['selected'] = str(index)
 
         parent.append(E(self.HTML_OPTION, label))
 
