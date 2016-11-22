@@ -43,9 +43,27 @@ class PolymerForm(HtmlForm):
     HTML_SELECT = 'paper-dropdown-menu'
     HTML_TEXTAREA = 'paper-textarea'
 
-    def _gen_select(self, ctx, cls, inst, name, cls_attrs, elt, **kwargs):
+    def _gen_options(self, ctx, cls, inst, name, cls_attrs, elt, **kwargs):
+        print "!" * 50
+        print elt.attrib
+        print "!" * 50
+
+        del elt.attrib['name']
+        del elt.attrib['class']
+
         option_parent = E('paper-listbox', **{'class': 'dropdown-content'})
-        super(PolymerForm, self)._gen_select(ctx, cls, inst, name,
-                                             cls_attrs, option_parent, **kwargs)
         elt.append(option_parent)
+
+        super(PolymerForm, self)._gen_options(ctx, cls, inst, name, cls_attrs,
+                                                        option_parent, **kwargs)
         return elt
+
+    def _append_option(self, parent, label, value, selected=False, index=-1):
+        assert (not selected) or index >= 0
+
+        if selected:
+            import ipdb; ipdb.set_trace()
+            parent.getparent().attrib['selected'] = str(index)
+
+        parent.append(E(self.HTML_OPTION, label))
+
