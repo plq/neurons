@@ -67,3 +67,25 @@ class PolymerForm(HtmlForm):
 
         parent.append(E(self.HTML_OPTION, label))
 
+    def date_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls_attrs = self.get_cls_attrs(cls)
+
+        elt = self._gen_input(ctx, cls, inst, name, cls_attrs, **kwargs)
+
+        if elt.tag == self.HTML_INPUT:
+            newelt = E('neurons-date-picker')
+
+            for k in ('id', 'name'):
+                newelt.attrib[k] = elt.attrib[k]
+
+            if inst is not None:
+                assert isinstance(inst, date)
+                inststr = self.to_unicode(cls, inst)
+
+                newelt.attrib['date'] = inststr
+
+            elt = newelt
+
+        div = self._wrap_with_label(ctx, cls, name, elt, **kwargs)
+        parent.write(div)
+

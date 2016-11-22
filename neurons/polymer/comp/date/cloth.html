@@ -7,21 +7,23 @@
 <link rel="import" spyne-id="dependencies">
 
 
-<dom-module spyne-attr="dom_module_id">
-  <template is="dom-bind" id="scope">
+<dom-module id="neurons-date-picker">
+  <template>
     <style is="custom-style" include="paper-date-picker-dialog-style">
     section {
       margin: 24px;
     }
-
-
     </style>
     <section spyne-id="main">
-      <h1>{{dateFormat(date, 'LL')}}</h1>
-      <paper-button class="btn" on-tap="showDialog" raised>Change Date
+      <h1>{{_dateFormat(date, 'LL')}}</h1>
+      <paper-button class="btn" on-tap="_showDialog" raised>
+        Change Date
       </paper-button>
-      <paper-dialog id="dialog" class="paper-date-picker-dialog" modal
-                    on-iron-overlay-closed="dismissDialog">
+
+      <!-- FIXME: make modal -->
+      <paper-dialog id="dialog" class="paper-date-picker-dialog"
+                                        on-iron-overlay-closed="_dismissDialog">
+
         <paper-date-picker id="picker" date="[[date]]"></paper-date-picker>
         <div class="buttons">
           <paper-button dialog-dismiss spyne-id="label_cancel"></paper-button>
@@ -32,25 +34,31 @@
   </template>
 
   <script>
-    HTMLImports.whenReady(function() {
-      var scope = Polymer.dom(document).querySelector('#scope');
-      scope.dateFormat = function(date, format) {
-        return moment(date).format(format);
-      };
-      scope.dismissDialog = function(event) {
-        if (event.detail.confirmed) {
-          scope.date = scope.$.picker.date;
+    Polymer({"is": "neurons-date-picker"
+      ,properties: {
+        date: {
+          type: String,
+          reflectToAttribute: true
         }
-      };
-      scope.showDialog = function() {
-        this.$.dialog.toggle();
-      };
-      document.addEventListener('WebComponentsReady', function() {
-        scope.date = new Date(2017, 3, 13);
-        scope.showDialog();
-      });
-    });
-  </script>
+        ,format: {
+          type: String,
+          reflectToAttribute: true
+        }
+      }
 
-  <script spyne-id="definition"></script>
+      ,_dateFormat: function(date, format) {
+        return moment(date).format(format);
+      }
+
+      ,_dismissDialog: function(event) {
+        if (event.detail.confirmed) {
+          this.date = this.$.picker.date;
+        }
+      }
+
+      ,_showDialog: function() {
+        this.$.dialog.toggle();
+      }
+    })
+  </script>
 </dom-module>
