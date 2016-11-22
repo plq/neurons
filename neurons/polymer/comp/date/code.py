@@ -33,9 +33,7 @@
 
 import json
 
-from lxml import html
-
-from neurons.polymer.const import T_DATE
+from neurons.polymer.comp.date import T_DATE
 from neurons.polymer.model import PolymerComponent
 from neurons.polymer.service import gen_component_imports
 
@@ -43,7 +41,7 @@ from spyne import ComplexModel, Unicode
 from spyne import ServiceBase
 from spyne import rpc
 
-__comp_name__ = 'arskom-date-picker'
+__comp_name__ = 'neurons-date-picker'
 
 
 class DateComponent(ComplexModel):

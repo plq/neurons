@@ -31,18 +31,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+from neurons.polymer import read_cloth_file
 
-def _read(fn):
-    from lxml import html
-    from pkg_resources import resource_filename
-
-    retval = html.fragment_fromstring(
-                    open(resource_filename(__name__, fn), 'rb').read(),
-                                                     create_parent='spyne-root')
-    retval.attrib['spyne-tagbag'] = ''
-
-    return retval
-
-
-T_DATE = _read('date.html')
-T_DOM_MODULE = _read('dom_module.html')
+T_DOM_MODULE = read_cloth_file(__name__, 'dom_module.html')

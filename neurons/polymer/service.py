@@ -79,7 +79,7 @@ def gen_component(cls, method_name, component_name, DetailScreen,
         'paper-dropdown-menu',
         'paper-dropdown-menu/paper-dropdown-menu-light',
 
-        HtmlImport(href='arskom-date-picker.html'),
+        HtmlImport(href='neurons-date-picker.html'),
     ]
 
     styles = []

@@ -32,3 +32,15 @@
 #
 
 from neurons.polymer.protocol import PolymerForm
+
+
+def read_cloth_file(ns, fn):
+    from lxml import html
+    from pkg_resources import resource_filename
+
+    retval = html.fragment_fromstring(
+                    open(resource_filename(ns, fn), 'rb').read(),
+                                                     create_parent='spyne-root')
+    retval.attrib['spyne-tagbag'] = ''
+
+    return retval
