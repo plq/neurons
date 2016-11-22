@@ -38,7 +38,7 @@ class HtmlImport(ComplexModel):
     href = XmlAttribute(Unicode)
 
 
-class DomModule(ComplexModel):
+class PolymerComponent(ComplexModel):
     style = Unicode
     definition = Unicode
     dependencies = HtmlImport.customize(max_occurs='unlimited')
