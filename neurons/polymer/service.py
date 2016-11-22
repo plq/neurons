@@ -91,7 +91,11 @@ def TComponentGeneratorService(cls, prefix=None, locale=None,
                 'paper-input',
                 'paper-input/paper-textarea',
 
+                # required for dropdown menu
+                'paper-listbox',
+
                 'paper-dropdown-menu',
+                'paper-dropdown-menu/paper-dropdown-menu-light',
             ]
 
             styles = []
