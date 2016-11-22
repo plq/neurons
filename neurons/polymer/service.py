@@ -31,13 +31,12 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-import re, json
-
-from itertools import chain
+import re
+import json
 
 from spyne import ServiceBase, rpc
 
-from .model import DomModule, HtmlImport
+from .model import PolymerComponent, HtmlImport
 
 
 def _to_snake_case(name):
@@ -45,26 +44,58 @@ def _to_snake_case(name):
     return re.sub('([a-z0-9])([A-Z])', r'\1-\2', s1).lower()
 
 
-def _gen_init_data(cls, method_name):
-    return {
-        "is": method_name
-    }
+def gen_component_imports(deps):
+    for comp in deps:
+        if isinstance(comp, HtmlImport):
+            yield comp
+            continue
 
-
-def _gen_imports(deps):
-    return chain(
-        [
-            HtmlImport(
-                href="/static/bower_components/{0}/{0}.html".format(comp)
-            )
-            for comp in deps if not '/' in comp
-        ],
-        [
-            HtmlImport(
+        if '/' in comp:
+            yield HtmlImport(
                 href="/static/bower_components/{0}.html".format(comp)
             )
-            for comp in deps if '/' in comp
-        ])
+
+        else:
+            yield HtmlImport(
+                href="/static/bower_components/{0}/{0}.html".format(comp)
+            )
+
+
+def gen_component(cls, method_name, component_name, DetailScreen,
+                                                               gen_css_imports):
+    initial_data = {
+        "is": component_name
+    }
+
+    deps = [
+        'polymer',
+
+        'paper-input',
+        'paper-input/paper-textarea',
+
+        # required for dropdown menu
+        'paper-listbox',
+
+        'paper-dropdown-menu',
+        'paper-dropdown-menu/paper-dropdown-menu-light',
+
+        HtmlImport(href='arskom-date-picker.html'),
+    ]
+
+    styles = []
+    if gen_css_imports:
+        styles.append('@import url("/static/screen/{}.css")'
+            .format(component_name))
+
+    retval = DetailScreen(dom_module_id=component_name, main=cls())
+    retval.definition = "Polymer({})".format(json.dumps(initial_data))
+    retval.dependencies = gen_component_imports(deps)
+
+    if len(styles) > 0:
+        retval.style = '\n'.join(styles)
+
+    return retval
+
 
 def TComponentGeneratorService(cls, prefix=None, locale=None,
                                                          gen_css_imports=False):
@@ -76,41 +107,17 @@ def TComponentGeneratorService(cls, prefix=None, locale=None,
 
     method_name = component_name + ".html"
 
-    class DetailScreen(DomModule):
-        __type_name__ = '{}DetailScreen'.format(type_name)
+    class DetailScreen(PolymerComponent):
+        __type_name__ = '{}DetailComponent'.format(type_name)
         main = cls
 
     class ComponentGeneratorService(ServiceBase):
         @rpc(_returns=DetailScreen, _body_style='bare',
-            _in_message_name=method_name)
-        def gen_form(self):
-            init_data = _gen_init_data(cls, component_name)
-            deps = [
-                'polymer',
-
-                'paper-input',
-                'paper-input/paper-textarea',
-
-                # required for dropdown menu
-                'paper-listbox',
-
-                'paper-dropdown-menu',
-                'paper-dropdown-menu/paper-dropdown-menu-light',
-            ]
-
-            styles = []
-            if gen_css_imports:
-                styles.append('@import url("/static/screen/{}.css")'
-                                                        .format(component_name))
-
-            retval = DetailScreen(dom_module_id=component_name, main=cls())
-            retval.definition = "Polymer({})".format(json.dumps(init_data))
-            retval.dependencies = _gen_imports(deps)
-
-            if len(styles) > 0 :
-                retval.style = '\n'.join(styles)
-
-            return retval
+            _in_message_name=method_name,
+            _internal_key_suffix='_' + component_name)
+        def _gen_component(self):
+            return gen_component(cls, method_name, component_name, DetailScreen,
+                                                                gen_css_imports)
 
     if locale is not None:
         def _fix_locale(ctx):
