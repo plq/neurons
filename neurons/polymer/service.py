@@ -85,8 +85,14 @@ def TComponentGeneratorService(cls, prefix=None, locale=None,
             _in_message_name=method_name)
         def gen_form(self):
             init_data = _gen_init_data(cls, component_name)
-            deps = ['polymer', 'paper-input', 'paper-input/paper-textarea',
-                'paper-dropdown-menu']
+            deps = [
+                'polymer',
+
+                'paper-input',
+                'paper-input/paper-textarea',
+
+                'paper-dropdown-menu',
+            ]
 
             styles = []
             if gen_css_imports:
