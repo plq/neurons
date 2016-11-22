@@ -539,7 +539,7 @@ class HtmlForm(HtmlFormRoot):
         cls_attrs = self.get_cls_attrs(cls)
         elt = self._gen_input(ctx, cls, inst, name, cls_attrs, **kwargs)
 
-        if elt.tag == 'input':
+        if elt.tag == self.HTML_INPUT:
             # no point in applying constraints for <select> tags
             elt.attrib['type'] = 'number'
             self._apply_number_constraints(cls_attrs, elt, epsilon=1)
