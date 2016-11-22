@@ -51,6 +51,21 @@ def _gen_init_data(cls, method_name):
     }
 
 
+def _gen_imports(deps):
+    return chain(
+        [
+            HtmlImport(
+                href="/static/bower_components/{0}/{0}.html".format(comp)
+            )
+            for comp in deps if not '/' in comp
+        ],
+        [
+            HtmlImport(
+                href="/static/bower_components/{0}.html".format(comp)
+            )
+            for comp in deps if '/' in comp
+        ])
+
 def TComponentGeneratorService(cls, prefix=None, locale=None,
                                                          gen_css_imports=False):
     type_name = cls.get_type_name()
@@ -80,19 +95,7 @@ def TComponentGeneratorService(cls, prefix=None, locale=None,
 
             retval = DetailScreen(dom_module_id=component_name, main=cls())
             retval.definition = "Polymer({})".format(json.dumps(init_data))
-            retval.dependencies = chain(
-                [
-                    HtmlImport(
-                        href="/static/bower_components/{0}/{0}.html".format(comp)
-                    )
-                    for comp in deps if not '/' in comp
-                ],
-                [
-                    HtmlImport(
-                        href="/static/bower_components/{0}.html".format(comp)
-                    )
-                    for comp in deps if '/' in comp
-                ])
+            retval.dependencies = _gen_imports(deps)
 
             if len(styles) > 0 :
                 retval.style = '\n'.join(styles)
