@@ -35,6 +35,8 @@ from spyne import Application
 from spyne.protocol.html import HtmlCloth
 from spyne.protocol.http import HttpRpc
 
+from neurons.polymer.comp.date import DateComponentGeneratorService
+
 from .const import T_DOM_MODULE
 
 
@@ -44,6 +46,7 @@ def gen_components_app(config, prefix, classes, locale=None,
 
     return \
         Application(
+            [DateComponentGeneratorService] +
             [
                 TComponentGeneratorService(cls, prefix, locale, gen_css_imports)
                                                               for cls in classes

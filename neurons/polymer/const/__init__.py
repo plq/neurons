@@ -44,4 +44,5 @@ def _read(fn):
     return retval
 
 
+T_DATE = _read('date.html')
 T_DOM_MODULE = _read('dom_module.html')
