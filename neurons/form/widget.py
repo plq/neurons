@@ -273,13 +273,8 @@ class HtmlWidget(HtmlBase):
     def _gen_input(self, ctx, cls, inst, name, cls_attrs, **kwargs):
         elt_attrs = self._gen_input_attrs(ctx, cls, inst, name, cls_attrs,
                                                                        **kwargs)
-        field_name = name.split('.')[-1]
-
         tag = self.HTML_INPUT
         values = cls_attrs.values
-        values_dict = cls_attrs.values_dict
-        if values_dict is None:
-            values_dict = {}
 
         if values is not None and len(values) > 0:
             tag = self.HTML_SELECT
@@ -297,11 +292,21 @@ class HtmlWidget(HtmlBase):
         if values is None or len(values) == 0:
             return elt
 
+        return self._gen_select(ctx, cls, inst, name, cls_attrs, elt, **kwargs)
+
+    def _gen_select(self, ctx, cls, inst, name, cls_attrs, elt, **kwargs):
+        field_name = name.split('.')[-1]
+
+        values_dict = cls_attrs.values_dict
+        if values_dict is None:
+            values_dict = {}
+
         inststr = self.to_unicode(cls, inst)
         if cls_attrs.write is False and inststr is not None:
             inst_label = values_dict.get(inst, inststr)
             if isinstance(inst_label, dict):
                 inst_label = self.trd(inst_label, ctx.locale, field_name)
+
             logger.debug("\t\tinst %r label %r", inst_label, inst)
             elt.append(E(self.HTML_OPTION, inst_label, value=inststr))
 
