@@ -50,6 +50,10 @@ class PolymerForm(HtmlForm):
         option_parent = E('paper-listbox', **{'class': 'dropdown-content'})
         elt.append(option_parent)
 
+        # FIXME: parameterize these
+        elt.attrib['no-animations'] = ''
+        elt.attrib['noink'] = ''
+
         super(PolymerForm, self)._gen_options(ctx, cls, inst, name, cls_attrs,
                                                         option_parent, **kwargs)
         return elt
