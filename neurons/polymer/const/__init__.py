@@ -31,11 +31,17 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from lxml import html
-from pkg_resources import resource_filename
 
-T_DOM_MODULE = html.fragment_fromstring(
-    open(resource_filename(__name__, 'dom_module.html'), 'rb').read(),
+def _read(fn):
+    from lxml import html
+    from pkg_resources import resource_filename
+
+    retval = html.fragment_fromstring(
+                    open(resource_filename(__name__, fn), 'rb').read(),
                                                      create_parent='spyne-root')
+    retval.attrib['spyne-tagbag'] = ''
 
-T_DOM_MODULE.attrib['spyne-tagbag'] = ''
+    return retval
+
+
+T_DOM_MODULE = _read('dom_module.html')
