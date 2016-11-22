@@ -44,10 +44,6 @@ class PolymerForm(HtmlForm):
     HTML_TEXTAREA = 'paper-textarea'
 
     def _gen_options(self, ctx, cls, inst, name, cls_attrs, elt, **kwargs):
-        print "!" * 50
-        print elt.attrib
-        print "!" * 50
-
         del elt.attrib['name']
         del elt.attrib['class']
 
