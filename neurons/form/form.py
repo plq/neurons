@@ -538,9 +538,11 @@ class HtmlForm(HtmlFormRoot):
     def integer_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
         elt = self._gen_input(ctx, cls, inst, name, cls_attrs, **kwargs)
-        elt.attrib['type'] = 'number'
 
-        self._apply_number_constraints(cls_attrs, elt, epsilon=1)
+        if elt.tag == 'input':
+            # no point in applying constraints for <select> tags
+            elt.attrib['type'] = 'number'
+            self._apply_number_constraints(cls_attrs, elt, epsilon=1)
 
         parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
 
