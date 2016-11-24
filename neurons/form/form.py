@@ -312,6 +312,33 @@ class HtmlForm(HtmlFormRoot):
                None if attrs.fieldset is None else \
                                 (attrs.fieldset.index, attrs.fieldset.htmlid), \
 
+    def to_subprot(self, ctx, cls, inst, parent, name, subprot, **kwargs):
+        if isinstance(subprot, HtmlFormWidget) or \
+                                         not self.get_cls_attrs(cls).form_label:
+            return subprot.subserialize(ctx, cls, inst, parent, name, **kwargs)
+
+        return self._wrap_unknown_prot_with_label(ctx, cls, inst, parent,
+                                                        name, subprot, **kwargs)
+
+    @coroutine
+    def _wrap_unknown_prot_with_label(self, ctx, cls, inst, parent, name,
+                                                             subprot, **kwargs):
+        attrib = self._gen_label_wrapper_class(ctx, cls, name)
+        with parent.element('div', attrib):
+            parent.write(E.label(self.trc(cls, ctx.locale, name)))
+            ret = subprot.subserialize(ctx, cls, inst, parent, name, **kwargs)
+
+        if isgenerator(ret):
+            try:
+                while True:
+                    sv2 = (yield)
+                    ret.send(sv2)
+            except Break as b:
+                try:
+                    ret.throw(b)
+                except StopIteration:
+                    pass
+
     def unicode_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs, elt = self._gen_input_unicode(ctx, cls, inst, name, **kwargs)
         parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
