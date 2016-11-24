@@ -35,9 +35,17 @@ from spyne import Application
 from spyne.protocol.html import HtmlCloth
 from spyne.protocol.http import HttpRpc
 
-from neurons.polymer.comp.date import DateComponentGeneratorService
+from neurons.polymer.comp.date.code import DateComponentScreen
 
 from .const import T_DOM_MODULE
+
+
+# FIXME: This is a hack to add DateComponentScreen to the interface.
+from spyne import ServiceBase, rpc
+class _DummyService(ServiceBase):
+    @rpc(_returns=DateComponentScreen)
+    def dummy(self):
+        pass
 
 
 def gen_components_app(config, prefix, classes, locale=None,
@@ -46,7 +54,7 @@ def gen_components_app(config, prefix, classes, locale=None,
 
     return \
         Application(
-            [DateComponentGeneratorService] +
+            [_DummyService] +
             [
                 TComponentGeneratorService(cls, prefix, locale, gen_css_imports)
                                                               for cls in classes

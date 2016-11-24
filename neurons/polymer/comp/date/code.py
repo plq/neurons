@@ -37,9 +37,8 @@ from neurons.polymer.comp.date import T_DATE
 from neurons.polymer.model import PolymerComponent
 from neurons.polymer.service import gen_component_imports
 
-from spyne import ComplexModel, Unicode
-from spyne import ServiceBase
-from spyne import rpc
+from spyne import ComplexModel, Unicode, SelfReference
+from spyne import mrpc
 
 __comp_name__ = 'neurons-date-picker'
 
@@ -52,13 +51,11 @@ class DateComponent(ComplexModel):
 class DateComponentScreen(PolymerComponent):
     class Attributes(ComplexModel.Attributes):
         html_cloth = T_DATE
+
     main = DateComponent
 
-
-class DateComponentGeneratorService(ServiceBase):
-    @rpc(_returns=DateComponentScreen, _body_style='bare',
-        _in_message_name=__comp_name__ + ".html")
-    def get_arskom_date_component(self):
+    @mrpc(_returns=SelfReference, _body_style='bare')
+    def definition(self, ctx):
         initial_data = {
             "is": __comp_name__
         }
@@ -75,8 +72,8 @@ class DateComponentGeneratorService(ServiceBase):
 
         retval = DateComponentScreen(dom_module_id=__comp_name__,
             main=DateComponent(
-                label_ok = "BOK",
-                label_cancel = "Cancel"
+                label_ok="OK",
+                label_cancel="Cancel"
             )
         )
         retval.definition = "Polymer({})".format(json.dumps(initial_data))
