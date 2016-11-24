@@ -134,9 +134,6 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
         if name == "":
             name = cls.get_type_name()
 
-        if self.label:
-            parent.write(E.label(self.trc(cls, ctx.locale, name)))
-
         cls_attr = self.get_cls_attrs(cls)
         if cls_attr.write is False:
             ctx.protocol.can_add = False
@@ -145,7 +142,15 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
             ctx.protocol.can_add = self.can_add
             ctx.protocol.can_remove = self.can_remove
 
-        ret = self._gen_table(ctx, cls, inst, parent, name, gen_rows, **kwargs)
+        if self.label:
+            attrib = self._gen_label_wrapper_class(ctx, cls, name)
+            with parent.element('div', attrib):
+                parent.write(E.label(self.trc(cls, ctx.locale, name)))
+                ret = self._gen_table(ctx, cls, inst, parent, name, gen_rows,
+                                                                       **kwargs)
+        else:
+            ret = self._gen_table(ctx, cls, inst, parent, name, gen_rows,
+                                                                       **kwargs)
 
         if isgenerator(ret):
             try:
