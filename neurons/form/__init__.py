@@ -31,7 +31,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from neurons.form.widget import HtmlWidget
+from neurons.form.widget import HtmlFormWidget
 from neurons.form.widget import HrefWidget
 from neurons.form.widget import ParentHrefWidget
 from neurons.form.widget import PasswordWidget

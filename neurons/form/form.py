@@ -54,7 +54,7 @@ try:
 except ImportError:
     FileData = type('__ignored', (object,), {})
 
-from neurons.form.widget import HtmlWidget, SimpleRenderWidget
+from neurons.form.widget import HtmlFormWidget, SimpleRenderWidget
 
 SOME_COUNTER = 0
 
@@ -120,7 +120,7 @@ _csstag = lambda src: E.link(href=src, type="text/css", rel="stylesheet")
 
 
 # monkeypatch spyne <2.13
-if not hasattr(HtmlWidget, '_get_datetime_format'):
+if not hasattr(HtmlFormWidget, '_get_datetime_format'):
     def _get_datetime_format(self, cls_attrs):
         dt_format = cls_attrs.dt_format
         if dt_format is None:
@@ -132,10 +132,10 @@ if not hasattr(HtmlWidget, '_get_datetime_format'):
 
         return dt_format
 
-    HtmlWidget._get_datetime_format = _get_datetime_format
+    HtmlFormWidget._get_datetime_format = _get_datetime_format
 
 
-class HtmlFormRoot(HtmlWidget):
+class HtmlFormRoot(HtmlFormWidget):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
                 cloth=None, cloth_parser=None, polymorphic=True, hier_delim='.',
                      label=True, doctype=None, asset_paths={}, placeholder=None,
@@ -383,8 +383,9 @@ class HtmlForm(HtmlFormRoot):
         if bool(inst):
             elt.attrib['checked'] = 'checked'
 
-        wrap_label = HtmlWidget.WRAP_FORWARD \
-              if cls_attrs.label_position == 'left' else HtmlWidget.WRAP_FORWARD
+        wrap_label = HtmlFormWidget.WRAP_FORWARD \
+                            if cls_attrs.label_position == 'left' \
+                                                else HtmlFormWidget.WRAP_FORWARD
 
         div = self._wrap_with_label(ctx, cls, name, elt,
                                                 wrap_label=wrap_label, **kwargs)

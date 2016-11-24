@@ -78,7 +78,7 @@ def _gen_html5_epsilon():
     return D('1e%s' % int(math.log(2 ** (-1024)) / math.log(10)))
 
 
-class HtmlWidget(HtmlBase):
+class HtmlFormWidget(HtmlBase):
     DEFAULT_INPUT_WRAPPER_CLASS = 'label-input-wrapper'
     DEFAULT_ANCHOR_WRAPPER_CLASS = 'label-anchor-wrapper'
 
@@ -100,7 +100,7 @@ class HtmlWidget(HtmlBase):
                input_class=None, input_div_class=None, input_wrapper_class=None,
                                                               label_class=None):
 
-        super(HtmlWidget, self).__init__(app=app, doctype=doctype,
+        super(HtmlFormWidget, self).__init__(app=app, doctype=doctype,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
                 cloth=cloth, cloth_parser=cloth_parser, polymorphic=polymorphic,
                                                           hier_delim=hier_delim)
@@ -122,7 +122,7 @@ class HtmlWidget(HtmlBase):
         self.label_class = label_class
 
     def to_subprot(self, ctx, cls, inst, parent, name, subprot, **kwargs):
-        if isinstance(subprot, HtmlWidget):
+        if isinstance(subprot, HtmlFormWidget):
             if subprot.input_class is None:
                 subprot.input_class = self.input_class
 
@@ -132,7 +132,7 @@ class HtmlWidget(HtmlBase):
             if subprot.label_class is None:
                 subprot.label_class = self.label_class
 
-        return super(HtmlWidget, self).to_subprot(ctx, cls, inst, parent, name,
+        return super(HtmlFormWidget, self).to_subprot(ctx, cls, inst, parent, name,
                                                               subprot, **kwargs)
 
     @staticmethod
@@ -191,9 +191,9 @@ class HtmlWidget(HtmlBase):
                 label_attrib['class'] = self.label_class
 
             retval = E.label(self.trc(cls, ctx.locale, name), **label_attrib)
-            if wrap_label is HtmlWidget.WRAP_FORWARD:
+            if wrap_label is HtmlFormWidget.WRAP_FORWARD:
                 retval = E.div(retval, input, **attrib)
-            elif wrap_label is HtmlWidget.WRAP_REVERSED:
+            elif wrap_label is HtmlFormWidget.WRAP_REVERSED:
                 retval = E.div(input, retval, **attrib)
             elif wrap_label is None:
                 pass
@@ -426,7 +426,7 @@ class HtmlWidget(HtmlBase):
         return self.to_parent(ctx, newcls, inst, parent, name, **kwargs)
 
 
-class ConditionalRendererBase(HtmlWidget):
+class ConditionalRendererBase(HtmlFormWidget):
     def __init__(self):
         super(ConditionalRendererBase, self).__init__()
 
@@ -461,7 +461,7 @@ class ConditionalRendererBase(HtmlWidget):
 
 
 # TODO: Make label optional
-class PasswordWidget(HtmlWidget):
+class PasswordWidget(HtmlFormWidget):
     def __init__(self, *args, **kwargs):
         super(PasswordWidget, self).__init__(*args, **kwargs)
 
@@ -476,7 +476,7 @@ class PasswordWidget(HtmlWidget):
         parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
 
 
-class HrefWidget(HtmlWidget):
+class HrefWidget(HtmlFormWidget):
     supported_types = (Unicode, Decimal)
 
     def __init__(self, href=None, hidden_input=False, label=True, quote=None,
@@ -594,7 +594,7 @@ class ParentHrefWidget(HrefWidget):
                                                                       **kwargs)
 
 
-class SimpleRenderWidget(HtmlWidget):
+class SimpleRenderWidget(HtmlFormWidget):
     def __init__(self, label=True, type=None, hidden=False, elt=None):
         super(SimpleRenderWidget, self).__init__(label=label)
 
@@ -704,7 +704,7 @@ class SimpleRenderWidget(HtmlWidget):
             self._gen_input_hidden(cls, inst, parent, name, **kwargs)
 
 
-class ComplexRenderWidget(HtmlWidget):
+class ComplexRenderWidget(HtmlFormWidget):
     type_attrs = dict(validate_freq=False)
 
     def __init__(self, text_field=None, id_field=None, type=None,
