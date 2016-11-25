@@ -79,7 +79,7 @@ def gen_component(cls, method_name, component_name, DetailScreen,
         'paper-dropdown-menu',
         'paper-dropdown-menu/paper-dropdown-menu-light',
 
-        HtmlImport(href='neurons-date-picker.html'),
+        HtmlImport(href='DateComponentScreen.definition'),
     ]
 
     styles = []
@@ -125,6 +125,5 @@ def TComponentGeneratorService(cls, prefix=None, locale=None,
 
         ComponentGeneratorService.event_manager \
                                        .add_listener('method_call', _fix_locale)
-
 
     return ComponentGeneratorService
