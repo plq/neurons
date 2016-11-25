@@ -31,6 +31,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+from datetime import date
+
 from lxml.html.builder import E
 
 from neurons.form import HtmlForm
@@ -89,3 +91,32 @@ class PolymerForm(HtmlForm):
         div = self._wrap_with_label(ctx, cls, name, elt, **kwargs)
         parent.write(div)
 
+    def time_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls_attrs = self.get_cls_attrs(cls)
+        elt = self._gen_input(ctx, cls, inst, name, cls_attrs, **kwargs)
+        elt.attrib['type'] = 'text'
+
+        if cls_attrs.format is None:
+            data_format = 'HH:MM:SS'
+        else:
+            data_format = cls_attrs.format.replace('%H', 'HH') \
+                .replace('%M', 'MM') \
+                .replace('%S', 'SS')
+
+        div = self._wrap_with_label(ctx, cls, name, elt, **kwargs)
+        parent.write(div)
+
+    def datetime_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls_attrs = self.get_cls_attrs(cls)
+        elt = self._gen_input(ctx, cls, None, name, cls_attrs, **kwargs)
+        elt.attrib['type'] = 'text'
+
+        dt_format = self._get_datetime_format(cls_attrs)
+        if dt_format is None:
+            date_format, time_format = 'yy-mm-dd', 'HH:mm:ss'
+        else:
+            date_format, time_format = \
+                self._split_datetime_format(cls_attrs.dt_format)
+
+        div = self._wrap_with_label(ctx, cls, name, elt, **kwargs)
+        parent.write(div)
