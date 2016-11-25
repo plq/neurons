@@ -31,14 +31,12 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-import json
 
 from neurons.polymer.comp.date import T_DATE
 from neurons.polymer.model import PolymerComponent
-from neurons.polymer.service import gen_component_imports
 
-from spyne import ComplexModel, Unicode, SelfReference
-from spyne import mrpc
+from spyne import ComplexModel, Unicode, SelfReference, mrpc
+
 
 __comp_name__ = 'neurons-date-picker'
 
@@ -56,28 +54,14 @@ class DateComponentScreen(PolymerComponent):
 
     @mrpc(_returns=SelfReference, _body_style='bare')
     def definition(self, ctx):
-        initial_data = {
-            "is": __comp_name__
-        }
-
-        deps = [
-            'polymer',
-
-            'paper-date-picker',
-            'paper-dialog',
-            'paper-button',
-        ]
-
         styles = []
 
         retval = DateComponentScreen(dom_module_id=__comp_name__,
             main=DateComponent(
                 label_ok="OK",
-                label_cancel="Cancel"
-            )
+                label_cancel="Cancel",
+            ),
         )
-        retval.definition = "Polymer({})".format(json.dumps(initial_data))
-        retval.dependencies = gen_component_imports(deps)
 
         if len(styles) > 0:
             retval.style = '\n'.join(styles)
