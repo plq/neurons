@@ -709,7 +709,7 @@ class ComplexRenderWidget(HtmlFormWidget):
 
     def __init__(self, text_field=None, id_field=None, type=None,
                              hidden_fields=None, label=True, null_str='[NULL]'):
-        """A widget that renders complex objects as links.
+        """A widget base that renders complex objects as simple html elements.
 
         :param text_field: The name of the field containing a human readable
             string that represents the object.
