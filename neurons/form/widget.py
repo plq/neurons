@@ -1182,7 +1182,7 @@ class MultiSelectWidget(SelectWidgetBase):
         if issubclass(cls, Array):
             cls = next(iter(cls._type_info.values()))
 
-        super(MultiSelectWidget, self).to_parent_impl(ctx, cls, inst,
+        super(MultiSelectWidget, self).cm_to_parent_impl(ctx, cls, inst,
                                                          parent, name, **kwargs)
 
     def _write_select(self, ctx, cls, inst, parent, name, fti, **kwargs):
