@@ -347,6 +347,7 @@ class StaticFileServer(HttpApplication):
 
 class HttpListener(Listener):
     _type_info = [
+        ('debug', Boolean(default=True)),
         ('static_dir', Unicode),
         ('_subapps', Array(HttpApplication, sub_name='subapps')),
     ]
@@ -417,7 +418,9 @@ class HttpListener(Listener):
             if subapp.url != '':
                 root.putChild(subapp.url, subapp.gen_resource())
 
-        return Site(root)
+        retval = Site(root)
+        retval.displayTracebacks = self.debug
+        return retval
 
     @property
     def _subapps(self):
