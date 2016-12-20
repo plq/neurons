@@ -861,8 +861,27 @@ class Daemon(ComplexModel):
 
         return self
 
+    def boot_message(self):
+        import spyne
+        import neurons
+        import twisted
+        import sqlalchemy
+
+        logging.info("Booting daemon '%s'. We have spyne-%s, neurons-%s, "
+                     "sqlalchemy-%s and twisted-%s.",
+                        self.name, B(spyne.__version__), B(neurons.__version__),
+                          B(sqlalchemy.__version__), B(twisted.version.short()))
+
+    @staticmethod
+    def hello_darkness_my_old_friend():
+        logger.info("Quis custodiet ipsos custodes?")
+
     def pre_logging_apply(self):
-        pass
+        logging.info("Root logger level = %s",
+                                    LOGLEVEL_STR_MAP[logging.getLogger().level])
+
+        self.hello_darkness_my_old_friend()
+        self.boot_message()
 
     def pre_limits_apply(self):
         pass
@@ -1158,32 +1177,11 @@ class ServiceDaemon(Daemon):
         logging.info("Sublogger level initialized for '%s' as %s", ns,
                                                         LOGLEVEL_STR_MAP[level])
 
-    @staticmethod
-    def hello_darkness_my_old_friend():
-        logger.info("Quis custodiet ipsos custodes?")
-
-    def boot_message(self):
-        import spyne
-        import neurons
-        import twisted
-        import sqlalchemy
-
-        logging.info("Booting daemon '%s'. We have spyne-%s, neurons-%s, "
-                     "sqlalchemy-%s and twisted-%s.",
-                        self.name, B(spyne.__version__), B(neurons.__version__),
-                          B(sqlalchemy.__version__), B(twisted.version.short()))
-
     def pre_logging_apply(self):
         if self.log_rpc or self.log_queries or self.log_results or \
                     self.log_model or self.log_interface or self.log_rpc or \
                                                                 self.log_cloth:
             logging.getLogger().setLevel(logging.DEBUG)
-
-        logging.info("Root logger level = %s",
-                                    LOGLEVEL_STR_MAP[logging.getLogger().level])
-
-        self.hello_darkness_my_old_friend()
-        self.boot_message()
 
         if self.log_model:
             self._set_log_level('spyne.model', logging.DEBUG)
