@@ -94,6 +94,7 @@ class HtmlFormWidget(HtmlBase):
     HTML_TEXTAREA = 'textarea'
     HTML_SELECT = 'select'
     HTML_OPTION = 'option'
+    HTML_CHECKBOX_TAG = 'input'
 
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
                 cloth=None, cloth_parser=None, polymorphic=True, hier_delim='.',
@@ -271,10 +272,12 @@ class HtmlFormWidget(HtmlBase):
 
         return elt_attrs
 
-    def _gen_input(self, ctx, cls, inst, name, cls_attrs, **kwargs):
+    def _gen_input(self, ctx, cls, inst, name, cls_attrs, tag=None, **kwargs):
         elt_attrs = self._gen_input_attrs(ctx, cls, inst, name, cls_attrs,
                                                                        **kwargs)
-        tag = self.HTML_INPUT
+        if tag is None:
+            tag = self.HTML_INPUT
+
         values = cls_attrs.values
 
         if values is not None and len(values) > 0:

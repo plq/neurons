@@ -31,6 +31,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+import logging
+logger = logging.getLogger(__name__)
+
 from datetime import date
 
 from lxml.html.builder import E
@@ -45,6 +48,7 @@ class PolymerForm(HtmlForm):
     HTML_OPTION_PARENTS = 'paper-listbox', {'class': 'dropdown-content'}
     HTML_SELECT = 'paper-dropdown-menu'
     HTML_TEXTAREA = 'paper-textarea'
+    HTML_CHECKBOX_TAG = 'paper-checkbox'
 
     def _gen_options(self, ctx, cls, inst, name, cls_attrs, elt, **kwargs):
         del elt.attrib['name']
@@ -132,3 +136,10 @@ class PolymerForm(HtmlForm):
 
         div = self._wrap_with_label(ctx, cls, name, elt, **kwargs)
         parent.write(div)
+
+    def boolean_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        ret = self._gen_boolean_widget(ctx, cls, inst, parent, name, **kwargs)
+        del ret.attrib['type']
+        ret.text = ret.attrib['label']
+        del ret.attrib['label']
+        parent.write(ret)
