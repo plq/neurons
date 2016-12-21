@@ -36,18 +36,17 @@ logger = logging.getLogger(__name__)
 
 import re
 
-from lxml.builder import E
-
 from slimit.parser import Parser
 
 from spyne import ServiceBase, rpc, Unicode
+from spyne.protocol.html import HtmlCloth
 
-from .model import PolymerComponent, PolymerScreen, HtmlImport
+from .model import PolymerComponent, PolymerScreen, HtmlImport, AjaxGetter
 
 
-def _to_snake_case(name):
-    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1-\2', name)
-    return re.sub('([a-z0-9])([A-Z])', r'\1-\2', s1).lower()
+def _to_snake_case(name, delim='-'):
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1%s\2' % delim, name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1%s\2' % delim, s1).lower()
 
 
 def gen_component_imports(deps):
@@ -69,15 +68,24 @@ def gen_component_imports(deps):
 
 POLYMER_DEFN_TEMPLATE = """
 Polymer({
-    "is": "blabla",
-    "process_response": function(data) {
+    is: "blabla",
+    properties: {
+
+    },
+    attached: function() {
+        var children = this.getEffectiveChildren();
+        for (var i = 0, l = children.length; i < l; ++i) {
+
+        }
+    },
+    process_getter_response: function(data) {
         var fields = ["foo", {"bar": ["subfoo"]}];
 
         var curinst = data;
         for (var f in fields) {
             this.$[f].value = data[f];
         }
-    },
+    }
 })
 """
 
@@ -88,18 +96,28 @@ def gen_polymer_defn(component_name, cls):
 
     entries = tree.children()[0].children()[0].children()[1].children()
 
-    assert entries[0].left.value == '"is"'
-    entries[0].right.value = '"{}"'.format(component_name)
+    # set tag name
+    e0 = entries[0]
+    assert e0.left.value == 'is'
+    e0.right.value = '"{}"'.format(component_name)
 
-    assert entries[1].left.value == '"process_response"'
-    # entries[1].right.value = '"%s"' % component_name
+    # add tag properties
+    e1 = entries[1]
+    assert e1.left.value == 'properties'
+
+    getter_in_cls = _get_getter_input(cls)
+    getter_fti = getter_in_cls.get_flat_type_info(getter_in_cls)
+    for k, v in getter_fti.items():
+        print(k, v)
+
+    # write getter handler
+    e3 = entries[3]
+    assert e3.left.value == 'process_getter_response'
 
     return tree.to_ecma()
 
 
-
-def gen_component(cls, method_name, component_name, DetailScreen,
-                                                               gen_css_imports):
+def gen_component(cls, component_name, DetailScreen, gen_css_imports):
     deps = [
         'polymer',
 
@@ -123,8 +141,12 @@ def gen_component(cls, method_name, component_name, DetailScreen,
         styles.append('@import url("/static/screen/{}.css")'
             .format(component_name))
 
+    # FIXME: stop hardcoding /api
+    getter_url = "/api/{}.get".format(cls.get_type_name())
+
     retval = DetailScreen(
         main=cls(),
+        getter=AjaxGetter(url=getter_url),
         dom_module_id=component_name,
         definition=gen_polymer_defn(component_name, cls),
         dependencies=gen_component_imports(deps),
@@ -154,23 +176,33 @@ def TComponentGeneratorService(cls, prefix=None, locale=None,
         @rpc(Unicode(6), _returns=DetailScreen, _body_style='out_bare',
             _in_message_name=method_name,
             _internal_key_suffix='_' + component_name)
-        def _gen_component(self, locale):
+        def _gen_component(ctx, locale):
             if locale is not None:
                 ctx.locale = locale
-                logger.debug("Locale override local.")
-            return gen_component(cls, method_name, component_name, DetailScreen,
+                logger.debug("Locale overridden to %s locally.", locale)
+            return gen_component(cls, component_name, DetailScreen,
                                                                 gen_css_imports)
 
     if locale is not None:
         def _fix_locale(ctx):
             if ctx.locale is None:
                 ctx.locale = 'tr_TR'
-                logger.debug("Locale override generic.")
+                logger.debug("Locale overridden to %s.", ctx.locale)
 
         ComponentGeneratorService.event_manager \
                                        .add_listener('method_call', _fix_locale)
 
     return ComponentGeneratorService
+
+
+def _get_getter_input(cls):
+    try:
+        getter_descriptor = cls.Attributes.methods['get']
+    except KeyError:
+        raise Exception("%r needs a getter", cls)
+
+    return getter_descriptor.in_message
+
 
 
 def TScreenGeneratorService(cls, prefix=None):
@@ -182,14 +214,22 @@ def TScreenGeneratorService(cls, prefix=None):
 
     method_name = component_name + ".html"
 
+    getter_in_cls = _get_getter_input(cls)
+
+    class DetailScreen(PolymerScreen):
+        main = getter_in_cls.customize(
+            protocol=HtmlCloth(),
+            sub_name=component_name,
+        )
+
     class ScreenGeneratorService(ServiceBase):
         @rpc(Unicode(6), _returns=PolymerScreen, _body_style='out_bare',
             _in_message_name=method_name,
             _internal_key_suffix='_' + component_name)
-        def _gen_screen(self, locale):
-            retval = PolymerScreen(
+        def _gen_screen(ctx, locale):
+            retval = DetailScreen(
                 title=type_name,
-                element=E(component_name),
+                main=getter_in_cls(),
             )
 
             if locale is None:

@@ -31,21 +31,25 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from spyne import Unicode, ComplexModel, XmlAttribute, Array, AnyHtml
+from spyne import Unicode, ComplexModel, XmlAttribute, Array, AnyHtml, AnyUri
 
 
 class HtmlImport(ComplexModel):
     href = XmlAttribute(Unicode)
 
 
+class AjaxGetter(ComplexModel):
+    url = XmlAttribute(AnyUri)
+
+
 class PolymerComponent(ComplexModel):
     style = Unicode
+    getter = AjaxGetter
     definition = Unicode
     dependencies = Array(HtmlImport, wrapped=False)
     dom_module_id = Unicode(sub_name="id")
 
 
 class PolymerScreen(ComplexModel):
-    element = AnyHtml
     dependencies = Array(HtmlImport, wrapped=False)
     title = Unicode
