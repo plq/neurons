@@ -35,9 +35,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 import re
-import json
 
 from lxml.builder import E
+
+from slimit.parser import Parser
 
 from spyne import ServiceBase, rpc, Unicode
 
@@ -66,12 +67,39 @@ def gen_component_imports(deps):
             )
 
 
+POLYMER_DEFN_TEMPLATE = """
+Polymer({
+    "is": "blabla",
+    "process_response": function(data) {
+        var fields = ["foo", {"bar": ["subfoo"]}];
+
+        var curinst = data;
+        for (var f in fields) {
+            this.$[f].value = data[f];
+        }
+    },
+})
+"""
+
+
+def gen_polymer_defn(component_name, cls):
+    parser = Parser()
+    tree = parser.parse(POLYMER_DEFN_TEMPLATE)
+
+    entries = tree.children()[0].children()[0].children()[1].children()
+
+    assert entries[0].left.value == '"is"'
+    entries[0].right.value = '"{}"'.format(component_name)
+
+    assert entries[1].left.value == '"process_response"'
+    # entries[1].right.value = '"%s"' % component_name
+
+    return tree.to_ecma()
+
+
+
 def gen_component(cls, method_name, component_name, DetailScreen,
                                                                gen_css_imports):
-    initial_data = {
-        "is": component_name
-    }
-
     deps = [
         'polymer',
 
@@ -95,9 +123,12 @@ def gen_component(cls, method_name, component_name, DetailScreen,
         styles.append('@import url("/static/screen/{}.css")'
             .format(component_name))
 
-    retval = DetailScreen(dom_module_id=component_name, main=cls())
-    retval.definition = "Polymer({})".format(json.dumps(initial_data))
-    retval.dependencies = gen_component_imports(deps)
+    retval = DetailScreen(
+        main=cls(),
+        dom_module_id=component_name,
+        definition=gen_polymer_defn(component_name, cls),
+        dependencies=gen_component_imports(deps),
+    )
 
     if len(styles) > 0:
         retval.style = '\n'.join(styles)
