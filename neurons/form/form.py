@@ -161,42 +161,17 @@ class HtmlFormRoot(HtmlFormWidget):
 
         # if we are already in a form, don't open a <form> tag
         if not getattr(ctx.outprot_ctx, 'in_form', False):
-            cls_attrs = self.get_cls_attrs(cls)
-
             ctx.outprot_ctx.in_form = True
 
             if not (len(ctx.outprot_ctx.prot_stack) == 1 and
                               isinstance(ctx.protocol.prot_stack[0], HtmlForm)):
                 name = ''
 
-            attrib = dict(method=self.method)
-            if self.method == 'POST':
-                attrib['enctype'] = "multipart/form-data"
-
-            if hasattr(ctx.protocol, 'form_action'):
-                fa = ctx.protocol.form_action
-                attrib['action'] = fa
-                logger.debug("Set form action to '%s' from ctx", fa)
-
-            elif cls_attrs.form_action:
-                fa = cls_attrs.form_action
-                attrib['action'] = fa
-                logger.debug("Set form action to '%s' from cls_attrs", fa)
-
-            elif self.action is not None:
-                fa = self.action
-                attrib['action'] = fa
-                logger.debug("Set form action to '%s' from protocol", fa)
-
-            elif isinstance(ctx.transport, HttpTransportContext):
-                fa = ctx.transport.get_path()
-                attrib['action'] = fa
-                logger.debug("Set form action to '%s' from request path", fa)
-
+            attrib = self._gen_form_attrib(ctx, cls)
             self.event_manager.fire_event("before_form", ctx, cls, inst, parent,
                                                   name, attrib=attrib, **kwargs)
 
-            with parent.element('form', attrib=attrib):
+            with parent.element(self.HTML_FORM, attrib=attrib):
                 ret = super(HtmlFormRoot, self).start_to_parent(ctx, cls, inst,
                                                          parent, name, **kwargs)
                 if isgenerator(ret):
@@ -239,6 +214,34 @@ class HtmlFormRoot(HtmlFormWidget):
                     except StopIteration:
                         pass
 
+    def _gen_form_attrib(self, ctx, cls):
+        cls_attrs = self.get_cls_attrs(cls)
+
+        attrib = dict(method=self.method)
+        if self.method == 'POST':
+            attrib['enctype'] = "multipart/form-data"
+
+        if hasattr(ctx.protocol, 'form_action'):
+            fa = ctx.protocol.form_action
+            attrib['action'] = fa
+            logger.debug("Set form action to '%s' from ctx", fa)
+
+        elif cls_attrs.form_action:
+            fa = cls_attrs.form_action
+            attrib['action'] = fa
+            logger.debug("Set form action to '%s' from cls_attrs", fa)
+
+        elif self.action is not None:
+            fa = self.action
+            attrib['action'] = fa
+            logger.debug("Set form action to '%s' from protocol", fa)
+
+        elif isinstance(ctx.transport, HttpTransportContext):
+            fa = ctx.transport.get_path()
+            attrib['action'] = fa
+            logger.debug("Set form action to '%s' from request path", fa)
+
+        return attrib
 
 class HtmlForm(HtmlFormRoot):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
