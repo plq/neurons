@@ -41,7 +41,7 @@ class HtmlImport(ComplexModel):
 class PolymerComponent(ComplexModel):
     style = Unicode
     definition = Unicode
-    dependencies = HtmlImport.customize(max_occurs='unlimited')
+    dependencies = Array(HtmlImport, wrapped=False)
     dom_module_id = Unicode(sub_name="id")
 
 
