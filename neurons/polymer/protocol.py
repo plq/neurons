@@ -39,6 +39,7 @@ from neurons.form import HtmlForm
 
 
 class PolymerForm(HtmlForm):
+    HTML_FORM = 'iron-form'
     HTML_INPUT = 'paper-input'
     HTML_OPTION = 'paper-item'
     HTML_OPTION_PARENTS = 'paper-listbox', {'class': 'dropdown-content'}
@@ -68,6 +69,17 @@ class PolymerForm(HtmlForm):
         #     parent.attrib['selected'] = str(index)
 
         parent.append(E(self.HTML_OPTION, label))
+
+    def _wrap_with_label(self, ctx, cls, name, input, no_label=False,
+                                             _=HtmlForm.WRAP_FORWARD, **kwargs):
+        cls_attrs = self.get_cls_attrs(cls)
+
+        wants_no_label = cls_attrs.label is False or no_label or not self.label
+        if not wants_no_label:
+            input.attrib['label'] = self.trc(cls, ctx.locale, name)
+            input.attrib['always-float-label'] = ""
+
+        return input
 
     def date_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
