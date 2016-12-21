@@ -75,6 +75,9 @@ def gen_component(cls, method_name, component_name, DetailScreen,
     deps = [
         'polymer',
 
+        'iron-ajax',
+        'iron-form',
+
         'paper-input',
         'paper-input/paper-textarea',
 

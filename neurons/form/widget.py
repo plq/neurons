@@ -89,6 +89,7 @@ class HtmlFormWidget(HtmlBase):
     # https://www.w3.org/TR/2012/WD-html5-20121025/common-microsyntaxes.html#rules-for-parsing-floating-point-number-values
     HTML5_EPSILON = _gen_html5_epsilon()
 
+    HTML_FORM = 'form'
     HTML_INPUT = 'input'
     HTML_TEXTAREA = 'textarea'
     HTML_SELECT = 'select'
