@@ -31,6 +31,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+import logging
+logger = logging.getLogger(__name__)
+
 import re
 import json
 
@@ -114,16 +117,21 @@ def TComponentGeneratorService(cls, prefix=None, locale=None,
         main = cls
 
     class ComponentGeneratorService(ServiceBase):
-        @rpc(_returns=DetailScreen, _body_style='bare',
+        @rpc(Unicode(6), _returns=DetailScreen, _body_style='out_bare',
             _in_message_name=method_name,
             _internal_key_suffix='_' + component_name)
-        def _gen_component(self):
+        def _gen_component(self, locale):
+            if locale is not None:
+                ctx.locale = locale
+                logger.debug("Locale override local.")
             return gen_component(cls, method_name, component_name, DetailScreen,
                                                                 gen_css_imports)
 
     if locale is not None:
         def _fix_locale(ctx):
-            ctx.locale = 'tr_TR'
+            if ctx.locale is None:
+                ctx.locale = 'tr_TR'
+                logger.debug("Locale override generic.")
 
         ComponentGeneratorService.event_manager \
                                        .add_listener('method_call', _fix_locale)
