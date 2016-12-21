@@ -37,7 +37,7 @@ from spyne.protocol.http import HttpRpc
 
 from neurons.polymer.comp.date.code import DateComponentScreen
 
-from .const import T_DOM_MODULE
+from .const import T_DOM_MODULE, T_SCREEN
 
 
 # FIXME: This is a hack to add DateComponentScreen to the interface.
@@ -48,20 +48,43 @@ class _DummyService(ServiceBase):
         pass
 
 
-def gen_components_app(config, prefix, classes, locale=None,
+def gen_component_app(config, prefix, classes, locale=None,
         gen_css_imports=False):
+    from neurons.polymer.protocol import PolymerForm
     from neurons.polymer.service import TComponentGeneratorService
 
     return \
         Application(
             [_DummyService] +
             [
-                TComponentGeneratorService(cls, prefix, locale, gen_css_imports)
+                TComponentGeneratorService(
+                        cls.customize(prot=PolymerForm()),
+                                        prefix, locale, gen_css_imports)
                                                               for cls in classes
             ],
-            tns='ruzgar.web', name='Components',
+            tns='%s.comp' % config.name,
             in_protocol=HttpRpc(validator='soft'),
             out_protocol=HtmlCloth(cloth=T_DOM_MODULE,
+                                                     doctype='<!DOCTYPE html>'),
+            config=config,
+        )
+
+
+def gen_screen_app(config, prefix, classes):
+    from neurons.polymer.protocol import PolymerForm
+    from neurons.polymer.service import TScreenGeneratorService
+
+    return \
+        Application(
+            [_DummyService] +
+            [
+                TScreenGeneratorService(
+                                      cls.customize(prot=PolymerForm()), prefix)
+                for cls in classes
+            ],
+            tns='%s.scr' % config.name,
+            in_protocol=HttpRpc(validator='soft'),
+            out_protocol=HtmlCloth(cloth=T_SCREEN,
                                                      doctype='<!DOCTYPE html>'),
             config=config,
         )

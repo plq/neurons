@@ -31,7 +31,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from spyne import Unicode, ComplexModel, XmlAttribute
+from spyne import Unicode, ComplexModel, XmlAttribute, Array, AnyHtml
 
 
 class HtmlImport(ComplexModel):
@@ -43,3 +43,9 @@ class PolymerComponent(ComplexModel):
     definition = Unicode
     dependencies = HtmlImport.customize(max_occurs='unlimited')
     dom_module_id = Unicode(sub_name="id")
+
+
+class PolymerScreen(ComplexModel):
+    element = AnyHtml
+    dependencies = Array(HtmlImport, wrapped=False)
+    title = Unicode

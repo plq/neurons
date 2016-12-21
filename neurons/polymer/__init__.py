@@ -44,3 +44,12 @@ def read_cloth_file(ns, fn):
     retval.attrib['spyne-tagbag'] = ''
 
     return retval
+
+
+def read_html_document(ns, fn):
+    from lxml import html
+    from pkg_resources import resource_filename
+
+    retval = html.fromstring(open(resource_filename(ns, fn), 'rb').read())
+
+    return retval

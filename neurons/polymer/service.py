@@ -34,9 +34,11 @@
 import re
 import json
 
-from spyne import ServiceBase, rpc
+from lxml.builder import E
 
-from .model import PolymerComponent, HtmlImport
+from spyne import ServiceBase, rpc, Unicode
+
+from .model import PolymerComponent, PolymerScreen, HtmlImport
 
 
 def _to_snake_case(name):
@@ -127,3 +129,41 @@ def TComponentGeneratorService(cls, prefix=None, locale=None,
                                        .add_listener('method_call', _fix_locale)
 
     return ComponentGeneratorService
+
+
+def TScreenGeneratorService(cls, prefix=None):
+    type_name = cls.get_type_name()
+    component_name = _to_snake_case(type_name)
+
+    if prefix is not None:
+        component_name = "{}-{}".format(prefix, component_name)
+
+    method_name = component_name + ".html"
+
+    class ScreenGeneratorService(ServiceBase):
+        @rpc(Unicode(6), _returns=PolymerScreen, _body_style='out_bare',
+            _in_message_name=method_name,
+            _internal_key_suffix='_' + component_name)
+        def _gen_screen(self, locale):
+            retval = PolymerScreen(
+                title=type_name,
+                element=E(component_name),
+            )
+
+            if locale is None:
+                retval.dependencies = [
+                    HtmlImport(
+                        href="/comp/{}".format(method_name)
+                    ),
+                ]
+
+            else:
+                retval.dependencies = [
+                    HtmlImport(
+                        href="/comp/{}?locale={}".format(method_name, locale)
+                    )
+                ]
+
+            return retval
+
+    return ScreenGeneratorService

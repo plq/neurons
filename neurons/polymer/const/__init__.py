@@ -32,5 +32,8 @@
 #
 
 from neurons.polymer import read_cloth_file
+from neurons.polymer import read_html_document
 
 T_DOM_MODULE = read_cloth_file(__name__, 'dom_module.html')
+
+T_SCREEN = read_html_document(__name__, 'screen.html')
