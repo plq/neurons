@@ -97,9 +97,9 @@ class PolymerForm(HtmlForm):
         elt.attrib['type'] = 'text'
 
         if cls_attrs.format is None:
-            data_format = 'HH:MM:SS'
+            time_format = 'HH:MM:SS'
         else:
-            data_format = cls_attrs.format.replace('%H', 'HH') \
+            time_format = cls_attrs.format.replace('%H', 'HH') \
                 .replace('%M', 'MM') \
                 .replace('%S', 'SS')
 
