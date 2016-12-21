@@ -31,6 +31,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+__comp_name__ = 'neurons-date-picker'
+
+
 from neurons.polymer import read_cloth_file
 
 T_DATE = read_cloth_file(__name__, 'cloth.html')

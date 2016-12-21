@@ -31,14 +31,12 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+from . import __comp_name__
 
 from neurons.polymer.comp.date import T_DATE
 from neurons.polymer.model import PolymerComponent
 
 from spyne import ComplexModel, Unicode, SelfReference, mrpc
-
-
-__comp_name__ = 'neurons-date-picker'
 
 
 class DateComponent(ComplexModel):
