@@ -44,7 +44,7 @@ HIDE_EMPTY_COLUMNS = """neurons.hide_empty_columns = function ($table) {
 
 class Link(ComplexModel):
     href = XmlAttribute(AnyUri)
-    rel = XmlAttribute(Unicode(values=["stylesheet"]))
+    rel = XmlAttribute(Unicode(values=["stylesheet", 'import']))
 
 
 class CascadingStyleSheet(ComplexModel):
