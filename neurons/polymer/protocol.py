@@ -74,30 +74,30 @@ class PolymerForm(HtmlForm):
 
         parent.append(E(self.HTML_OPTION, label))
 
-    def _wrap_with_label(self, ctx, cls, name, input, no_label=False,
+    def _wrap_with_label(self, ctx, cls, name, input_elt, no_label=False,
                                              _=HtmlForm.WRAP_FORWARD, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
 
         wants_no_label = cls_attrs.label is False or no_label or not self.label
         if not wants_no_label:
-            input.attrib['label'] = self.trc(cls, ctx.locale, name)
-            input.attrib['always-float-label'] = ""
+            input_elt.attrib['label'] = self.trc(cls, ctx.locale, name)
+            input_elt.attrib['always-float-label'] = ""
 
-        return input
+        return input_elt
 
     def _gen_input(self, ctx, cls, inst, name, cls_attrs, **kwargs):
-        input = super(PolymerForm, self)._gen_input(ctx, cls, inst, name,
+        retval = super(PolymerForm, self)._gen_input(ctx, cls, inst, name,
                                                             cls_attrs, **kwargs)
 
         if cls_attrs.error_message is not None:
-            input.attrib['error-message'] = \
+            retval.attrib['error-message'] = \
                              self.trd(cls_attrs.error_message, ctx.locale, name)
 
         if cls_attrs.placeholder is not None:
-            input.attrib['placeholder'] = \
+            retval.attrib['placeholder'] = \
                                self.trd(cls_attrs.placeholder, ctx.locale, name)
 
-        return input
+        return retval
 
     def date_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)

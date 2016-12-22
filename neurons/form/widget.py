@@ -171,11 +171,11 @@ class HtmlFormWidget(HtmlBase):
         classes = [self.input_wrapper_class, self.selsafe(name)]
         return {'class': ' '.join(classes)}
 
-    def _wrap_with_label(self, ctx, cls, name, input, no_label=False,
+    def _wrap_with_label(self, ctx, cls, name, input_elt, no_label=False,
                                              wrap_label=WRAP_FORWARD, **kwargs):
-        input_id = input.attrib['id']
+        input_id = input_elt.attrib['id']
         if self.input_div_class is not None:
-            input = E.div(input, **{'class': self.input_div_class})
+            input_elt = E.div(input_elt, **{'class': self.input_div_class})
 
         attrib = self._gen_label_wrapper_class(ctx, cls, name)
 
@@ -183,9 +183,9 @@ class HtmlFormWidget(HtmlBase):
         wants_no_label = cls_attrs.label is False or no_label or not self.label
         if wants_no_label:
             if wrap_label is None:
-                retval = input
+                retval = input_elt
             else:
-                retval = E.div(input, **attrib)
+                retval = E.div(input_elt, **attrib)
 
         else:
             label_attrib = {'for': input_id}
@@ -194,9 +194,9 @@ class HtmlFormWidget(HtmlBase):
 
             retval = E.label(self.trc(cls, ctx.locale, name), **label_attrib)
             if wrap_label is HtmlFormWidget.WRAP_FORWARD:
-                retval = E.div(retval, input, **attrib)
+                retval = E.div(retval, input_elt, **attrib)
             elif wrap_label is HtmlFormWidget.WRAP_REVERSED:
-                retval = E.div(input, retval, **attrib)
+                retval = E.div(input_elt, retval, **attrib)
             elif wrap_label is None:
                 pass
             else:
