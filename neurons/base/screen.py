@@ -226,11 +226,15 @@ class ScreenBase(ComplexModel):
 
             self._have_namespace = True
 
+        return self
+
     def with_jquery(self):
         if not self._have_jquery:
             self.append_script_href(self.JQUERY_URL)
 
             self._have_jquery = True
+
+        return self
 
     def with_own_stylesheet(self, base='/assets/css/screen'):
         if self.links is None:
