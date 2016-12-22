@@ -201,9 +201,9 @@ class ScreenBase(ComplexModel):
         self._have_hide_empty_columns = False
         self._have_setup_datatables = False
 
-        assert ctx.protocol.screen is None, \
+        assert ctx.outprot_ctx.screen is None, \
                           "We are supposed to have only one screen per context."
-        ctx.protocol.screen = self
+        ctx.outprot_ctx.screen = self
 
     def append_script_href(self, what, type='text/javascript'):
         if self.scripts is None:
