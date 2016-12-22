@@ -153,7 +153,7 @@ class PolymerForm(HtmlForm):
         parent.write(div)
 
     def boolean_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        ret = self._gen_boolean_widget(ctx, cls, inst, parent, name, **kwargs)
+        ret = self._gen_boolean_widget(ctx, cls, inst, name, **kwargs)
         del ret.attrib['type']
         ret.text = ret.attrib['label']
         del ret.attrib['label']
