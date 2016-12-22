@@ -181,6 +181,8 @@ class ViewBase(ComplexModel):
 
 
 class ScreenBase(ComplexModel):
+    JQUERY_URL = "https://code.jquery.com/jquery-1.12.4.min.js"
+
     class Attributes(ComplexModel.Attributes):
         logged = False
 
@@ -226,8 +228,7 @@ class ScreenBase(ComplexModel):
 
     def with_jquery(self):
         if not self._have_jquery:
-            self.append_script_href(
-                                 "https://code.jquery.com/jquery-1.12.4.min.js")
+            self.append_script_href(self.JQUERY_URL)
 
             self._have_jquery = True
 
