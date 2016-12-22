@@ -76,9 +76,10 @@ Polymer({
     },
     attached: function() {
         var children = this.getEffectiveChildren();
-        for (var i = 0, l = children.length; i < l; ++i) {
-
-        }
+        var retval = window.neurons.xml_to_jsobj(children);
+        var getter = this.$.ajax_getter;
+        getter.params = retval;
+        getter.generateRequest();
     },
     process_getter_response: function(data) {
         var fields = ["foo", {"bar": ["subfoo"]}];
