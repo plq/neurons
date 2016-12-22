@@ -85,6 +85,20 @@ class PolymerForm(HtmlForm):
 
         return input
 
+    def _gen_input(self, ctx, cls, inst, name, cls_attrs, **kwargs):
+        input = super(PolymerForm, self)._gen_input(ctx, cls, inst, name,
+                                                            cls_attrs, **kwargs)
+
+        if cls_attrs.error_message is not None:
+            input.attrib['error-message'] = \
+                             self.trd(cls_attrs.error_message, ctx.locale, name)
+
+        if cls_attrs.placeholder is not None:
+            input.attrib['placeholder'] = \
+                               self.trd(cls_attrs.placeholder, ctx.locale, name)
+
+        return input
+
     def date_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
 
