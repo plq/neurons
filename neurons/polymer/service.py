@@ -41,7 +41,9 @@ from slimit.parser import Parser
 from spyne import ServiceBase, rpc, Unicode, ComplexModel
 from spyne.protocol.html import HtmlCloth
 
-from .model import PolymerComponent, PolymerScreen, HtmlImport, AjaxGetter
+from neurons.base.screen import Link
+
+from .model import PolymerComponent, HtmlImport, AjaxGetter, PolymerScreen
 
 
 def _to_snake_case(name, delim='-'):
@@ -227,29 +229,33 @@ def TScreenGeneratorService(cls, prefix=None):
         )
 
     class ScreenGeneratorService(ServiceBase):
-        @rpc(getter_in_cls, ScreenParams, _returns=PolymerScreen, _body_style='out_bare',
-            _in_message_name=method_name,
+        @rpc(getter_in_cls, ScreenParams, _returns=PolymerScreen,
+            _body_style='out_bare', _in_message_name=method_name,
             _internal_key_suffix='_' + component_name)
         def _gen_screen(ctx, query, params):
             if query is None:
                 query = getter_in_cls()
 
-            retval = DetailScreen(
-                title=type_name,
-                main=query
-            )
+            retval = DetailScreen(ctx, title=type_name, main=query) \
+                .with_jquery() \
+                .with_xml_to_jsobj()
+
+            if retval.links is None:
+                retval.links = []
 
             if params is not None and params.locale is not None:
-                retval.dependencies = [
-                    HtmlImport(
+                retval.links = [
+                    Link(
+                        rel='import',
                         href="/comp/{}?locale={}".format(method_name,
                                                                   params.locale)
                     )
                 ]
 
             else:
-                retval.dependencies = [
-                    HtmlImport(
+                retval.links = [
+                    Link(
+                        rel='import',
                         href="/comp/{}".format(method_name)
                     ),
                 ]

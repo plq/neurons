@@ -37,7 +37,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
 
   <title spyne-id="title"></title>
-  <meta name="description" content="Arskom Rüzgar (Web Entegre)">
+  <meta name="description" spyne-attr="description">
 
   <link rel="icon" href="/static/images/favicon.ico">
 
@@ -49,12 +49,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
   <!-- Add to homescreen for Chrome on Android. Fallback for manifest.json -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="application-name" content="Rüzgar">
+  <meta name="application-name" spyne-attr="application_name">
 
   <!-- Add to homescreen for Safari on iOS -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Arskom Rüzgar">
+  <meta name="apple-mobile-web-app-title" spyne-attr="apple_mobile_webapp_title">
 
   <!-- Homescreen icons -->
   <link rel="apple-touch-icon" href="/static/images/manifest/icon-48x48.png">
@@ -68,7 +68,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   <meta name="msapplication-TileColor" content="#3f51b5">
   <meta name="msapplication-tap-highlight" content="no">
 
-  <script src="/static/jquery-1.12.4.min.js"></script>
+  <script spyne-id="scripts" spyne-data="data"></script>
 
   <script>
     // Setup Polymer options
@@ -116,7 +116,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     }
   </script>
 
-  <link rel="import" spyne-id="dependencies">
+  <link spyne-id="links">
 
   <style>
     body {

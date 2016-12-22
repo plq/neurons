@@ -188,6 +188,15 @@ class ScreenBase(ComplexModel):
 
     datatables = None
 
+    title = Unicode(default='Neurons Screen')
+
+    # meta properties
+    description = Unicode(sub_name='content', default='Neurons Application')
+    application_name = Unicode(sub_name='content',
+                                                  default='Neurons Application')
+    apple_mobile_webapp_title = Unicode(sub_name='content',
+                                                          default='Neurons App')
+
     links = Array(Link, wrapped=False)
     styles = Array(CascadingStyleSheet, wrapped=False)
     scripts = Array(ScriptElement, wrapped=False)
