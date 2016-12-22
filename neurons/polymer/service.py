@@ -38,7 +38,7 @@ import re
 
 from slimit.parser import Parser
 
-from spyne import ServiceBase, rpc, Unicode
+from spyne import ServiceBase, rpc, Unicode, ComplexModel
 from spyne.protocol.html import HtmlCloth
 
 from .model import PolymerComponent, PolymerScreen, HtmlImport, AjaxGetter
@@ -205,6 +205,9 @@ def _get_getter_input(cls):
     return getter_descriptor.in_message
 
 
+class ScreenParams(ComplexModel):
+    locale = Unicode(6)
+
 
 def TScreenGeneratorService(cls, prefix=None):
     type_name = cls.get_type_name()
@@ -224,27 +227,31 @@ def TScreenGeneratorService(cls, prefix=None):
         )
 
     class ScreenGeneratorService(ServiceBase):
-        @rpc(Unicode(6), _returns=PolymerScreen, _body_style='out_bare',
+        @rpc(getter_in_cls, ScreenParams, _returns=PolymerScreen, _body_style='out_bare',
             _in_message_name=method_name,
             _internal_key_suffix='_' + component_name)
-        def _gen_screen(ctx, locale):
+        def _gen_screen(ctx, query, params):
+            if query is None:
+                query = getter_in_cls()
+
             retval = DetailScreen(
                 title=type_name,
-                main=getter_in_cls(),
+                main=query
             )
 
-            if locale is None:
+            if params is not None and params.locale is not None:
                 retval.dependencies = [
                     HtmlImport(
-                        href="/comp/{}".format(method_name)
-                    ),
+                        href="/comp/{}?locale={}".format(method_name,
+                                                                  params.locale)
+                    )
                 ]
 
             else:
                 retval.dependencies = [
                     HtmlImport(
-                        href="/comp/{}?locale={}".format(method_name, locale)
-                    )
+                        href="/comp/{}".format(method_name)
+                    ),
                 ]
 
             return retval
