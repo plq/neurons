@@ -128,6 +128,7 @@ class PolymerForm(HtmlForm):
 
         if cls_attrs.format is None:
             time_format = 'HH:MM:SS'
+
         else:
             time_format = cls_attrs.format.replace('%H', 'HH') \
                 .replace('%M', 'MM') \

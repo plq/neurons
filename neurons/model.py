@@ -62,7 +62,8 @@ def respawn(cls, ctx=None):
 
         db = ctx.app.config.stores['sql_main'].itself
         with closing(db.Session()) as session:
-            return session.query(cls).with_polymorphic('*') \
+            return session.query(cls) \
+                .with_polymorphic('*') \
                 .filter_by(**filters) \
                 .one()
 
