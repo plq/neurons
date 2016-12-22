@@ -58,47 +58,39 @@ window.neurons.xml_to_jsobj = function (children, array_tags) {
         return Object.prototype.toString.apply(o) === '[object Array]';
     }
 
-    function parse_node(xml_node, result) {
-        if (xml_node.nodeName == "#text" && xml_node.nodeValue.trim() == "") {
+    function parse_node(xml_node, result, parnames) {
+        if (xml_node.nodeName == "#text") {
+            var str = xml_node.nodeValue.trim();
+            if (str != "") {
+                result[parnames.join('.')] = str;
+            }
+
             return;
         }
 
         var json_node = {};
-        var existing = result[xml_node.nodeName.toLowerCase()];
-        if (existing) {
-            if (!is_array(existing)) {
-                result[xml_node.nodeName.toLowerCase()] = [existing, json_node];
-            }
-            else {
-                result[xml_node.nodeName.toLowerCase()].push(json_node);
-            }
-        }
-        else {
-            if (array_tags && array_tags.indexOf(xml_node.nodeName) != -1) {
-                result[xml_node.nodeName.toLowerCase()] = [json_node];
-            }
-            else {
-                result[xml_node.nodeName.toLowerCase()] = json_node;
-            }
-        }
+        var curname = xml_node.nodeName.toLowerCase();
 
         if (xml_node.attributes) {
             var length = xml_node.attributes.length;
             for (var i = 0; i < length; i++) {
                 var attribute = xml_node.attributes[i];
-                json_node[attribute.nodeName.toLowerCase()] = attribute.nodeValue;
+                var attrname = attribute.nodeName.toLowerCase();
+                var names = parnames.concat([attrname]);
+                json_node[names.join('.')] = attribute.nodeValue;
             }
         }
 
         var length = xml_node.childNodes.length;
         for (var i = 0; i < length; i++) {
-            parse_node(xml_node.childNodes[i], json_node);
+            parse_node(xml_node.childNodes[i], result,
+                                                    parnames.concat([curname]));
         }
     }
 
     var result = {};
     for (var i = 0, l = children.length; i < l; ++i) {
-        parse_node(children[i], result);
+        parse_node(children[i], result, []);
     }
 
     return result;
