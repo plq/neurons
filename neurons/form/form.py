@@ -89,7 +89,7 @@ class Tab(namedtuple('Tab', 'legend attrib index htmlid')):
 
 def _gen_array_js(parent, key):
     parent.write(E.script("""
-$(function() {
+if (window.$) $(function() {
     var field_name = "." + "%(field_name)s";
 
     var add = function() {
@@ -242,6 +242,7 @@ class HtmlFormRoot(HtmlFormWidget):
             logger.debug("Set form action to '%s' from request path", fa)
 
         return attrib
+
 
 class HtmlForm(HtmlFormRoot):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
