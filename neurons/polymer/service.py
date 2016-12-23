@@ -74,20 +74,37 @@ Polymer({
     properties: {
 
     },
+    listeners: {
+      'iron-form-element-register': '_register_element',
+    },
+    created: function() {
+        this._elements = {};
+    },
     attached: function() {
         var children = this.getEffectiveChildren();
-        var retval = window.neurons.xml_to_jsobj(children);
+        var retval = neurons.xml_to_jsobj(children);
         var getter = this.$.ajax_getter;
         getter.params = retval;
         getter.generateRequest();
     },
-    process_getter_response: function(data) {
-        var fields = ["foo", {"bar": ["subfoo"]}];
+    process_getter_response: function(e, req) {
+        var resp = req.response;
+        var form = this.$.form;
 
-        var curinst = data;
-        for (var f in fields) {
-            this.$[f].value = data[f];
+        for (var k in resp) {
+            var elt = this._elements[k];
+            if (! elt) {
+                continue;
+            }
+
+            elt.value = resp[k];
         }
+
+        if (window.console) console.log(resp);
+    },
+    _register_element: function(e) {
+        var elt = Polymer.dom(e).rootTarget;
+        this._elements[elt.getAttribute('name')] = elt;
     }
 })
 """
@@ -112,10 +129,6 @@ def gen_polymer_defn(component_name, cls):
     getter_fti = getter_in_cls.get_flat_type_info(getter_in_cls)
     for k, v in getter_fti.items():
         print(k, v)
-
-    # write getter handler
-    e3 = entries[3]
-    assert e3.left.value == 'process_getter_response'
 
     return tree.to_ecma()
 
