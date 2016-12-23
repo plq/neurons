@@ -42,13 +42,24 @@ from neurons.form import HtmlForm
 
 
 class PolymerForm(HtmlForm):
-    HTML_FORM = 'iron-form'
     HTML_INPUT = 'paper-input'
     HTML_OPTION = 'paper-item'
     HTML_OPTION_PARENTS = 'paper-listbox', {'class': 'dropdown-content'}
     HTML_SELECT = 'paper-dropdown-menu'
     HTML_TEXTAREA = 'paper-textarea'
     HTML_CHECKBOX_TAG = 'paper-checkbox'
+
+    def _gen_form_attrib(self, ctx, cls):
+        attrib = super(PolymerForm, self)._gen_form_attrib(ctx, cls)
+
+        # attrib['id'] = attrib['action'] \
+        #                        .replace('/', '_').replace('.', '_').strip('_')
+
+        attrib['id'] = 'form'
+        attrib['is'] = 'iron-form'
+        attrib['content-type'] = "application/json"
+
+        return attrib
 
     def _gen_options(self, ctx, cls, inst, name, cls_attrs, elt, **kwargs):
         del elt.attrib['name']
