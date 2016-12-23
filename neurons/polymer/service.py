@@ -132,6 +132,7 @@ def gen_component(cls, component_name, DetailScreen, gen_css_imports):
         'paper-checkbox',
 
         # required for dropdown menu
+        'paper-item',
         'paper-listbox',
 
         'paper-dropdown-menu',
