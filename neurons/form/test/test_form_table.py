@@ -56,7 +56,7 @@ def _test_type(cls, inst, prot_cls=HtmlFormTable):
         def some_call(ctx):
             return inst
 
-    prot = prot_cls(cloth=T_TEST, doctype='<!DOCTYPE html>')
+    prot = prot_cls(cloth=T_TEST, doctype='<!DOCTYPE html>', label=False)
     app = Application([SomeService], 'some_ns', out_protocol=prot)
 
     null = NullServer(app, ostr=True)
@@ -101,10 +101,10 @@ class TestFormTable(unittest.TestCase):
         elt = _test_type(Array(SomeObject), v)
 
         assert elt.xpath(
-            'table/tbody/tr/td/div/input[contains(@class, "i ")]/@value') == \
+            'table/tbody/tr/td/div/input[contains(@class, "i")]/@value') == \
                                                            [str(o.i) for o in v]
         assert elt.xpath(
-            'table/tbody/tr/td/div/input[contains(@class, "s ")]/@value') == \
+            'table/tbody/tr/td/div/input[contains(@class, "s")]/@value') == \
                                                            [str(o.s) for o in v]
 
         assert elt.xpath('table/tbody/tr/td/button/text()') == ['-'] * len(v) + ['+']
@@ -116,7 +116,7 @@ class TestFormTable(unittest.TestCase):
 
         class SomeObject(ComplexModel):
             i = Integer
-            s = Array(Unicode(64), prot=HtmlFormTable(), label=True)
+            s = Array(Unicode(64), prot=HtmlFormTable(label=False), label=True)
 
         v = SomeObject(i=42, s=v)
         elt = _test_type(SomeObject, v, HtmlForm)
