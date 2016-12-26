@@ -36,12 +36,11 @@ logger = logging.getLogger(__name__)
 
 import re
 
-from slimit.parser import Parser
-
 from spyne import ServiceBase, rpc, Unicode, ComplexModel
 from spyne.protocol.html import HtmlCloth
 
 from neurons.base.screen import Link
+from neurons.jsutil import get_js_parser, set_js_variable
 
 from .model import PolymerComponent, HtmlImport, AjaxGetter, PolymerScreen
 
@@ -66,6 +65,57 @@ def gen_component_imports(deps):
             yield HtmlImport(
                 href="/static/bower_components/{0}/{0}.html".format(comp)
             )
+
+
+POLYMER_PREAMBLE = """
+var polymer_init_options = {};
+
+// Setup Polymer options
+window.Polymer = {
+  dom: 'shadow',
+  lazyRegister: true
+};
+
+// Load webcomponentsjs polyfill if browser does not support native Web Components
+(function () {
+  'use strict';
+
+  var onload = function () {
+    // For native Imports, manually fire WebComponentsReady so user code
+    // can use the same code path for native and polyfill'd imports.
+    if (!window.HTMLImports) {
+      document.dispatchEvent(
+              new CustomEvent('WebComponentsReady', {bubbles: true})
+      );
+    }
+  };
+
+  var webComponentsSupported = (
+          'registerElement' in document &&
+                           'import' in document.createElement('link') &&
+                           'content' in document.createElement('template'));
+
+  if (!webComponentsSupported) {
+    var script = document.createElement('script');
+    script.async = true;
+    script.src = polymer_init_options.url_polyfill;
+    script.onload = onload;
+    document.head.appendChild(script);
+  }
+  else {
+    onload();
+  }
+})();
+
+// Load pre-caching Service Worker
+if (polymer_init_options.url_service_worker) {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register(polymer_init_options.url_service_worker);
+    });
+  }
+}
+"""
 
 
 POLYMER_DEFN_TEMPLATE = """
@@ -111,7 +161,7 @@ Polymer({
 
 
 def gen_polymer_defn(component_name, cls):
-    parser = Parser()
+    parser = get_js_parser()
     tree = parser.parse(POLYMER_DEFN_TEMPLATE)
 
     entries = tree.children()[0].children()[0].children()[1].children()
@@ -226,7 +276,12 @@ class ScreenParams(ComplexModel):
     locale = Unicode(6)
 
 
-def TScreenGeneratorService(cls, prefix=None):
+DEFAULT_URL_POLYFILL = \
+            '/static/bower_components/webcomponentsjs/webcomponents-lite.min.js'
+
+
+def TScreenGeneratorService(cls, prefix=None, url_polyfill=DEFAULT_URL_POLYFILL,
+                                                       url_service_worker=None):
     type_name = cls.get_type_name()
     component_name = _to_snake_case(type_name)
 
@@ -274,6 +329,17 @@ def TScreenGeneratorService(cls, prefix=None):
                         href="/comp/{}".format(method_name)
                     ),
                 ]
+
+            data = dict()
+
+            if url_service_worker is not None:
+                data['service_worker_url'] = url_service_worker
+
+            data['url_polyfill'] = url_polyfill
+
+            tree = get_js_parser().parse(POLYMER_PREAMBLE)
+            preamble = set_js_variable(tree, 'polymer_init_options', data)
+            retval.append_script(preamble)
 
             return retval
 
