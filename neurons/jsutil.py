@@ -34,11 +34,26 @@
 from __future__ import print_function
 
 import json
+import threading
 
 from slimit.ast import Identifier, Node, Assign, VarDecl
+from slimit.parser import Parser
+
+parser_store = threading.local()
 
 
-def set_js_variable(parser, tree, name, val):
+def get_js_parser():
+    parser = getattr(parser_store, 'parser', None)
+
+    if parser is not None:
+        return parser
+
+    parser = parser_store.parser = Parser()
+
+    return parser
+
+
+def set_js_variable(tree, name, val):
     children = tree.children()
 
     if len(children) == 0:
@@ -49,8 +64,8 @@ def set_js_variable(parser, tree, name, val):
         if isinstance(c0, Identifier):
             if c0.value == name:
                 valstr = "foo = {}".format(json.dumps(val))
-                valastroot = parser.parse(valstr)
-                valast = valastroot.children()[0].children()[0].children()[1]
+                valast_root = get_js_parser().parse(valstr)
+                valast = valast_root.children()[0].children()[0].children()[1]
 
                 if isinstance(tree, VarDecl):
                     tree.initializer = valast
@@ -60,6 +75,6 @@ def set_js_variable(parser, tree, name, val):
 
     for c in children:
         if isinstance(c, Node):
-            set_js_variable(parser, c, name, val)
+            set_js_variable(c, name, val)
 
     return tree.to_ecma()
