@@ -96,7 +96,7 @@ update_meminfo()
 class _SetStaticPathAction(Action):
     def __init__(self, option_strings, dest, const=None, help=None):
         super(_SetStaticPathAction, self).__init__(nargs=1, const=const,
-            option_strings=option_strings, dest=dest, help=help)
+                            option_strings=option_strings, dest=dest, help=help)
 
     def __call__(self, parser, namespace, values, option_string=None):
         self.const.path = abspath(values[0])
@@ -588,7 +588,7 @@ class Daemon(ComplexModel):
             help=u"Prepend resident set size to all logging messages. "
                  u"Requires psutil")),
 
-        ('log_rpc', Boolean(help=u"Log raw rpc data.")),
+        ('log_rpc', Boolean(help=u"Log protocol operations.")),
         ('log_model', Boolean(help=u"Log model operations.")),
         ('log_cloth', Boolean(help=u"Log cloth generation.")),
         ('log_interface', Boolean(help=u"Log interface build process.")),

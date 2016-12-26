@@ -200,9 +200,9 @@ def _do_start_shell(config):
     from pprint import pprint, pformat
 
     header = (
-        "Database handle is:           db\n"
+        "Database handle is:  db\n"
         "There's also an open session: session\n"
-        "Imported packages:  traceback, inspect, sys\n"
+        "Imported packages: traceback, inspect, sys\n"
         "Imported functions: pprint(), pformat()"
     )
 

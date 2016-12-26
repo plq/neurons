@@ -137,8 +137,8 @@ Polymer({
         getter.params = retval;
         getter.generateRequest();
     },
-    process_getter_response: function(e, req) {
-        var resp = req.response;
+    process_getter_response: function(e) {
+        var resp = e.detail.response;
         var form = this.$.form;
 
         for (var k in resp) {
@@ -170,15 +170,6 @@ def gen_polymer_defn(component_name, cls):
     e0 = entries[0]
     assert e0.left.value == 'is'
     e0.right.value = '"{}"'.format(component_name)
-
-    # add tag properties
-    e1 = entries[1]
-    assert e1.left.value == 'properties'
-
-    getter_in_cls = _get_getter_input(cls)
-    getter_fti = getter_in_cls.get_flat_type_info(getter_in_cls)
-    for k, v in getter_fti.items():
-        print(k, v)
 
     return tree.to_ecma()
 
@@ -310,9 +301,6 @@ def TScreenGeneratorService(cls, prefix=None, url_polyfill=DEFAULT_URL_POLYFILL,
                 .with_jquery() \
                 .with_xml_to_jsobj()
 
-            if retval.links is None:
-                retval.links = []
-
             if params is not None and params.locale is not None:
                 retval.links = [
                     Link(
@@ -330,12 +318,9 @@ def TScreenGeneratorService(cls, prefix=None, url_polyfill=DEFAULT_URL_POLYFILL,
                     ),
                 ]
 
-            data = dict()
-
+            data = {'url_polyfill': url_polyfill}
             if url_service_worker is not None:
                 data['service_worker_url'] = url_service_worker
-
-            data['url_polyfill'] = url_polyfill
 
             tree = get_js_parser().parse(POLYMER_PREAMBLE)
             preamble = set_js_variable(tree, 'polymer_init_options', data)
