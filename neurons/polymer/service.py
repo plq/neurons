@@ -42,7 +42,7 @@ from spyne.protocol.html import HtmlCloth
 from neurons.base.screen import Link
 from neurons.jsutil import get_js_parser, set_js_variable
 
-from .model import PolymerComponent, HtmlImport, AjaxGetter, PolymerScreen
+from .model import PolymerComponent, HtmlImport, IronAjax, PolymerScreen
 
 
 def _to_snake_case(name, delim='-'):
@@ -119,25 +119,25 @@ if (polymer_init_options.url_service_worker) {
 
 
 POLYMER_DEFN_TEMPLATE = """
-Polymer({
-    is: "blabla",
-    properties: {
+Polymer({is: "blabla"
+    ,properties: {
 
-    },
-    listeners: {
+    }
+    ,listeners: {
+      'iron-form-presubmit': '_presubmit',
       'iron-form-element-register': '_register_element',
-    },
-    created: function() {
+    }
+    ,created: function() {
         this._elements = {};
-    },
-    attached: function() {
+    }
+    ,attached: function() {
         var children = this.getEffectiveChildren();
         var retval = neurons.xml_to_jsobj(children);
         var getter = this.$.ajax_getter;
         getter.params = retval;
         getter.generateRequest();
-    },
-    process_getter_response: function(e) {
+    }
+    ,process_getter_response: function(e) {
         var resp = e.detail.response;
         var form = this.$.form;
 
@@ -151,10 +151,20 @@ Polymer({
         }
 
         if (window.console) console.log(resp);
-    },
-    _register_element: function(e) {
+    }
+    ,_register_element: function(e) {
         var elt = Polymer.dom(e).rootTarget;
         this._elements[elt.getAttribute('name')] = elt;
+    }
+    ,_presubmit: function(e) {
+        e.preventDefault();
+
+        var data = this.$.form.serialize();
+        if (window.console) console.log(data);
+
+        var putter = this.$.ajax_putter;
+        putter.params = retval;
+        putter.generateRequest();
     }
 })
 """
@@ -203,9 +213,12 @@ def gen_component(cls, component_name, DetailScreen, gen_css_imports):
     # FIXME: stop hardcoding /api
     getter_url = "/api/{}.get".format(cls.get_type_name())
 
+    putter_url = "/api/{}.put".format(cls.get_type_name())
+
     retval = DetailScreen(
         main=cls(),
-        getter=AjaxGetter(url=getter_url),
+        getter=IronAjax(url=getter_url),
+        putter=IronAjax(url=putter_url),
         dom_module_id=component_name,
         definition=gen_polymer_defn(component_name, cls),
         dependencies=gen_component_imports(deps),

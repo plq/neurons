@@ -40,13 +40,14 @@ class HtmlImport(ComplexModel):
     href = XmlAttribute(Unicode)
 
 
-class AjaxGetter(ComplexModel):
+class IronAjax(ComplexModel):
     url = XmlAttribute(AnyUri)
 
 
 class PolymerComponent(ComplexModel):
     style = Unicode
-    getter = AjaxGetter
+    getter = IronAjax
+    putter = IronAjax
     definition = Unicode
     dependencies = Array(HtmlImport, wrapped=False)
     dom_module_id = Unicode(sub_name="id")

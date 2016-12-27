@@ -35,11 +35,22 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 <dom-module spyne-attr="dom_module_id">
   <template>
     <style spyne-id="style"></style>
+
     <iron-ajax
             spyne-id="getter"
             id="ajax_getter"
             handle-as="json"
             on-response="process_getter_response"></iron-ajax>
+
+    <iron-ajax
+            spyne-id="putter"
+            id="ajax_putter"
+            handle-as="json"
+            content-type="application/json"
+            method="POST"
+            on-response="process_putter_response"
+            debounce-duration="3000"></iron-ajax>
+
     <spyne-data spyne-id="main"></spyne-data>
   </template>
 
