@@ -703,7 +703,7 @@ class HtmlForm(HtmlFormRoot):
             if not (fset is prev_fset):
                 if fset_ctx is not None:
                     fset_ctx.__exit__(None, None, None)
-                    logger.debug("exiting fset norm", prev_fset)
+                    logger.debug("exiting fset norm")
 
                 logger.debug("entering fset %r", fset)
                 fset_ctx = parent.element(fset.tag, fset.attrib)
