@@ -33,7 +33,9 @@
 
 from neurons.base.screen import ScreenBase
 
-from spyne import Unicode, ComplexModel, XmlAttribute, Array, AnyUri
+from spyne import Unicode, ComplexModel, XmlAttribute, Array, AnyUri, Boolean, \
+    Integer, XmlData
+from spyne.util import six
 
 
 class HtmlImport(ComplexModel):
@@ -42,6 +44,23 @@ class HtmlImport(ComplexModel):
 
 class IronAjax(ComplexModel):
     url = XmlAttribute(AnyUri)
+
+
+class PaperInput(ComplexModel):
+    class Attributes(ComplexModel.Attributes):
+        sub_name = 'paper-input'
+
+    name = XmlAttribute(Unicode)
+    type = XmlAttribute(Unicode)
+    min = XmlAttribute(Unicode(cast=six.text_type))
+    max = XmlAttribute(Unicode(cast=six.text_type))
+    minlength = XmlAttribute(Integer)
+    maxlength = XmlAttribute(Integer)
+    label = XmlAttribute(Unicode)
+    required = XmlAttribute(Boolean)
+    auto_validate = XmlAttribute(Boolean(sub_name='auto-validate'))
+    error_message = XmlAttribute(Unicode(sub_name='error-message'))
+    pattern = XmlAttribute(Unicode)
 
 
 class PolymerComponent(ComplexModel):

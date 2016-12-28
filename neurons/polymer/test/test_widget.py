@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # encoding: utf8
 #
 # This file is part of the Neurons project.
@@ -30,3 +31,62 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
+
+from __future__ import absolute_import, print_function
+
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
+import unittest
+
+from lxml import html, etree
+
+from neurons.polymer import PolymerForm
+
+from spyne import Application, NullServer, ServiceBase, rpc, Unicode, Integer, \
+    ComplexModel
+from spyne.util.test import show
+
+
+def _test_type(cls, inst):
+    # silence bogus warnings
+    from spyne.util import appreg; appreg.applications.clear()
+
+    class SomeService(ServiceBase):
+        @rpc(_returns=cls, _body_style='bare')
+        def some_call(ctx):
+            return inst
+
+    prot = PolymerForm()
+    app = Application([SomeService], 'some_ns', out_protocol=prot)
+
+    null = NullServer(app, ostr=True)
+
+    ret = ''.join(null.service.some_call())
+    try:
+        elt = html.fromstring(ret)
+    except:
+        print(ret)
+        raise
+
+    show(elt, stdout=False)
+    print(etree.tostring(elt, pretty_print=True))
+
+    return elt
+
+
+class TestPolymerForm(object):
+    def test_simple(self):
+        class SomeObject(ComplexModel):
+            _type_info = [
+                ('s', Unicode),
+            ]
+
+        v = SomeObject(i=42, s="Arthur")
+        elt = _test_type(SomeObject, v)
+
+        assert elt.xpath('fieldset/paper-input/@name') == ['s']
+
+
+if __name__ == '__main__':
+    unittest.main()

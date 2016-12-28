@@ -32,69 +32,84 @@
 #
 
 import logging
+
+from neurons.polymer.model import PaperInput
+from spyne.protocol.cloth import XmlCloth
+
 logger = logging.getLogger(__name__)
 
 from datetime import date
 
 from lxml.html.builder import E
 
-from neurons.form import HtmlForm
+from neurons.form import HtmlFormRoot, SimpleRenderWidget
+
+from spyne import ComplexModelBase, Unicode, Decimal, Boolean, Date, Time, \
+    DateTime, Integer, Duration, PushBase, Array, Uuid, AnyHtml, AnyXml, \
+    AnyUri, Fault, File, D
+from spyne.util.cdict import cdict
 
 
-class PolymerForm(HtmlForm):
+class PolymerForm(HtmlFormRoot):
     HTML_INPUT = 'paper-input'
     HTML_OPTION = 'paper-item'
-    HTML_OPTION_PARENTS = 'paper-listbox', {'class': 'dropdown-content'}
     HTML_SELECT = 'paper-dropdown-menu'
     HTML_TEXTAREA = 'paper-textarea'
     HTML_CHECKBOX_TAG = 'paper-checkbox'
 
+    def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
+                cloth=None, cloth_parser=None, polymorphic=True, hier_delim='.',
+                     doctype=None, label=True, asset_paths={}, placeholder=None,
+                                         input_class=None, input_div_class=None,
+                                     input_wrapper_class=None, label_class=None,
+                                  action=None, method='POST', before_form=None):
+
+        super(PolymerForm, self).__init__(app=app, doctype=doctype,
+                     ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
+                cloth=cloth, cloth_parser=cloth_parser, polymorphic=polymorphic,
+                    hier_delim=hier_delim, label=label, asset_paths=asset_paths,
+                    placeholder=placeholder, input_class=input_class,
+                    input_div_class=input_div_class,
+               input_wrapper_class=input_wrapper_class, label_class=label_class,
+                          action=action, method=method, before_form=before_form)
+
+        self.serialization_handlers = cdict({
+            Date: self._check_simple(self.date_to_parent),
+            Time: self._check_simple(self.time_to_parent),
+            # Uuid: self._check_simple(self.uuid_to_parent),
+            # File: self.file_to_parent,
+            Fault: self.fault_to_parent,
+            # Array: self.array_type_to_parent,
+            AnyUri: self._check_simple(self.anyuri_to_parent),
+            # AnyXml: self._check_simple(self.anyxml_to_parent),
+            # Integer: self._check_simple(self.integer_to_parent),
+            Unicode: self._check_simple(self.unicode_to_parent),
+            # AnyHtml: self._check_simple(self.anyhtml_to_parent),
+            # Decimal: self._check_simple(self.decimal_to_parent),
+            Boolean: self._check_simple(self.boolean_to_parent),
+            # Duration: self._check_simple(self.duration_to_parent),
+            DateTime: self._check_simple(self.datetime_to_parent),
+            ComplexModelBase: self.complex_model_to_parent,
+        })
+
+        self.hier_delim = hier_delim
+
+        self.asset_paths.update(asset_paths)
+        self.use_global_null_handler = False
+
+        self.simple = SimpleRenderWidget(label=label)
+
     def _gen_form_attrib(self, ctx, cls):
-        attrib = super(PolymerForm, self)._gen_form_attrib(ctx, cls)
+        attrib = {
+            'id': 'form',
+            'is': 'iron-form',
+            'method': self.method,
+            'content-type': "application/json",
+        }
 
-        # attrib['id'] = attrib['action'] \
-        #                        .replace('/', '_').replace('.', '_').strip('_')
-
-        attrib['id'] = 'form'
-        attrib['is'] = 'iron-form'
-        attrib['content-type'] = "application/json"
+        attrib.update(self._get_form_action(ctx, self.get_cls_attrs(cls)))
 
         return attrib
-
-    def _gen_options(self, ctx, cls, inst, name, cls_attrs, elt, **kwargs):
-        del elt.attrib['name']
-        del elt.attrib['class']
-
-        option_parent = E('paper-listbox', **{'class': 'dropdown-content'})
-        elt.append(option_parent)
-
-        # FIXME: parameterize these
-        elt.attrib['no-animations'] = ''
-        elt.attrib['noink'] = ''
-
-        super(PolymerForm, self)._gen_options(ctx, cls, inst, name, cls_attrs,
-                                                        option_parent, **kwargs)
-        return elt
-
-    def _append_option(self, parent, label, value, selected=False, index=-1):
-        assert (not selected) or index >= 0
-
-        # waiting for https://github.com/lxml/lxml/pull/210
-        # if selected:
-        #     parent.attrib['selected'] = str(index)
-
-        parent.append(E(self.HTML_OPTION, label))
-
-    def _wrap_with_label(self, ctx, cls, name, input_elt, no_label=False,
-                                             _=HtmlForm.WRAP_FORWARD, **kwargs):
-        cls_attrs = self.get_cls_attrs(cls)
-
-        wants_no_label = cls_attrs.label is False or no_label or not self.label
-        if not wants_no_label:
-            input_elt.attrib['label'] = self.trc(cls, ctx.locale, name)
-            input_elt.attrib['always-float-label'] = ""
-
-        return input_elt
 
     def _gen_input(self, ctx, cls, inst, name, cls_attrs, **kwargs):
         retval = super(PolymerForm, self)._gen_input(ctx, cls, inst, name,
@@ -109,6 +124,61 @@ class PolymerForm(HtmlForm):
                                self.trd(cls_attrs.placeholder, ctx.locale, name)
 
         return retval
+
+    def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls_attr = self.get_cls_attrs(cls)
+
+        fieldset_attr = {'class': cls.get_type_name()}
+
+        if cls_attr.fieldset is False or cls_attr.no_fieldset:
+            return self._render_complex(ctx, cls, inst, parent, name, False,
+                                                                       **kwargs)
+        if cls_attr.fieldset or cls_attr.no_fieldset is False:
+            with parent.element('fieldset', fieldset_attr):
+                return self._render_complex(ctx, cls, inst, parent, name, False,
+                                                                       **kwargs)
+
+        with parent.element('fieldset', fieldset_attr):
+            return self._render_complex(ctx, cls, inst, parent, name, True,
+                                                                       **kwargs)
+
+    @staticmethod
+    def _apply_number_constraints(cls_attrs, elt_inst, epsilon):
+        if cls_attrs.min_str_len != Decimal.Attributes.min_str_len:
+            elt_inst.minlength = str(cls_attrs.min_str_len)
+
+        if cls_attrs.max_str_len != Decimal.Attributes.max_str_len:
+            elt_inst.maxlength = str(cls_attrs.max_str_len)
+
+        if cls_attrs.ge != Decimal.Attributes.ge:
+            elt_inst.min = str(cls_attrs.ge)
+
+        if cls_attrs.gt != Decimal.Attributes.gt:
+            elt_inst.min = str(cls_attrs.gt + epsilon)
+
+        if cls_attrs.le != Decimal.Attributes.le:
+            elt_inst.max = str(cls_attrs.le)
+
+        if cls_attrs.lt != Decimal.Attributes.lt:
+            elt_inst.max = str(cls_attrs.lt - epsilon)
+
+    def unicode_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls_attrs = self.get_cls_attrs(cls)
+
+        elt_cls = PaperInput
+        elt_inst = elt_cls()
+
+        elt_inst.name = name
+        elt_inst.type = "text"
+
+        if cls_attrs.min_len is not None and cls_attrs.min_len > D('-inf'):
+            elt_inst.minlength = cls_attrs.min_len
+
+        if cls_attrs.max_len is not None and cls_attrs.max_len < D('inf'):
+            elt_inst.maxlength = cls_attrs.max_len
+
+        XmlCloth().to_parent(ctx, elt_cls, elt_inst, parent,
+                                      elt_cls.Attributes.sub_name, use_ns=False)
 
     def date_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
