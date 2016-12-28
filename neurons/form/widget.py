@@ -1085,7 +1085,6 @@ class SelectWidgetBase(ComplexRenderWidget):
 
             cache_entry = objcache[cache_key] = []
 
-
         # FIXME: this iteration blocks the reactor
         for o in insts:
             id_str, text_str = self._prep_inst(cls, o, fti)
