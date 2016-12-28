@@ -82,7 +82,7 @@ class PolymerForm(HtmlFormRoot):
             # Array: self.array_type_to_parent,
             AnyUri: self._check_simple(self.anyuri_to_parent),
             # AnyXml: self._check_simple(self.anyxml_to_parent),
-            # Integer: self._check_simple(self.integer_to_parent),
+            Integer: self._check_simple(self.integer_to_parent),
             Unicode: self._check_simple(self.unicode_to_parent),
             # AnyHtml: self._check_simple(self.anyhtml_to_parent),
             # Decimal: self._check_simple(self.decimal_to_parent),
@@ -144,9 +144,6 @@ class PolymerForm(HtmlFormRoot):
 
     @staticmethod
     def _apply_number_constraints(cls_attrs, elt_inst, epsilon):
-        if cls_attrs.min_str_len != Decimal.Attributes.min_str_len:
-            elt_inst.minlength = str(cls_attrs.min_str_len)
-
         if cls_attrs.max_str_len != Decimal.Attributes.max_str_len:
             elt_inst.maxlength = str(cls_attrs.max_str_len)
 
@@ -176,6 +173,20 @@ class PolymerForm(HtmlFormRoot):
 
         if cls_attrs.max_len is not None and cls_attrs.max_len < D('inf'):
             elt_inst.maxlength = cls_attrs.max_len
+
+        XmlCloth().to_parent(ctx, elt_cls, elt_inst, parent,
+                                      elt_cls.Attributes.sub_name, use_ns=False)
+
+    def integer_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls_attrs = self.get_cls_attrs(cls)
+
+        elt_cls = PaperInput
+        elt_inst = elt_cls()
+
+        elt_inst.name = name
+        elt_inst.type = "number"
+
+        self._apply_number_constraints(cls_attrs, elt_inst, epsilon=1)
 
         XmlCloth().to_parent(ctx, elt_cls, elt_inst, parent,
                                       elt_cls.Attributes.sub_name, use_ns=False)

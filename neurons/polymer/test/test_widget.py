@@ -79,13 +79,14 @@ class TestPolymerForm(object):
     def test_simple(self):
         class SomeObject(ComplexModel):
             _type_info = [
+                ('i', Integer),
                 ('s', Unicode),
             ]
 
         v = SomeObject(i=42, s="Arthur")
         elt = _test_type(SomeObject, v)
 
-        assert elt.xpath('fieldset/paper-input/@name') == ['s']
+        assert elt.xpath('fieldset/paper-input/@name') == ['i', 's']
 
 
 if __name__ == '__main__':
