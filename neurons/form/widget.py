@@ -990,7 +990,7 @@ class SelectWidgetBase(ComplexRenderWidget):
     def _write_select_impl(self, ctx, cls, tag_attrib, data, fti, parent):
         attr = self.get_cls_attrs(cls)
 
-        with parent.element("select", attrib=tag_attrib):
+        with parent.element(self.HTML_SELECT, attrib=tag_attrib):
             if self.others is None:
                 for v_id_str, v_text_str in data:
                     elt = E(self.HTML_OPTION, v_text_str, value=v_id_str,
