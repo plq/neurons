@@ -47,7 +47,7 @@ from lxml import html, etree
 from neurons.polymer import PolymerForm
 
 from spyne import Application, NullServer, ServiceBase, rpc, Unicode, Integer, \
-    ComplexModel
+    ComplexModel, Decimal
 from spyne.util.test import show
 
 
@@ -79,7 +79,16 @@ def _test_type(cls, inst):
 
 
 class TestPolymerForm(object):
-    def test_simple(self):
+    def test_simple_decimal(self):
+        v = 42
+        elt = _test_type(Decimal(ge=0, le=5), v)
+
+        assert elt.xpath('paper-input/@name') == ['']
+        assert elt.xpath('paper-input/@type') == ['number']
+        assert elt.xpath('paper-input/@min') == ['0']
+        assert elt.xpath('paper-input/@max') == ['5']
+
+    def test_complex(self):
         class SomeObject(ComplexModel):
             _type_info = [
                 ('i', Integer),
@@ -106,9 +115,7 @@ class TestPolymerDropdownMenu(object):
         v = SomeObject(i=42, s="Arthur")
         elt = _test_type(SomeObject, v)
 
-        assert elt.xpath('div/label/text()') == ['SomeObject']
-        assert elt.xpath('fieldset/paper-dropdown-menu/paper-listbox/paper-item/text()') == ['Arthur']
-        assert elt.xpath('fieldset/paper-dropdown-menu/paper-listbox/paper-item/@value') == ['42']
+        assert elt.xpath('fieldset/paper-dropdown-menu/paper-listbox/paper-item/@name') == ['']
 
 
 if __name__ == '__main__':

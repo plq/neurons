@@ -85,7 +85,7 @@ class PolymerForm(HtmlFormRoot):
             Integer: self._check_simple(self.integer_to_parent),
             Unicode: self._check_simple(self.unicode_to_parent),
             # AnyHtml: self._check_simple(self.anyhtml_to_parent),
-            # Decimal: self._check_simple(self.decimal_to_parent),
+            Decimal: self._check_simple(self.decimal_to_parent),
             Boolean: self._check_simple(self.boolean_to_parent),
             # Duration: self._check_simple(self.duration_to_parent),
             DateTime: self._check_simple(self.datetime_to_parent),
@@ -187,6 +187,28 @@ class PolymerForm(HtmlFormRoot):
         elt_inst.type = "number"
 
         self._apply_number_constraints(cls_attrs, elt_inst, epsilon=1)
+
+        XmlCloth().to_parent(ctx, elt_cls, elt_inst, parent,
+                                      elt_cls.Attributes.sub_name, use_ns=False)
+
+    def decimal_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls_attrs = self.get_cls_attrs(cls)
+
+        elt_cls = PaperInput
+        elt_inst = elt_cls()
+
+        elt_inst.name = name
+        elt_inst.type = "number"
+
+        if D(cls.Attributes.fraction_digits).is_infinite():
+            epsilon = self.HTML5_EPSILON
+            elt_inst.step = 'any'
+
+        else:
+            epsilon = 10 ** (-int(cls.Attributes.fraction_digits))
+            elt_inst.step = str(epsilon)
+
+        self._apply_number_constraints(cls_attrs, elt_inst, epsilon=epsilon)
 
         XmlCloth().to_parent(ctx, elt_cls, elt_inst, parent,
                                       elt_cls.Attributes.sub_name, use_ns=False)
