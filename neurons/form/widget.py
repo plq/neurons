@@ -100,7 +100,7 @@ class HtmlFormWidget(HtmlBase):
                 cloth=None, cloth_parser=None, polymorphic=True, hier_delim='.',
                      label=True, doctype=None, asset_paths={}, placeholder=None,
                input_class=None, input_div_class=None, input_wrapper_class=None,
-                                                              label_class=None):
+                                                   label_class=None, type=None):
 
         super(HtmlFormWidget, self).__init__(app=app, doctype=doctype,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
@@ -113,6 +113,7 @@ class HtmlFormWidget(HtmlBase):
                                                input_wrapper_class, label_class)
 
         self.use_global_null_handler = False
+        self.type = type
 
     def _init_input_vars(self, input_class, input_div_class,
                                               input_wrapper_class, label_class):
@@ -195,10 +196,13 @@ class HtmlFormWidget(HtmlBase):
             retval = E.label(self.trc(cls, ctx.locale, name), **label_attrib)
             if wrap_label is HtmlFormWidget.WRAP_FORWARD:
                 retval = E.div(retval, input_elt, **attrib)
+
             elif wrap_label is HtmlFormWidget.WRAP_REVERSED:
                 retval = E.div(input_elt, retval, **attrib)
+
             elif wrap_label is None:
                 pass
+
             else:
                 raise ValueError(wrap_label)
 
@@ -423,6 +427,14 @@ class HtmlFormWidget(HtmlBase):
         if cls_attrs.lt != Decimal.Attributes.lt:
             elt.attrib['max'] = str(cls_attrs.lt - epsilon)
 
+    def _get_cls(self, cls):
+        if self.type is not None:
+            cls = self.type
+            if len(self.type_attrs) > 0:
+                cls = self.type.customize(**self.type_attrs)
+
+        return cls
+
     def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         newcls = self._get_cls(cls)
         if newcls is cls:
@@ -611,14 +623,6 @@ class SimpleRenderWidget(HtmlFormWidget):
             AnyUri: self.any_uri_to_parent,
             ComplexModelBase: self.complex_model_to_parent,
         })
-
-    def _get_cls(self, cls):
-        if self.type is not None:
-            cls = self.type
-            if len(self.type_attrs) > 0:
-                cls = self.type.customize(**self.type_attrs)
-
-        return cls
 
     def _gen_text_str(self, cls, inst, **kwargs):
         cls = self._get_cls(cls)

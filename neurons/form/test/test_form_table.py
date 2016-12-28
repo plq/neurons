@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # encoding: utf8
 #
 # This file is part of the Neurons project.
@@ -30,6 +31,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
+
 
 import logging
 logging.basicConfig(level=logging.DEBUG)

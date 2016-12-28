@@ -59,6 +59,20 @@ from neurons.form.widget import HtmlFormWidget, SimpleRenderWidget
 SOME_COUNTER = 0
 
 
+class TabFsetState(object):
+    def __init__(self):
+        self.prev_fset = None
+        self.fset_ctx = None
+        self.fset = None
+
+        self.prev_tab = None
+        self.tab_ctx = None
+        self.tab = None
+
+        self.tabview_ctx = None
+        self.tabview_id = None
+
+
 def _idxof(haystack, needle, default):
     try:
         return haystack.index(needle)
@@ -155,6 +169,8 @@ class HtmlFormRoot(HtmlFormWidget):
         if before_form is not None:
             self.event_manager.add_listener("before_form", before_form)
 
+        self.simple = SimpleRenderWidget(label=label)
+
     @coroutine
     def start_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         # FIXME: what a HUGE swath of copy/paste! I want yield from!
@@ -187,16 +203,28 @@ class HtmlFormRoot(HtmlFormWidget):
                             pass
 
                     finally:
-                        parent.write(E.p(
-                            E.input(value="Submit", type="submit",
-                                            **{'class': "btn btn-default"}),
-                                                    **{'class': "text-center"}))
+                        parent.write(
+                            E.p(
+                                E.input(
+                                    value="Submit",
+                                    type="submit",
+                                    **{'class': "btn btn-default"}
+                                ),
+                                **{'class': "text-center"}
+                            )
+                        )
                         ctx.protocol.in_form = False
                 else:
-                    parent.write(E.p(
-                        E.input(value="Submit", type="submit",
-                                        **{'class': "btn btn-default"}),
-                                                **{'class': "text-center"}))
+                    parent.write(
+                        E.p(
+                            E.input(
+                                value="Submit",
+                                type="submit",
+                                **{'class': "btn btn-default"}
+                            ),
+                            **{'class': "text-center"}
+                        )
+                    )
                     ctx.protocol.in_form = False
 
         else:
@@ -221,27 +249,225 @@ class HtmlFormRoot(HtmlFormWidget):
         if self.method == 'POST':
             attrib['enctype'] = "multipart/form-data"
 
-        if hasattr(ctx.protocol, 'form_action'):
-            fa = ctx.protocol.form_action
-            attrib['action'] = fa
-            logger.debug("Set form action to '%s' from ctx", fa)
-
-        elif cls_attrs.form_action:
-            fa = cls_attrs.form_action
-            attrib['action'] = fa
-            logger.debug("Set form action to '%s' from cls_attrs", fa)
-
-        elif self.action is not None:
-            fa = self.action
-            attrib['action'] = fa
-            logger.debug("Set form action to '%s' from protocol", fa)
-
-        elif isinstance(ctx.transport, HttpTransportContext):
-            fa = ctx.transport.get_path()
-            attrib['action'] = fa
-            logger.debug("Set form action to '%s' from request path", fa)
+        attrib.update(self._get_form_action(ctx, cls_attrs))
 
         return attrib
+
+    def _get_form_action(self, ctx, cls_attrs):
+        if hasattr(ctx.protocol, 'form_action'):
+            action = ctx.protocol.form_action
+            logger.debug("Set form action to '%s' from ctx", action)
+            return {'action': action}
+
+        elif cls_attrs.form_action:
+            action = cls_attrs.form_action
+            logger.debug("Set form action to '%s' from cls_attrs", action)
+            return {'action': action}
+
+        elif self.action is not None:
+            action = self.action
+            logger.debug("Set form action to '%s' from protocol", action)
+            return {'action': action}
+
+        elif isinstance(ctx.transport, HttpTransportContext):
+            action = ctx.transport.get_path()
+            logger.debug("Set form action to '%s' from request path", action)
+            return {'action': action}
+
+        return {}
+
+    def _check_simple(self, f):
+        def _ch(ctx, cls, inst, parent, name, **kwargs):
+            cls_attrs = self.get_cls_attrs(cls)
+            if cls_attrs.hidden:
+                self._gen_input_hidden(cls, inst, parent, name)
+            elif cls_attrs.read_only:
+                self.simple.to_parent(ctx, cls, inst, parent, name, **kwargs)
+            else:
+                f(ctx, cls, inst, parent, name, **kwargs)
+
+        _ch.__name__ = f.__name__
+        return _ch
+
+    def _gen_tab_headers(self, ctx, fti):
+        retval = E.ul()
+
+        tabs = {}
+        for k, v in fti:
+            subattr = self.get_cls_attrs(v)
+            tab = subattr.tab
+            if tab is not None and not subattr.exc:
+                tabs[id(tab)] = tab
+
+        for i, tab in enumerate(sorted(tabs.values(),
+                                            key=lambda t: (t.index, t.htmlid))):
+            retval.append(E.li(E.a(
+                self.trd(tab.legend, ctx.locale, "Tab %d" % i),
+                href="#" + tab.htmlid
+            )))
+
+        return retval
+
+    def _form_key(self, sort_key):
+        k, v = sort_key
+        attrs = self.get_cls_attrs(v)
+        return None if attrs.tab is None else \
+                                (attrs.tab.index, attrs.tab.htmlid), \
+               None if attrs.fieldset is None else \
+                                (attrs.fieldset.index, attrs.fieldset.htmlid),
+
+    @coroutine
+    def _render_complex(self, ctx, cls, inst, parent, name, in_fset, **kwargs):
+        global SOME_COUNTER
+
+        fti = self.sort_fields(cls)
+        fti.sort(key=self._form_key)
+
+        s = TabFsetState()
+
+        # FIXME: hack! why do we have top-level object receiving name?
+        if name == cls.get_type_name():
+            name = ''
+
+        if in_fset:
+            parent.write(E.legend(cls.get_type_name()))
+
+        for k, v in fti:
+            subattr = self.get_cls_attrs(v)
+            if subattr.exc:
+                logger.debug("Excluding %s", k)
+                continue
+
+            logger.debug("Generating form element for %s", k)
+            try:
+                subinst = getattr(inst, k, None)
+            except (KeyError, AttributeError):
+                subinst = None
+
+            s.tab = subattr.tab
+            if not (s.tab is s.prev_tab):
+                self._change_tab(ctx, parent, fti, s)
+
+            s.fset = subattr.fieldset
+            if not (s.fset is s.prev_fset):
+                self._change_fset(ctx, parent, k, s)
+
+            if name is not None and len(name) > 0:
+                child_key = self.hier_delim.join((name, k))
+            else:
+                child_key = k
+
+            label_ctxs = []
+            if subattr.label:
+                if self.input_wrapper_class is not None:
+                    div_attrib = {'class': self.input_wrapper_class}
+
+                    div_ctx = parent.element('div', div_attrib)
+                    div_ctx.__enter__()
+                    label_ctxs.append(div_ctx)
+                    logger.debug("entering label wrapper")
+
+                label_attrib = {}
+                if self.label_class is not None:
+                    label_attrib['class'] = ' '.join((
+                        self.label_class, self.selsafe(name)))
+
+                with parent.element('label', label_attrib):
+                    parent.write(self.trc(v, ctx.locale, child_key))
+
+            ret = self.to_parent(ctx, v, subinst, parent, child_key, **kwargs)
+            if isgenerator(ret):
+                try:
+                    while True:
+                        y = (yield)
+                        ret.send(y)
+
+                except Break as b:
+                    try:
+                        ret.throw(b)
+                    except StopIteration:
+                        pass
+
+            for c in reversed(label_ctxs):
+                c.__exit__(None, None, None)
+                logger.debug("exiting label_ctx %r", c)
+
+        if s.fset_ctx is not None:
+            s.fset_ctx.__exit__(None, None, None)
+            logger.debug("exiting fset close %r", s.fset)
+
+        if s.tab_ctx is not None:
+            s.tab_ctx.__exit__(None, None, None)
+            logger.debug("exiting tab close %r", s.tab)
+
+        if s.tabview_ctx is not None:
+            logger.debug("exiting tabview close")
+            s.tabview_ctx.__exit__(None, None, None)
+            parent.write(E.script(
+                '$(function(){ $( "#%s" ).tabs(); });' % s.tabview_id,
+                type="text/javascript"
+            ))
+
+    def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls_attr = self.get_cls_attrs(cls)
+
+        fieldset_attr = {'class': cls.get_type_name()}
+
+        if cls_attr.fieldset is False or cls_attr.no_fieldset:
+            return self._render_complex(ctx, cls, inst, parent, name, False,
+                                                                       **kwargs)
+        if cls_attr.fieldset or cls_attr.no_fieldset is False:
+            with parent.element('fieldset', fieldset_attr):
+                return self._render_complex(ctx, cls, inst, parent, name, False,
+                                                                       **kwargs)
+
+        with parent.element('fieldset', fieldset_attr):
+            return self._render_complex(ctx, cls, inst, parent, name, True,
+                                                                       **kwargs)
+
+    def _change_tab(self, ctx, parent, fti, s):
+        global SOME_COUNTER
+
+        if s.fset_ctx is not None:
+            s.fset_ctx.__exit__(None, None, None)
+            logger.debug("exiting fset tab %r ", s.prev_fset)
+
+        s.fset_ctx = s.prev_fset = None
+
+        if s.tab_ctx is not None:
+            s.tab_ctx.__exit__(None, None, None)
+            logger.debug("exiting tab %r", s.prev_tab)
+
+        if s.prev_tab is None:
+            logger.debug("entering tabview")
+            s.tabview_id = 'tabview' + str(SOME_COUNTER)
+            SOME_COUNTER += 1
+
+            s.tabview_ctx = parent.element('div', attrib={'id': s.tabview_id})
+            s.tabview_ctx.__enter__()
+
+            parent.write(self._gen_tab_headers(ctx, fti))
+
+        logger.debug("entering tab %r", s.tab)
+
+        attrib = {'id': s.tab.htmlid}
+        attrib.update(s.tab.attrib)
+        s.tab_ctx = parent.element('div', attrib)
+        s.tab_ctx.__enter__()
+
+        s.prev_tab = s.tab
+
+    def _change_fset(self, ctx, parent, name, s):
+        if s.fset_ctx is not None:
+            s.fset_ctx.__exit__(None, None, None)
+            logger.debug("exiting fset norm")
+
+        logger.debug("entering fset %r", s.fset)
+        s.fset_ctx = parent.element(s.fset.tag, s.fset.attrib)
+        s.fset_ctx.__enter__()
+
+        parent.write(E.legend(self.trd(s.fset.legend, ctx.locale, name)))
+        s.prev_fset = s.fset
 
 
 class HtmlForm(HtmlFormRoot):
@@ -292,29 +518,6 @@ class HtmlForm(HtmlFormRoot):
         }
         self.asset_paths.update(asset_paths)
         self.use_global_null_handler = False
-
-        self.simple = SimpleRenderWidget(label=label)
-
-    def _check_simple(self, f):
-        def _ch(ctx, cls, inst, parent, name, **kwargs):
-            cls_attrs = self.get_cls_attrs(cls)
-            if cls_attrs.hidden:
-                self._gen_input_hidden(cls, inst, parent, name)
-            elif cls_attrs.read_only:
-                self.simple.to_parent(ctx, cls, inst, parent, name, **kwargs)
-            else:
-                f(ctx, cls, inst, parent, name, **kwargs)
-
-        _ch.__name__ = f.__name__
-        return _ch
-
-    def _form_key(self, sort_key):
-        k, v = sort_key
-        attrs = self.get_cls_attrs(v)
-        return None if attrs.tab is None else \
-                                (attrs.tab.index, attrs.tab.htmlid), \
-               None if attrs.fieldset is None else \
-                                (attrs.fieldset.index, attrs.fieldset.htmlid), \
 
     def to_subprot(self, ctx, cls, inst, parent, name, subprot, **kwargs):
         if isinstance(subprot, HtmlFormWidget) or \
@@ -617,172 +820,6 @@ class HtmlForm(HtmlFormRoot):
     def array_type_to_parent(self, ctx, cls, inst, parent, name=None, **kwargs):
         v = next(iter(cls._type_info.values()))
         return self.to_parent(ctx, v, inst, parent, name, **kwargs)
-
-    def _gen_tab_headers(self, ctx, fti):
-        retval = E.ul()
-
-        tabs = {}
-        for k, v in fti:
-            subattr = self.get_cls_attrs(v)
-            tab = subattr.tab
-            if tab is not None and not subattr.exc:
-                tabs[id(tab)] = tab
-
-        for i, tab in enumerate(sorted(tabs.values(),
-                                            key=lambda t: (t.index, t.htmlid))):
-            retval.append(E.li(E.a(
-                self.trd(tab.legend, ctx.locale, "Tab %d" % i),
-                href="#" + tab.htmlid
-            )))
-
-        return retval
-
-    @coroutine
-    def _render_complex(self, ctx, cls, inst, parent, name, in_fset, **kwargs):
-        global SOME_COUNTER
-
-        fti = self.sort_fields(cls)
-        fti.sort(key=self._form_key)
-
-        prev_fset = fset_ctx = fset = None
-        prev_tab = tab_ctx = tab = tabview_ctx = None
-        tabview_id = None
-
-        # FIXME: hack! why do we have top-level object receiving name?
-        if name == cls.get_type_name():
-            name = ''
-
-        if in_fset:
-            parent.write(E.legend(cls.get_type_name()))
-
-        for k, v in fti:
-            subattr = self.get_cls_attrs(v)
-            if subattr.exc:
-                logger.debug("Excluding %s", k)
-                continue
-
-            logger.debug("Generating form element for %s", k)
-            try:
-                subinst = getattr(inst, k, None)
-            except (KeyError, AttributeError):
-                subinst = None
-
-            tab = subattr.tab
-            if not (tab is prev_tab):
-                if fset_ctx is not None:
-                    fset_ctx.__exit__(None, None, None)
-                    logger.debug("exiting fset tab %r", prev_fset)
-
-                fset_ctx = prev_fset = None
-
-                if tab_ctx is not None:
-                    tab_ctx.__exit__(None, None, None)
-                    logger.debug("exiting tab %r", prev_tab)
-
-                if prev_tab is None:
-                    logger.debug("entering tabview")
-                    tabview_id = 'tabview' + str(SOME_COUNTER)
-                    SOME_COUNTER += 1
-
-                    tabview_ctx = parent.element('div',
-                                                      attrib={'id': tabview_id})
-                    tabview_ctx.__enter__()
-
-                    parent.write(self._gen_tab_headers(ctx, fti))
-
-                logger.debug("entering tab %r", tab)
-
-                attrib = {'id': tab.htmlid}
-                attrib.update(tab.attrib)
-                tab_ctx = parent.element('div', attrib)
-                tab_ctx.__enter__()
-
-                prev_tab = tab
-
-            fset = subattr.fieldset
-            if not (fset is prev_fset):
-                if fset_ctx is not None:
-                    fset_ctx.__exit__(None, None, None)
-                    logger.debug("exiting fset norm")
-
-                logger.debug("entering fset %r", fset)
-                fset_ctx = parent.element(fset.tag, fset.attrib)
-                fset_ctx.__enter__()
-
-                parent.write(E.legend(self.trd(fset.legend, ctx.locale, k)))
-                prev_fset = fset
-
-            if name is not None and len(name) > 0:
-                child_key = self.hier_delim.join((name, k))
-            else:
-                child_key = k
-
-            label_ctxs = []
-            if subattr.label:
-                if self.input_wrapper_class is not None:
-                    div_attrib = {'class': self.input_wrapper_class}
-
-                    div_ctx = parent.element('div', div_attrib)
-                    div_ctx.__enter__()
-                    label_ctxs.append(div_ctx)
-                    logger.debug("entering label wrapper")
-
-                label_attrib = {}
-                if self.label_class is not None:
-                    label_attrib['class'] = ' '.join((
-                                          self.label_class, self.selsafe(name)))
-                with parent.element('label', label_attrib):
-                    parent.write(self.trc(v, ctx.locale, child_key))
-
-            ret = self.to_parent(ctx, v, subinst, parent, child_key, **kwargs)
-            if isgenerator(ret):
-                try:
-                    while True:
-                        y = (yield)
-                        ret.send(y)
-
-                except Break as b:
-                    try:
-                        ret.throw(b)
-                    except StopIteration:
-                        pass
-
-            for c in reversed(label_ctxs):
-                c.__exit__(None, None, None)
-                logger.debug("exiting label_ctxs")
-
-        if fset_ctx is not None:
-            fset_ctx.__exit__(None, None, None)
-            logger.debug("exiting fset close %r", fset)
-
-        if tab_ctx is not None:
-            tab_ctx.__exit__(None, None, None)
-            logger.debug("exiting tab close %r", tab)
-
-        if tabview_ctx is not None:
-            logger.debug("exiting tabview close")
-            tabview_ctx.__exit__(None, None, None)
-            parent.write(E.script(
-                '$(function(){ $( "#%s" ).tabs(); });' % tabview_id,
-                type="text/javascript"
-            ))
-
-    def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        cls_attr = self.get_cls_attrs(cls)
-
-        fieldset_attr = {'class': cls.get_type_name()}
-
-        if cls_attr.fieldset is False or cls_attr.no_fieldset:
-            return self._render_complex(ctx, cls, inst, parent, name, False,
-                                                                       **kwargs)
-        if cls_attr.fieldset or cls_attr.no_fieldset is False:
-            with parent.element('fieldset', fieldset_attr):
-                return self._render_complex(ctx, cls, inst, parent, name, False,
-                                                                       **kwargs)
-
-        with parent.element('fieldset', fieldset_attr):
-            return self._render_complex(ctx, cls, inst, parent, name, True,
-                                                                       **kwargs)
 
     def fault_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attr = self.get_cls_attrs(cls)
