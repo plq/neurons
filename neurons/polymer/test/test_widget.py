@@ -35,6 +35,9 @@
 from __future__ import absolute_import, print_function
 
 import logging
+
+from neurons.polymer import PolymerDropdownMenu
+
 logging.basicConfig(level=logging.DEBUG)
 
 import unittest
@@ -87,6 +90,25 @@ class TestPolymerForm(object):
         elt = _test_type(SomeObject, v)
 
         assert elt.xpath('fieldset/paper-input/@name') == ['i', 's']
+
+
+class TestPolymerDropdownMenu(object):
+    def _test_simple(self):
+        class SomeObject(ComplexModel):
+            class Attributes(ComplexModel.Attributes):
+                prot = PolymerDropdownMenu('s', 'i')
+
+            _type_info = [
+                ('i', Integer),
+                ('s', Unicode),
+            ]
+
+        v = SomeObject(i=42, s="Arthur")
+        elt = _test_type(SomeObject, v)
+
+        assert elt.xpath('div/label/text()') == ['SomeObject']
+        assert elt.xpath('fieldset/paper-dropdown-menu/paper-listbox/paper-item/text()') == ['Arthur']
+        assert elt.xpath('fieldset/paper-dropdown-menu/paper-listbox/paper-item/@value') == ['42']
 
 
 if __name__ == '__main__':

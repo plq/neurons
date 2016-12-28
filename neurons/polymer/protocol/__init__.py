@@ -32,3 +32,4 @@
 #
 
 from .form import PolymerForm
+from .widget import PolymerDropdownMenu

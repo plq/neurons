@@ -31,26 +31,47 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from neurons.polymer.protocol import PolymerForm
-from neurons.polymer.protocol import PolymerDropdownMenu
+from spyne import ComplexModelBase
+from spyne.protocol.html import HtmlBase
+
+from spyne.util.cdict import cdict
 
 
-def read_cloth_file(ns, fn):
-    from lxml import html
-    from pkg_resources import resource_filename
-
-    retval = html.fragment_fromstring(
-                    open(resource_filename(ns, fn), 'rb').read(),
-                                                     create_parent='spyne-root')
-    retval.attrib['spyne-tagbag'] = ''
-
-    return retval
+class PolymerWidgetBase(HtmlBase):
+    pass
 
 
-def read_html_document(ns, fn):
-    from lxml import html
-    from pkg_resources import resource_filename
+class PolymerDropdownMenu(PolymerWidgetBase):
+    """Generates a polymer dropdown menu.
 
-    retval = html.fromstring(open(resource_filename(ns, fn), 'rb').read())
+    Example:
 
-    return retval
+        <paper-dropdown-menu id="foo" no-animations="" noink=""
+                             label="label" always-float-label="">
+            <paper-listbox class="dropdown-content">
+                <paper-item></paper-item>
+                <paper-item>1</paper-item>
+                <paper-item>2</paper-item>
+                <paper-item>3</paper-item>
+            </paper-listbox>
+        </paper-dropdown-menu>
+    """
+
+    def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
+                cloth=None, cloth_parser=None, polymorphic=True, hier_delim='.',
+                                                    doctype=None, others=False):
+
+        super(PolymerDropdownMenu, self).__init__(app=app, doctype=doctype,
+                     ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
+                cloth=cloth, cloth_parser=cloth_parser, polymorphic=polymorphic,
+                                                          hier_delim=hier_delim)
+
+        self.serialization_handlers = cdict({
+            ComplexModelBase: self.complex_model_to_parent,
+        })
+
+        self.others = others
+
+
+    def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        pass

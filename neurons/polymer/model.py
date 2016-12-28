@@ -46,7 +46,37 @@ class IronAjax(ComplexModel):
     url = XmlAttribute(AnyUri)
 
 
-class PaperInput(ComplexModel):
+class HtmlElementBase(ComplexModel):
+    id = XmlAttribute(Unicode)
+    class_ = XmlAttribute(Unicode(sub_name='class'))
+
+
+class PaperItem(HtmlElementBase):
+    class Attributes(ComplexModel.Attributes):
+        sub_name = 'paper-item'
+
+    data = XmlData(Unicode)
+
+
+class PaperListbox(HtmlElementBase):
+    class Attributes(ComplexModel.Attributes):
+        sub_name = 'paper-listbox'
+
+    items = Array(PaperItem, wrapped=False)
+
+
+class PaperDropDownMenu(HtmlElementBase):
+    class Attributes(ComplexModel.Attributes):
+        sub_name = 'paper-dropdown-menu'
+
+    listbox = PaperListbox
+    noink = XmlAttribute(Boolean)
+    label = XmlAttribute(Boolean)
+    no_animations = XmlAttribute(Boolean(sub_name='no-animations'))
+    always_float_label = XmlAttribute(Boolean(sub_name='always-float-label'))
+
+
+class PaperInput(HtmlElementBase):
     class Attributes(ComplexModel.Attributes):
         sub_name = 'paper-input'
 
