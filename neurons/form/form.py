@@ -605,7 +605,7 @@ class HtmlForm(HtmlFormRoot):
 
         parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
 
-    def _gen_boolean_widget(self, ctx, cls, inst, name, **kwargs):
+    def boolean_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
         elt = self._gen_input(ctx, cls, inst, name, cls_attrs,
                                            tag=self.HTML_CHECKBOX_TAG, **kwargs)
@@ -622,12 +622,9 @@ class HtmlForm(HtmlFormRoot):
                             if cls_attrs.label_position == 'left' \
                                                 else HtmlFormWidget.WRAP_FORWARD
 
-        return self._wrap_with_label(ctx, cls, name, elt,
+        elt = self._wrap_with_label(ctx, cls, name, elt,
                                                 wrap_label=wrap_label, **kwargs)
-
-    def boolean_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        ret = self._gen_boolean_widget(ctx, cls, inst, name, **kwargs)
-        parent.write(ret)
+        parent.write(elt)
 
     def date_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         ctx.protocol.assets.extend([('jquery',), ('jquery-ui', 'datepicker')])

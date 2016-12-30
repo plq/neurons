@@ -34,7 +34,7 @@
 from neurons.base.screen import ScreenBase
 
 from spyne import Unicode, ComplexModel, XmlAttribute, Array, AnyUri, Boolean, \
-    Integer, XmlData
+    Integer, XmlData, Date
 from spyne.util import six
 
 
@@ -56,6 +56,7 @@ class PaperItem(HtmlElementBase):
         sub_name = 'paper-item'
 
     data = XmlData(Unicode)
+    value = XmlAttribute(Unicode)
 
 
 class PaperListbox(HtmlElementBase):
@@ -63,9 +64,10 @@ class PaperListbox(HtmlElementBase):
         sub_name = 'paper-listbox'
 
     items = Array(PaperItem, wrapped=False)
+    selected = XmlAttribute(Integer)
 
 
-class PaperDropDownMenu(HtmlElementBase):
+class PaperDropdownMenu(HtmlElementBase):
     class Attributes(ComplexModel.Attributes):
         sub_name = 'paper-dropdown-menu'
 
@@ -76,17 +78,34 @@ class PaperDropDownMenu(HtmlElementBase):
     always_float_label = XmlAttribute(Boolean(sub_name='always-float-label'))
 
 
+class NeuronsDatePicker(HtmlElementBase):
+    class Attributes(ComplexModel.Attributes):
+        sub_name = 'neurons-date-picker'
+
+    min = Date
+    max = Date
+
+
+class PaperCheckbox(HtmlElementBase):
+    class Attributes(ComplexModel.Attributes):
+        sub_name = 'paper-checkbox'
+
+    label = Unicode
+
+
 class PaperInput(HtmlElementBase):
     class Attributes(ComplexModel.Attributes):
         sub_name = 'paper-input'
 
     name = XmlAttribute(Unicode)
     type = XmlAttribute(Unicode)
-    min = XmlAttribute(Unicode(cast=six.text_type))
-    max = XmlAttribute(Unicode(cast=six.text_type))
+    min = XmlAttribute(Integer)
+    max = XmlAttribute(Integer)
     minlength = XmlAttribute(Integer)
     maxlength = XmlAttribute(Integer)
+    placeholder = XmlAttribute(Unicode)
     label = XmlAttribute(Unicode)
+    always_float_label = XmlAttribute(Boolean(sub_name='always-float-label'))
     required = XmlAttribute(Boolean)
     auto_validate = XmlAttribute(Boolean(sub_name='auto-validate'))
     error_message = XmlAttribute(Unicode(sub_name='error-message'))

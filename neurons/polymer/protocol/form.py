@@ -32,22 +32,25 @@
 #
 
 import logging
-
-from neurons.polymer.model import PaperInput
-from spyne.protocol.cloth import XmlCloth
-
 logger = logging.getLogger(__name__)
 
-from datetime import date
+import re
 
-from lxml.html.builder import E
+from neurons.form.widget import camel_case_to_uscore
+from neurons.polymer.model import PaperInput, NeuronsDatePicker, PaperCheckbox, \
+    PaperDropdownMenu, PaperListbox, PaperItem
 
 from neurons.form import HtmlFormRoot, SimpleRenderWidget
 
 from spyne import ComplexModelBase, Unicode, Decimal, Boolean, Date, Time, \
     DateTime, Integer, Duration, PushBase, Array, Uuid, AnyHtml, AnyXml, \
     AnyUri, Fault, File, D
+from spyne.protocol.cloth import XmlCloth
+from spyne.util import six
+from spyne.util.oset import oset
 from spyne.util.cdict import cdict
+from spyne.util.tdict import tdict
+
 
 
 class PolymerForm(HtmlFormRoot):
@@ -74,8 +77,8 @@ class PolymerForm(HtmlFormRoot):
                           action=action, method=method, before_form=before_form)
 
         self.serialization_handlers = cdict({
-            Date: self._check_simple(self.date_to_parent),
-            Time: self._check_simple(self.time_to_parent),
+            # Date: self._check_simple(self.date_to_parent),
+            # Time: self._check_simple(self.time_to_parent),
             # Uuid: self._check_simple(self.uuid_to_parent),
             # File: self.file_to_parent,
             Fault: self.fault_to_parent,
@@ -111,19 +114,125 @@ class PolymerForm(HtmlFormRoot):
 
         return attrib
 
-    def _gen_input(self, ctx, cls, inst, name, cls_attrs, **kwargs):
-        retval = super(PolymerForm, self)._gen_input(ctx, cls, inst, name,
-                                                            cls_attrs, **kwargs)
+    def _add_label(self, ctx, cls, cls_attrs, name, elt_inst,
+                                                      no_label=False, **kwargs):
+        wants_no_label = cls_attrs.label is False or no_label or not self.label
+
+        if not wants_no_label:
+            elt_inst.label = self.trc(cls, ctx.locale, name)
+            elt_inst.always_float_label = True
+
+        return elt_inst
+
+    def _gen_elt_inst(self, ctx, cls, inst, name, cls_attrs, sugcls=PaperInput, **kwargs):
+        elt_inst_data = dict(
+            id=self._gen_input_elt_id(name, **kwargs),
+            label=self.trc(cls, ctx.locale, name),
+            name=self._gen_input_name(name),
+            type='text',
+        )
+
+        elt_class = oset([
+            camel_case_to_uscore(cls.get_type_name()),
+            name.rsplit(self.hier_delim, 1)[-1],
+            re.sub(r'\[[0-9]+\]', '', name).replace(self.hier_delim, '__'),
+        ])
+
+        if self.input_class is not None:
+            elt_class.add(self.input_class)
+
+        elt_inst_data["class_"] = ' '.join(elt_class)
+
+        if cls_attrs.pattern is not None:
+            elt_inst_data["pattern"] = cls_attrs.pattern
+
+        if cls_attrs.read_only:
+            elt_inst_data["readonly"] = True
+
+        placeholder = cls_attrs.placeholder
+        if placeholder is None:
+            placeholder = self.placeholder
 
         if cls_attrs.error_message is not None:
-            retval.attrib['error-message'] = \
+            elt_inst_data['error_message'] = \
                              self.trd(cls_attrs.error_message, ctx.locale, name)
 
-        if cls_attrs.placeholder is not None:
-            retval.attrib['placeholder'] = \
-                               self.trd(cls_attrs.placeholder, ctx.locale, name)
+        if isinstance(placeholder, six.string_types):
+            elt_inst_data["placeholder"] = placeholder
 
-        return retval
+        elif placeholder:
+            elt_inst_data["placeholder"] = self.trc(cls, ctx.locale, name)
+
+        # Required bool means, in HTML context, a checkbox that needs to be
+        # checked, which is not what we mean here at all.
+        if not issubclass(cls, Boolean):
+            # We used OR here because html forms send empty values anyway. So a
+            # missing value is sent as null as well.
+            if cls_attrs.min_occurs >= 1 or cls_attrs.nullable == False:
+                elt_inst_data["required"] = True
+
+        if (cls_attrs.write_once and inst is not None) or \
+                                                       cls_attrs.write is False:
+            elt_inst_data["readonly"] = True
+
+        if cls_attrs.min_occurs == 1 and cls_attrs.nullable == False:
+            elt_inst_data['required'] = True
+
+        values = cls_attrs.values
+        if values is None or len(values) == 0:
+            return  sugcls(**elt_inst_data)
+
+        elt_inst = PaperDropdownMenu(
+             listbox=PaperListbox(items=[]), valueattr="value", **elt_inst_data)
+
+        field_name = name.split('.')[-1]
+
+        values_dict = cls_attrs.values_dict
+        if values_dict is None:
+            values_dict = {}
+
+        inststr = self.to_unicode(cls, inst)
+        if cls_attrs.write is False and inststr is not None:
+            inst_label = values_dict.get(inst, inststr)
+            if isinstance(inst_label, dict):
+                inst_label = self.trd(inst_label, ctx.locale, field_name)
+
+            logger.debug("\t\tinst %r label %r", inst_label, inst)
+            item = PaperItem(value=inststr, label=inst_label)
+            elt_inst.listbox.items.append(item)
+
+        else:
+            ever_selected = False
+            we_have_empty = False
+
+            if cls_attrs.nullable or cls_attrs.min_occurs == 0:
+                elt_inst.listbox.items.append(PaperItem(value="", label=""))
+                we_have_empty = True
+                # if none are selected, this will be the default anyway, so
+                # no need to add selected attribute to the option tag.
+
+            # FIXME: cache this!
+            for i, v in enumerate(cls_attrs.values):
+                valstr = self.to_unicode(cls, v)
+                if valstr is None:
+                    valstr = ""
+
+                if inst == v:
+                    ever_selected = True
+                    elt_inst.listbox.selected = i
+
+                val_label = values_dict.get(v, valstr)
+                logger.debug("\t\tother values inst %r label %r", v, val_label)
+                if isinstance(val_label, dict):
+                    val_label = self.trd(val_label, ctx.locale, valstr)
+
+                item = PaperItem(value=valstr, label=val_label)
+                elt_inst.listbox.items.append(item)
+
+            if not (ever_selected or we_have_empty):
+                elt_inst.listbox.items.insert(0, PaperItem(value="", label=""))
+
+        return elt_inst
 
     def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attr = self.get_cls_attrs(cls)
@@ -145,28 +254,29 @@ class PolymerForm(HtmlFormRoot):
     @staticmethod
     def _apply_number_constraints(cls_attrs, elt_inst, epsilon):
         if cls_attrs.max_str_len != Decimal.Attributes.max_str_len:
-            elt_inst.maxlength = str(cls_attrs.max_str_len)
+            elt_inst.maxlength = cls_attrs.max_str_len
 
         if cls_attrs.ge != Decimal.Attributes.ge:
-            elt_inst.min = str(cls_attrs.ge)
+            elt_inst.min = cls_attrs.ge
 
         if cls_attrs.gt != Decimal.Attributes.gt:
-            elt_inst.min = str(cls_attrs.gt + epsilon)
+            elt_inst.min = cls_attrs.gt + epsilon
 
         if cls_attrs.le != Decimal.Attributes.le:
-            elt_inst.max = str(cls_attrs.le)
+            elt_inst.max = cls_attrs.le
 
         if cls_attrs.lt != Decimal.Attributes.lt:
-            elt_inst.max = str(cls_attrs.lt - epsilon)
+            elt_inst.max = cls_attrs.lt - epsilon
+
+    def _write_elt_inst(self, ctx, elt_inst, parent):
+        elt_cls = elt_inst.__class__
+        XmlCloth().to_parent(ctx, elt_cls, elt_inst, parent,
+                                      elt_cls.Attributes.sub_name, use_ns=False)
 
     def unicode_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
 
-        elt_cls = PaperInput
-        elt_inst = elt_cls()
-
-        elt_inst.name = name
-        elt_inst.type = "text"
+        elt_inst = self._gen_elt_inst(ctx, cls, inst, name, cls_attrs, **kwargs)
 
         if cls_attrs.min_len is not None and cls_attrs.min_len > D('-inf'):
             elt_inst.minlength = cls_attrs.min_len
@@ -174,30 +284,24 @@ class PolymerForm(HtmlFormRoot):
         if cls_attrs.max_len is not None and cls_attrs.max_len < D('inf'):
             elt_inst.maxlength = cls_attrs.max_len
 
-        XmlCloth().to_parent(ctx, elt_cls, elt_inst, parent,
-                                      elt_cls.Attributes.sub_name, use_ns=False)
+        self._add_label(ctx, cls, cls_attrs, name, elt_inst, **kwargs)
+        self._write_elt_inst(ctx, elt_inst, parent)
 
     def integer_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
 
-        elt_cls = PaperInput
-        elt_inst = elt_cls()
-
-        elt_inst.name = name
+        elt_inst = self._gen_elt_inst(ctx, cls, inst, name, cls_attrs, **kwargs)
         elt_inst.type = "number"
 
         self._apply_number_constraints(cls_attrs, elt_inst, epsilon=1)
 
-        XmlCloth().to_parent(ctx, elt_cls, elt_inst, parent,
-                                      elt_cls.Attributes.sub_name, use_ns=False)
+        self._add_label(ctx, cls, cls_attrs, name, elt_inst, **kwargs)
+        self._write_elt_inst(ctx, elt_inst, parent)
 
     def decimal_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
 
-        elt_cls = PaperInput
-        elt_inst = elt_cls()
-
-        elt_inst.name = name
+        elt_inst = self._gen_elt_inst(ctx, cls, inst, name, cls_attrs, **kwargs)
         elt_inst.type = "number"
 
         if D(cls.Attributes.fraction_digits).is_infinite():
@@ -210,33 +314,21 @@ class PolymerForm(HtmlFormRoot):
 
         self._apply_number_constraints(cls_attrs, elt_inst, epsilon=epsilon)
 
-        XmlCloth().to_parent(ctx, elt_cls, elt_inst, parent,
-                                      elt_cls.Attributes.sub_name, use_ns=False)
+        self._add_label(ctx, cls, cls_attrs, name, elt_inst)
+        self._write_elt_inst(ctx, elt_inst, parent)
 
     def date_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
 
-        elt = self._gen_input(ctx, cls, inst, name, cls_attrs, **kwargs)
+        elt_inst = NeuronsDatePicker()
+        elt_inst.label = self.trd(cls_attrs.translations, ctx.locale, name)
 
-        if elt.tag == self.HTML_INPUT:
-            newelt = E('neurons-date-picker')
-
-            for k in ('id', 'name'):
-                newelt.attrib[k] = elt.attrib[k]
-
-            if inst is not None:
-                assert isinstance(inst, date)
-                inststr = self.to_unicode(cls, inst)
-
-                newelt.attrib['date'] = inststr
-
-            elt = newelt
-
-        div = self._wrap_with_label(ctx, cls, name, elt, **kwargs)
-        parent.write(div)
+        self._add_label(ctx, cls, cls_attrs, name, elt_inst)
+        self._write_elt_inst(ctx, elt_inst, parent)
 
     def time_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
+
         elt = self._gen_input(ctx, cls, inst, name, cls_attrs, **kwargs)
         elt.attrib['type'] = 'text'
 
@@ -253,22 +345,16 @@ class PolymerForm(HtmlFormRoot):
 
     def datetime_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
-        elt = self._gen_input(ctx, cls, None, name, cls_attrs, **kwargs)
-        elt.attrib['type'] = 'text'
 
-        dt_format = self._get_datetime_format(cls_attrs)
-        if dt_format is None:
-            date_format, time_format = 'yy-mm-dd', 'HH:mm:ss'
-        else:
-            date_format, time_format = \
-                self._split_datetime_format(cls_attrs.dt_format)
+        if inst is not None:
+            inst = inst.isoformat(' ')
 
-        div = self._wrap_with_label(ctx, cls, name, elt, **kwargs)
-        parent.write(div)
+        self.unicode_to_parent(ctx, cls, inst, parent, name, **kwargs)
 
     def boolean_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        ret = self._gen_boolean_widget(ctx, cls, inst, name, **kwargs)
-        del ret.attrib['type']
-        ret.text = ret.attrib['label']
-        del ret.attrib['label']
-        parent.write(ret)
+        cls_attrs = self.get_cls_attrs(cls)
+
+        elt_inst = self._gen_elt_inst(ctx, cls, inst, name, cls_attrs,
+                                                 sugcls=PaperCheckbox, **kwargs)
+
+        self._write_elt_inst(ctx, elt_inst, parent)
