@@ -50,6 +50,10 @@ class HtmlElementBase(ComplexModel):
     class_ = XmlAttribute(Unicode(sub_name='class'))
 
 
+class HtmlFormElementBase(HtmlElementBase):
+    name = XmlAttribute(Unicode)
+
+
 class PaperItem(HtmlElementBase):
     class Attributes(ComplexModel.Attributes):
         sub_name = 'paper-item'
@@ -85,18 +89,17 @@ class NeuronsDatePicker(HtmlElementBase):
     max = Date
 
 
-class PaperCheckbox(HtmlElementBase):
+class PaperCheckbox(HtmlFormElementBase):
     class Attributes(ComplexModel.Attributes):
         sub_name = 'paper-checkbox'
 
     label = Unicode
 
 
-class PaperInput(HtmlElementBase):
+class PaperInput(HtmlFormElementBase):
     class Attributes(ComplexModel.Attributes):
         sub_name = 'paper-input'
 
-    name = XmlAttribute(Unicode)
     type = XmlAttribute(Unicode)
     min = XmlAttribute(Integer)
     max = XmlAttribute(Integer)
