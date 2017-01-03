@@ -49,8 +49,6 @@ from spyne.protocol.cloth import XmlCloth
 from spyne.util import six
 from spyne.util.oset import oset
 from spyne.util.cdict import cdict
-from spyne.util.tdict import tdict
-
 
 
 class PolymerForm(HtmlFormRoot):

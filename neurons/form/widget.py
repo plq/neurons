@@ -74,6 +74,10 @@ camel_case_to_uscore = lambda s: ''.join(camel_case_to_uscore_gen(s))
 
 
 def _gen_html5_epsilon():
+    """See paragraph 17 at:
+
+    https://www.w3.org/TR/2012/WD-html5-20121025/common-microsyntaxes.html#rules-for-parsing-floating-point-number-values
+    """
     import math
     return D('1e%s' % int(math.log(2 ** (-1024)) / math.log(10)))
 
@@ -85,10 +89,7 @@ class HtmlFormWidget(HtmlBase):
     WRAP_FORWARD = type("WRAP_FORWARD", (object,), {})
     WRAP_REVERSED = type("WRAP_REVERSED", (object,), {})
 
-    # see paragraph 17 at:
-    # https://www.w3.org/TR/2012/WD-html5-20121025/common-microsyntaxes.html#rules-for-parsing-floating-point-number-values
     HTML5_EPSILON = _gen_html5_epsilon()
-
     HTML_FORM = 'form'
     HTML_INPUT = 'input'
     HTML_TEXTAREA = 'textarea'

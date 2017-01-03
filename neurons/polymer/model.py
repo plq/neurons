@@ -35,7 +35,6 @@ from neurons.base.screen import ScreenBase
 
 from spyne import Unicode, ComplexModel, XmlAttribute, Array, AnyUri, Boolean, \
     Integer, XmlData, Date
-from spyne.util import six
 
 
 class HtmlImport(ComplexModel):
