@@ -31,9 +31,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from neurons.polymer import read_cloth_file
-from neurons.polymer import read_html_document
-
-T_DOM_MODULE = read_cloth_file(__name__, 'dom_module.html')
+from neurons.polymer import read_cloth_file, read_file_contents, \
+    read_html_document
 
 T_SCREEN = read_html_document(__name__, 'screen.html')
+T_DOM_MODULE = read_cloth_file(__name__, 'dom_module.html')
+POLYMER_PREAMBLE = read_file_contents(__name__, 'preamble.js')
+POLYMER_DEFN_TEMPLATE = read_file_contents(__name__, 'defn.js')

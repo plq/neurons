@@ -41,6 +41,8 @@ from spyne.protocol.html import HtmlCloth
 
 from neurons.base.screen import Link
 from neurons.jsutil import get_js_parser, set_js_variable
+from neurons.polymer.const import POLYMER_PREAMBLE
+from neurons.polymer.const import POLYMER_DEFN_TEMPLATE
 
 from .model import PolymerComponent, HtmlImport, IronAjax, PolymerScreen
 
@@ -65,109 +67,6 @@ def gen_component_imports(deps):
             yield HtmlImport(
                 href="/static/bower_components/{0}/{0}.html".format(comp)
             )
-
-
-POLYMER_PREAMBLE = """
-var polymer_init_options = {};
-
-// Setup Polymer options
-window.Polymer = {
-  dom: 'shadow',
-  lazyRegister: true
-};
-
-// Load webcomponentsjs polyfill if browser does not support native Web Components
-(function () {
-  'use strict';
-
-  var onload = function () {
-    // For native Imports, manually fire WebComponentsReady so user code
-    // can use the same code path for native and polyfill'd imports.
-    if (!window.HTMLImports) {
-      document.dispatchEvent(
-              new CustomEvent('WebComponentsReady', {bubbles: true})
-      );
-    }
-  };
-
-  var webComponentsSupported = (
-          'registerElement' in document &&
-                           'import' in document.createElement('link') &&
-                           'content' in document.createElement('template'));
-
-  if (!webComponentsSupported) {
-    var script = document.createElement('script');
-    script.async = true;
-    script.src = polymer_init_options.url_polyfill;
-    script.onload = onload;
-    document.head.appendChild(script);
-  }
-  else {
-    onload();
-  }
-})();
-
-// Load pre-caching Service Worker
-if (polymer_init_options.url_service_worker) {
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function () {
-      navigator.serviceWorker.register(polymer_init_options.url_service_worker);
-    });
-  }
-}
-"""
-
-
-POLYMER_DEFN_TEMPLATE = """
-Polymer({is: "blabla"
-    ,properties: {
-
-    }
-    ,listeners: {
-      'iron-form-presubmit': '_presubmit',
-      'iron-form-element-register': '_register_element',
-    }
-    ,created: function() {
-        this._elements = {};
-    }
-    ,attached: function() {
-        var children = this.getEffectiveChildren();
-        var retval = neurons.xml_to_jsobj(children);
-        var getter = this.$.ajax_getter;
-        getter.params = retval;
-        getter.generateRequest();
-    }
-    ,process_getter_response: function(e) {
-        var resp = e.detail.response;
-        var form = this.$.form;
-
-        for (var k in resp) {
-            var elt = this._elements[k];
-            if (! elt) {
-                continue;
-            }
-
-            elt.value = resp[k];
-        }
-
-        if (window.console) console.log(resp);
-    }
-    ,_register_element: function(e) {
-        var elt = Polymer.dom(e).rootTarget;
-        this._elements[elt.getAttribute('name')] = elt;
-    }
-    ,_presubmit: function(e) {
-        e.preventDefault();
-
-        var data = this.$.form.serialize();
-        if (window.console) console.log(data);
-
-        var putter = this.$.ajax_putter;
-        putter.params = retval;
-        putter.generateRequest();
-    }
-})
-"""
 
 
 def gen_polymer_defn(component_name, cls):
