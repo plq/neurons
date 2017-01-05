@@ -52,6 +52,7 @@ class HtmlElementBase(ComplexModel):
 
 class HtmlFormElementBase(HtmlElementBase):
     name = XmlAttribute(Unicode)
+    disabled = XmlAttribute(Boolean)
 
 
 class PaperItem(HtmlElementBase):
@@ -70,7 +71,7 @@ class PaperListbox(HtmlElementBase):
     selected = XmlAttribute(Integer)
 
 
-class PaperDropdownMenu(HtmlElementBase):
+class PaperDropdownMenu(HtmlFormElementBase):
     class Attributes(ComplexModel.Attributes):
         sub_name = 'paper-dropdown-menu'
 

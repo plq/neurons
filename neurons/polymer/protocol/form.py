@@ -176,6 +176,14 @@ class PolymerForm(HtmlFormRoot):
         if cls_attrs.min_occurs == 1 and cls_attrs.nullable == False:
             elt_inst_data['required'] = True
 
+        if cls_attrs.read_only:
+            elt_inst_data['disabled'] = True
+
+        # is false checks for an explicit False and not something that walks
+        # and quacks like a False.
+        if cls_attrs.write is False:
+            elt_inst_data['disabled'] = True
+
         values = cls_attrs.values
         if values is None or len(values) == 0:
             return  sugcls(**elt_inst_data)
