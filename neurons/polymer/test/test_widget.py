@@ -108,10 +108,9 @@ class TestPolymerDropdownMenu(object):
 
         # This has to do with the workaround in complex_to_parent in
         # cloth/to_parent.py
-        ret = [r.strip() for r in ret if r != ' ']
+        ret = [r.strip() for r in ret]
 
-        assert ret == ['0', '3', '2', '1']
-
+        assert ret == ['', '0', '3', '2', '1']
 
     def _test_complex(self):
         class SomeObject(ComplexModel):
