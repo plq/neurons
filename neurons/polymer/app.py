@@ -30,11 +30,11 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-
 from spyne import Application
 from spyne.protocol.html import HtmlCloth
 from spyne.protocol.http import HttpRpc
 
+from neurons.polymer.comp.ref.code import ComplexReferenceComponentScreen
 from neurons.polymer.comp.date.code import DateComponentScreen
 
 from .const import T_DOM_MODULE, T_SCREEN
@@ -43,8 +43,8 @@ from .const import T_DOM_MODULE, T_SCREEN
 # FIXME: This is a hack to add DateComponentScreen to the interface.
 from spyne import ServiceBase, rpc
 class _DummyService(ServiceBase):
-    @rpc(_returns=DateComponentScreen)
-    def dummy(self):
+    @rpc(DateComponentScreen, ComplexReferenceComponentScreen)
+    def dummy(self, one, two):
         pass
 
 
