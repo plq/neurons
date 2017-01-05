@@ -102,7 +102,18 @@ class TestPolymerForm(object):
 
 
 class TestPolymerDropdownMenu(object):
-    def _test_simple(self):
+    def test_simple(self):
+        elt = _test_type(Integer(values=[0, 3, 2, 1]), None)
+        ret = elt.xpath('paper-dropdown-menu/paper-listbox/paper-item/text()')
+
+        # This has to do with the workaround in complex_to_parent in
+        # cloth/to_parent.py
+        ret = [r.strip() for r in ret if r != ' ']
+
+        assert ret == ['0', '3', '2', '1']
+
+
+    def _test_complex(self):
         class SomeObject(ComplexModel):
             class Attributes(ComplexModel.Attributes):
                 prot = PolymerDropdownMenu('s', 'i')

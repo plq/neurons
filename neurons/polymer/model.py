@@ -59,7 +59,7 @@ class PaperItem(HtmlElementBase):
     class Attributes(ComplexModel.Attributes):
         sub_name = 'paper-item'
 
-    data = XmlData(Unicode)
+    label = XmlData(Unicode)
     value = XmlAttribute(Unicode)
 
 
