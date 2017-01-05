@@ -32,11 +32,11 @@
 #
 
 from . import __comp_name__
-
 from . import T_CLOTH
+
 from neurons.polymer.model import PolymerComponent
 
-from spyne import ComplexModel, Unicode, SelfReference, mrpc
+from spyne import ComplexModel, Unicode, SelfReference, mrpc, Boolean
 
 
 class ComplexReferenceComponent(ComplexModel):
@@ -49,6 +49,7 @@ class ComplexReferenceComponentScreen(PolymerComponent):
         html_cloth = T_CLOTH
 
     main = ComplexReferenceComponent
+    template = Boolean(method='xml')
 
     @mrpc(_returns=SelfReference, _body_style='bare')
     def definition(self, ctx):
@@ -59,6 +60,7 @@ class ComplexReferenceComponentScreen(PolymerComponent):
                 label_ok="OK",
                 label_cancel="Cancel",
             ),
+            template=True,
         )
 
         if len(styles) > 0:

@@ -38,67 +38,77 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       href="/static/bower_components/paper-button/paper-button.html">
 <link rel="import"
       href="/static/bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import"
+      href="/static/bower_components/iron-form-element-behavior/iron-form-element-behavior.html">
 
 <link rel="import" spyne-id="dependencies">
 
-
-<dom-module id="neurons-reference">
-  <template>
+<dom-module id="neurons-complex-reference">
+  <!--
+  We parameterize this in order to be able to mark serialization method as xml
+  We need a space between iron-ajax because otherwise lxml will merge the
+  closing tag
+  -->
+  <template spyne-id="template" spyne-write-contents>
     <iron-ajax id="ajax_getter" url="[[data_source]]"
                on-response="_process_getter_response"
-               handle-as="json"></iron-ajax>
+               handle-as="json"> </iron-ajax>
     <paper-dropdown-menu id="options" name="{{name}}" disabled="{{disabled}}"
-        placeholder="{{placeholder}} label={{label}}">
-      <paper-listbox class="dropdown-contents">
+                         placeholder="{{placeholder}}" label="{{label}}">
+      <paper-listbox class="dropdown-contents" selected="0">
+        <paper-item></paper-item>
 
       </paper-listbox>
     </paper-dropdown-menu>
   </template>
 
   <script>
-    Polymer({"is": "neurons-reference"
+    Polymer({"is": "neurons-complex-reference"
+      ,behaviors: [
+        Polymer.IronFormElementBehavior
+      ]
       ,properties: {
         data_source: {
           type: String,
           reflectToAttribute: true
-        },
-        attr_item_value: {
+        }
+        ,attr_item_value: {
           type: String,
           value: 'id',
           reflectToAttribute: true
-        },
-        attr_item_label: {
+        }
+        ,attr_item_label: {
           type: String,
           value: 'name',
           reflectToAttribute: true
-        },
-        form_url: {
+        }
+        ,form_url: {
           type: String,
           reflectToAttribute: true
-        },
-        params: {
+        }
+        ,params: {
           type: String,
           reflectToAttribute: true
-        },
-        show_add: {
+        }
+        ,need_parent_params: {
           type: Boolean,
           reflectToAttribute: true
-        },
+        }
+        ,show_add: {
+          type: Boolean,
+          reflectToAttribute: true
+        }
 
         /* to imitate form elements */
-        name: {
-          type: String,
-          reflectToAttribute: true
-        },
-        disabled: {
+        ,disabled: {
           type: Boolean,
           reflectToAttribute: true
-        },
-        label: {
+        }
+        ,label: {
           type: String,
           reflectToAttribute: true
-        },
-        placeholder: {
+        }
+        ,placeholder: {
           type: String,
           reflectToAttribute: true
         }
