@@ -122,7 +122,8 @@ class TestPolymerDropdownMenu(object):
         v = SomeObject(i=42, s="Arthur")
         elt = _test_type(SomeObject, v)
 
-        assert elt.xpath('fieldset/paper-dropdown-menu/paper-listbox/paper-item/@name') == ['']
+        assert elt.xpath('paper-dropdown-menu/paper-listbox/paper-item/@name') \
+                                                                         == ['']
 
 
 if __name__ == '__main__':
