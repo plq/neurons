@@ -32,8 +32,8 @@
 #
 
 from . import __comp_name__
-
 from . import T_CLOTH
+
 from neurons.polymer.model import PolymerComponent
 
 from spyne import ComplexModel, Unicode, SelfReference, mrpc
