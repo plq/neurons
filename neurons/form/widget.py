@@ -97,19 +97,20 @@ class HtmlFormWidget(HtmlBase):
     HTML_OPTION = 'option'
     HTML_CHECKBOX_TAG = 'input'
 
-    def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
+    def __init__(self, app=None, encoding='utf8',
+            ignore_uncap=False, ignore_wrappers=False,
                 cloth=None, cloth_parser=None, polymorphic=True, hier_delim='.',
-                     label=True, doctype=None, asset_paths={}, placeholder=None,
+                     label=True, doctype=None, placeholder=None,
                input_class=None, input_div_class=None, input_wrapper_class=None,
                                                    label_class=None, type=None):
 
-        super(HtmlFormWidget, self).__init__(app=app, doctype=doctype,
+        super(HtmlFormWidget, self).__init__(app=app, encoding=encoding,
+            doctype=doctype,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
                 cloth=cloth, cloth_parser=cloth_parser, polymorphic=polymorphic,
                                                           hier_delim=hier_delim)
         self.label = label
         self.placeholder = placeholder
-        self.asset_paths = asset_paths
         self._init_input_vars(input_class, input_div_class,
                                                input_wrapper_class, label_class)
 

@@ -50,6 +50,7 @@ from neurons.form.widget import ComplexHrefWidget
 from neurons.form.form import Tab
 from neurons.form.form import Fieldset
 from neurons.form.form import HtmlFormRoot
+from neurons.form.form import THtmlFormRoot
 from neurons.form.form import HtmlForm
 
 from neurons.form.table import HtmlFormTable
