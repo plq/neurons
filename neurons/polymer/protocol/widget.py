@@ -240,7 +240,7 @@ class PolymerWidgetBase(HtmlCloth):
 
 
 class PolymerComplexReferenceWidget(PolymerWidgetBase):
-    def __init__(self, text_field=None, id_field=None,
+    def __init__(self, text_field=None, id_field=None, need_parent_params=True,
             app=None, encoding='utf8',
                       mime_type=None, ignore_uncap=False, ignore_wrappers=False,
                                 cloth=None, cloth_parser=None, polymorphic=True,
@@ -260,6 +260,7 @@ class PolymerComplexReferenceWidget(PolymerWidgetBase):
 
         self.data_source = data_source
         self.text_field = text_field
+        self.need_parent_params = need_parent_params
         self.id_field = id_field
 
     def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
@@ -269,6 +270,7 @@ class PolymerComplexReferenceWidget(PolymerWidgetBase):
                                                                        **kwargs)
 
         wgt_inst = NeuronsComplexReference(
+            need_parent_params=self.need_parent_params,
             attr_item_label=self.text_field, attr_item_value=self.id_field,
                                                                 **wgt_inst_data)
 
