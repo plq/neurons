@@ -149,10 +149,6 @@ class HtmlFormWidget(HtmlBase):
         return E.script("$(function(){\n\t%s\n});" % '\n\t'.join(js),
                                                         type="text/javascript")
 
-    @staticmethod
-    def selsafe(s):
-        return s.replace('[', '').replace(']', '').replace('.', '__')
-
     def _gen_input_hidden(self, cls, inst, parent, name, **kwargs):
         val = self.to_unicode(cls, inst)
         elt = E.input(type="hidden", name=name)
