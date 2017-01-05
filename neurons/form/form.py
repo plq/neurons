@@ -486,17 +486,18 @@ HtmlFormRoot = THtmlFormRoot(HtmlFormWidget)
 
 
 class HtmlForm(HtmlFormRoot):
-    def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
+    def __init__(self, app=None, encoding='utf8',
+                ignore_uncap=False, ignore_wrappers=False,
                 cloth=None, cloth_parser=None, polymorphic=True, hier_delim='.',
-                     doctype=None, label=True, asset_paths={}, placeholder=None,
+                     doctype=None, label=True, placeholder=None,
                                          input_class=None, input_div_class=None,
                                      input_wrapper_class=None, label_class=None,
                                   action=None, method='POST', before_form=None):
 
-        super(HtmlForm, self).__init__(app=app, doctype=doctype,
+        super(HtmlForm, self).__init__(app=app, encoding=encoding, doctype=doctype,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
                 cloth=cloth, cloth_parser=cloth_parser, polymorphic=polymorphic,
-                    hier_delim=hier_delim, label=label, asset_paths=asset_paths,
+                    hier_delim=hier_delim, label=label,
                     placeholder=placeholder, input_class=input_class,
                     input_div_class=input_div_class,
                input_wrapper_class=input_wrapper_class, label_class=label_class,
@@ -521,17 +522,6 @@ class HtmlForm(HtmlFormRoot):
             ComplexModelBase: self.complex_model_to_parent,
         })
 
-        self.hier_delim = hier_delim
-
-        self.asset_paths = {
-            ('jquery',): [_jstag("/assets/jquery/1.11.1/jquery.min.js")],
-            ('jquery-ui',): [_jstag("/assets/jquery-ui/1.11.0/jquery-ui.min.js")],
-            ('jquery-timepicker',): [
-                _jstag("/assets/jquery-timepicker/jquery-ui-timepicker-addon.js"),
-                _csstag("/assets/jquery-timepicker/jquery-ui-timepicker-addon.css"),
-            ],
-        }
-        self.asset_paths.update(asset_paths)
         self.use_global_null_handler = False
 
     def to_subprot(self, ctx, cls, inst, parent, name, subprot, **kwargs):
