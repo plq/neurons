@@ -33,7 +33,7 @@
 
 from . import __comp_name__
 
-from neurons.polymer.comp.date import T_DATE
+from . import T_CLOTH
 from neurons.polymer.model import PolymerComponent
 
 from spyne import ComplexModel, Unicode, SelfReference, mrpc
@@ -46,7 +46,7 @@ class DateComponent(ComplexModel):
 
 class DateComponentScreen(PolymerComponent):
     class Attributes(ComplexModel.Attributes):
-        html_cloth = T_DATE
+        html_cloth = T_CLOTH
 
     main = DateComponent
 
