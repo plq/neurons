@@ -31,27 +31,11 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from neurons.polymer.protocol import PolymerComplexReferenceWidget
-from neurons.polymer.protocol import PolymerForm
+__comp_name__ = 'neurons-complex-reference'
 
 
-def read_file_contents(ns, fn):
-    from pkg_resources import resource_filename
-    return open(resource_filename(ns, fn), 'rb').read()
+from neurons.polymer import read_cloth_file
 
+T_CLOTH = read_cloth_file(__name__, 'cloth.html')
 
-def read_cloth_file(ns, fn):
-    from lxml import html
-
-    retval = html.fragment_fromstring(read_file_contents(ns, fn),
-                                                     create_parent='spyne-root')
-    retval.attrib['spyne-tagbag'] = ''
-    return retval
-
-
-def read_html_document(ns, fn):
-    from lxml import html
-
-    retval = html.fromstring(read_file_contents(ns, fn))
-
-    return retval
+from .code import ComplexReferenceComponentScreen

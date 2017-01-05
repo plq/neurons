@@ -90,6 +90,15 @@ class NeuronsDatePicker(HtmlElementBase):
     max = Date
 
 
+class NeuronsComplexReference(HtmlFormElementBase):
+    class Attributes(ComplexModel.Attributes):
+        sub_name = 'neurons-complex-reference'
+
+    data_source = XmlAttribute(Unicode(sub_name='data-source'))
+    attr_item_value = XmlAttribute(Unicode(sub_name='attr-item-value'))
+    attr_item_label = XmlAttribute(Unicode(sub_name='attr-item-value'))
+
+
 class PaperCheckbox(HtmlFormElementBase):
     class Attributes(ComplexModel.Attributes):
         sub_name = 'paper-checkbox'

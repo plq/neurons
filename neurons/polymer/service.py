@@ -102,6 +102,7 @@ def gen_component(cls, component_name, DetailScreen, gen_css_imports):
         'paper-dropdown-menu/paper-dropdown-menu-light',
 
         HtmlImport(href='DateComponentScreen.definition'),
+        HtmlImport(href='ComplexReferenceComponentScreen.definition'),
     ]
 
     styles = []

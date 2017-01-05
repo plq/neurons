@@ -239,13 +239,40 @@ class PolymerWidgetBase(HtmlCloth):
         return elt_inst
 
 
+class PolymerComplexReferenceWidget(PolymerWidgetBase):
+    def __init__(self, text_field=None, id_field=None,
+            app=None, encoding='utf8',
+                      mime_type=None, ignore_uncap=False, ignore_wrappers=False,
+                                cloth=None, cloth_parser=None, polymorphic=True,
+                              strip_comments=True, hier_delim='.', doctype=None,
+                                                  label=True, data_source=None):
+
+        super(PolymerComplexReferenceWidget, self).__init__(
+             app=app, encoding=encoding, doctype=doctype, hier_delim=hier_delim,
+                                 mime_type=mime_type, ignore_uncap=ignore_uncap,
+                                   ignore_wrappers=ignore_wrappers, cloth=cloth,
+                             cloth_parser=cloth_parser, polymorphic=polymorphic,
+                                     strip_comments=strip_comments, label=label)
 
         self.serialization_handlers = cdict({
             ComplexModelBase: self.complex_model_to_parent,
         })
 
-        self.others = others
-
+        self.data_source = data_source
+        self.text_field = text_field
+        self.id_field = id_field
 
     def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        pass
+        cls_attrs = self.get_cls_attrs(cls)
+
+        wgt_inst_data = self._gen_widget_data(ctx, cls, inst, name, cls_attrs,
+                                                                       **kwargs)
+
+        wgt_inst = NeuronsComplexReference(
+            attr_item_label=self.text_field, attr_item_value=self.id_field,
+                                                                **wgt_inst_data)
+
+        wgt_inst.attr_item_label = self.text_field
+
+        self._add_label(ctx, cls, cls_attrs, name, wgt_inst, **kwargs)
+        self._write_elt_inst(ctx, wgt_inst, parent)

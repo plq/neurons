@@ -35,9 +35,6 @@
 from __future__ import absolute_import, print_function
 
 import logging
-
-from neurons.polymer import PolymerDropdownMenu
-
 logging.basicConfig(level=logging.DEBUG)
 
 import unittest

@@ -1,0 +1,119 @@
+<!--
+This file is part of the Neurons project.
+Copyright (c), Arskom Ltd. (arskom.com.tr),
+               Burak Arslan <burak.arslan@arskom.com.tr>.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+* Neither the name of the Arskom Ltd. nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<link rel="import"
+      href="/static/bower_components/polymer/polymer.html">
+<link rel="import"
+      href="/static/bower_components/paper-dialog/paper-dialog.html">
+<link rel="import"
+      href="/static/bower_components/paper-button/paper-button.html">
+<link rel="import"
+      href="/static/bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+
+<link rel="import" spyne-id="dependencies">
+
+
+<dom-module id="neurons-reference">
+  <template>
+    <iron-ajax id="ajax_getter" url="[[data_source]]"
+               on-response="_process_getter_response"
+               handle-as="json"></iron-ajax>
+    <paper-dropdown-menu id="options" name="{{name}}" disabled="{{disabled}}"
+        placeholder="{{placeholder}} label={{label}}">
+      <paper-listbox class="dropdown-contents">
+
+      </paper-listbox>
+    </paper-dropdown-menu>
+  </template>
+
+  <script>
+    Polymer({"is": "neurons-reference"
+      ,properties: {
+        data_source: {
+          type: String,
+          reflectToAttribute: true
+        },
+        attr_item_value: {
+          type: String,
+          value: 'id',
+          reflectToAttribute: true
+        },
+        attr_item_label: {
+          type: String,
+          value: 'name',
+          reflectToAttribute: true
+        },
+        form_url: {
+          type: String,
+          reflectToAttribute: true
+        },
+        params: {
+          type: String,
+          reflectToAttribute: true
+        },
+        show_add: {
+          type: Boolean,
+          reflectToAttribute: true
+        },
+
+        /* to imitate form elements */
+        name: {
+          type: String,
+          reflectToAttribute: true
+        },
+        disabled: {
+          type: Boolean,
+          reflectToAttribute: true
+        },
+        label: {
+          type: String,
+          reflectToAttribute: true
+        },
+        placeholder: {
+          type: String,
+          reflectToAttribute: true
+        }
+      }
+      ,created: function() {
+        this._elements = {};
+      }
+      ,attached: function() {
+        var getter = this.$.ajax_getter;
+        getter.params = this.params;
+        getter.generateRequest();
+      }
+      ,_process_getter_response: function() {
+
+      }
+    });
+  </script>
+</dom-module>

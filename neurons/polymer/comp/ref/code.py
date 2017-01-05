@@ -31,27 +31,37 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from neurons.polymer.protocol import PolymerComplexReferenceWidget
-from neurons.polymer.protocol import PolymerForm
+from . import __comp_name__
+
+from . import T_CLOTH
+from neurons.polymer.model import PolymerComponent
+
+from spyne import ComplexModel, Unicode, SelfReference, mrpc
 
 
-def read_file_contents(ns, fn):
-    from pkg_resources import resource_filename
-    return open(resource_filename(ns, fn), 'rb').read()
+class ComplexReferenceComponent(ComplexModel):
+    label_ok = Unicode
+    label_cancel = Unicode
 
 
-def read_cloth_file(ns, fn):
-    from lxml import html
+class ComplexReferenceComponentScreen(PolymerComponent):
+    class Attributes(ComplexModel.Attributes):
+        html_cloth = T_CLOTH
 
-    retval = html.fragment_fromstring(read_file_contents(ns, fn),
-                                                     create_parent='spyne-root')
-    retval.attrib['spyne-tagbag'] = ''
-    return retval
+    main = ComplexReferenceComponent
 
+    @mrpc(_returns=SelfReference, _body_style='bare')
+    def definition(self, ctx):
+        styles = []
 
-def read_html_document(ns, fn):
-    from lxml import html
+        retval = ComplexReferenceComponentScreen(dom_module_id=__comp_name__,
+            main=ComplexReferenceComponent(
+                label_ok="OK",
+                label_cancel="Cancel",
+            ),
+        )
 
-    retval = html.fromstring(read_file_contents(ns, fn))
+        if len(styles) > 0:
+            retval.style = '\n'.join(styles)
 
-    return retval
+        return retval
