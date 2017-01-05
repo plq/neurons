@@ -18,7 +18,7 @@ Polymer({is: "blabla"
         getter.params = this._parameters;
         getter.generateRequest();
     }
-    ,process_getter_response: function(e) {
+    ,_process_getter_response: function(e) {
         var resp = e.detail.response;
         var form = this.$.form;
 
@@ -32,7 +32,6 @@ Polymer({is: "blabla"
 
             elt.value = resp[k];
         }
-
     }
     ,_register_element: function(e) {
         var elt = Polymer.dom(e).rootTarget;
@@ -51,12 +50,11 @@ Polymer({is: "blabla"
             data[k] = this._parameters[k];
         }
 
-
         var putter = this.$.ajax_putter;
         putter.params = data;
         putter.generateRequest();
     }
-    ,process_putter_response: function(e) {
+    ,_process_putter_response: function(e) {
         var resp = e.detail.response;
         if (window.console) console.log(resp);
     }

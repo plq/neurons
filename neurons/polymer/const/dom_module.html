@@ -40,7 +40,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             spyne-id="getter"
             id="ajax_getter"
             handle-as="json"
-            on-response="process_getter_response"></iron-ajax>
+            on-response="_process_getter_response"></iron-ajax>
 
     <iron-ajax
             spyne-id="putter"
@@ -48,7 +48,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             handle-as="json"
             content-type="application/json"
             method="POST"
-            on-response="process_putter_response"
+            on-response="_process_putter_response"
             debounce-duration="3000"></iron-ajax>
 
     <spyne-data spyne-id="main"></spyne-data>
