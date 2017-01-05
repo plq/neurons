@@ -33,7 +33,6 @@ Polymer({is: "blabla"
             elt.value = resp[k];
         }
 
-        if (window.console) console.log(resp);
     }
     ,_register_element: function(e) {
         var elt = Polymer.dom(e).rootTarget;
@@ -43,7 +42,6 @@ Polymer({is: "blabla"
         e.preventDefault();
 
         var form_data = this.$.form.serialize();
-        if (window.console) console.log(form_data);
 
         var data = {};
         for (var k in form_data) {
@@ -53,7 +51,6 @@ Polymer({is: "blabla"
             data[k] = this._parameters[k];
         }
 
-        if (window.console) console.log(data);
 
         var putter = this.$.ajax_putter;
         putter.params = data;
