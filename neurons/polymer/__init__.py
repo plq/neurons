@@ -36,8 +36,13 @@ from neurons.polymer.protocol import PolymerForm
 
 
 def read_file_contents(ns, fn):
+    import os.path
+    import neurons.daemon.autorel
     from pkg_resources import resource_filename
-    return open(resource_filename(ns, fn), 'rb').read()
+
+    path = os.path.abspath(resource_filename(ns, fn))
+    neurons.daemon.autorel.AutoReloader.FILES.add(path)
+    return open(path, 'rb').read()
 
 
 def read_cloth_file(ns, fn):
