@@ -91,10 +91,10 @@ class AutoReloader(object):
     autoreloader monitors all imported modules; you can add to the
     set by adding to ``autoreload.files``::
 
-        neurons.daemon.autoreload.AutoReloader.FILES.add(myFile)
+        neurons.daemon.autorel.AutoReloader.FILES.add(myFile)
 
 
-        neurons.daemon.autoreload.AutoReloader.match = r'^(?!cherrypy).+'
+        neurons.daemon.autorel.AutoReloader.match = r'^(?!cherrypy).+'
 
     The autoreload plugin takes a ``frequency`` argument. The default is
     1 second; that is, the autoreloader will examine files once each second.
