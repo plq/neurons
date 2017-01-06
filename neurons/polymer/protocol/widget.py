@@ -242,17 +242,15 @@ class PolymerWidgetBase(HtmlCloth):
 class PolymerComplexReferenceWidget(PolymerWidgetBase):
     def __init__(self, text_field=None, id_field=None, data_source=None,
                                                         need_parent_params=True,
-            app=None, encoding='utf8',
-                      mime_type=None, ignore_uncap=False, ignore_wrappers=False,
-                                cloth=None, cloth_parser=None, polymorphic=True,
-                              strip_comments=True, hier_delim='.', doctype=None,
-                                                  label=True, data_source=None):
+                  app=None, encoding='utf8', mime_type=None, ignore_uncap=False,
+         ignore_wrappers=False, cloth=None, cloth_parser=None, polymorphic=True,
+                 strip_comments=True, hier_delim='.', doctype=None, label=True):
 
-        super(PolymerComplexReferenceWidget, self).__init__(
-             app=app, encoding=encoding, doctype=doctype, hier_delim=hier_delim,
-                                 mime_type=mime_type, ignore_uncap=ignore_uncap,
-                                   ignore_wrappers=ignore_wrappers, cloth=cloth,
-                             cloth_parser=cloth_parser, polymorphic=polymorphic,
+        super(PolymerComplexReferenceWidget, self) \
+            .__init__(app=app, encoding=encoding, doctype=doctype,
+                      hier_delim=hier_delim, mime_type=mime_type,
+                     ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
+                cloth=cloth, cloth_parser=cloth_parser, polymorphic=polymorphic,
                                      strip_comments=strip_comments, label=label)
 
         self.serialization_handlers = cdict({
