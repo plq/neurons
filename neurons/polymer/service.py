@@ -41,7 +41,7 @@ from spyne.protocol.html import HtmlCloth
 
 from neurons.base.screen import Link
 from neurons.jsutil import get_js_parser, set_js_variable
-from neurons.polymer.const import POLYMER_PREAMBLE
+from neurons.polymer.const import POLYMER_PREAMBLE, DEFAULT_URL_POLYFILL
 from neurons.polymer.const import POLYMER_DEFN_TEMPLATE
 
 from .model import PolymerComponent, HtmlImport, IronAjax, PolymerScreen
@@ -178,10 +178,6 @@ def _get_getter_input(cls):
 
 class ScreenParams(ComplexModel):
     locale = Unicode(6)
-
-
-DEFAULT_URL_POLYFILL = \
-            '/static/bower_components/webcomponentsjs/webcomponents-lite.min.js'
 
 
 def TScreenGeneratorService(cls, prefix=None, url_polyfill=DEFAULT_URL_POLYFILL,

@@ -38,3 +38,6 @@ T_SCREEN = read_html_document(__name__, 'screen.html')
 T_DOM_MODULE = read_cloth_file(__name__, 'dom_module.html')
 POLYMER_PREAMBLE = read_file_contents(__name__, 'preamble.js')
 POLYMER_DEFN_TEMPLATE = read_file_contents(__name__, 'defn.js')
+
+DEFAULT_URL_POLYFILL = \
+            '/static/bower_components/webcomponentsjs/webcomponents-lite.min.js'
