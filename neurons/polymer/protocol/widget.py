@@ -35,6 +35,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 import re
+import json
 
 from spyne import ComplexModelBase, Boolean, Decimal
 from spyne.util import six
@@ -241,7 +242,7 @@ class PolymerWidgetBase(HtmlCloth):
 
 class PolymerComplexReferenceWidget(PolymerWidgetBase):
     def __init__(self, text_field=None, id_field=None, data_source=None,
-                                                        need_parent_params=True,
+                                  need_parent_params=True, param_whitelist=None,
                   app=None, encoding='utf8', mime_type=None, ignore_uncap=False,
          ignore_wrappers=False, cloth=None, cloth_parser=None, polymorphic=True,
                  strip_comments=True, hier_delim='.', doctype=None, label=True):
@@ -257,6 +258,7 @@ class PolymerComplexReferenceWidget(PolymerWidgetBase):
             ComplexModelBase: self.complex_model_to_parent,
         })
 
+        self.param_whitelist = param_whitelist
         self.data_source = data_source
         self.text_field = text_field
         self.need_parent_params = need_parent_params
@@ -274,7 +276,8 @@ class PolymerComplexReferenceWidget(PolymerWidgetBase):
             attr_item_label=self.text_field, attr_item_value=self.id_field,
                                                                 **wgt_inst_data)
 
-        wgt_inst.attr_item_label = self.text_field
+        if self.param_whitelist is not None:
+            wgt_inst.param_whitelist = json.dumps(self.param_whitelist)
 
         self._add_label(ctx, cls, cls_attrs, name, wgt_inst, **kwargs)
         self._write_elt_inst(ctx, wgt_inst, parent)

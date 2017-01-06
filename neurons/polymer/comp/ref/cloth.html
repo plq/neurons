@@ -98,6 +98,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           type: Object,
           notify: true
         }
+        ,paramWhitelist: {
+          type: Object,
+          value: []
+        }
         ,need_parent_params: {
           type: Boolean,
           reflectToAttribute: true
@@ -142,6 +146,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       ,_new_params: function(e) {
         var getter = this.$.ajax_getter;
         getter.params = e.detail.value;
+        if (this.paramWhitelist.length > 0) {
+          for (k in getter.params) {
+            if (! this._contains(this.paramWhitelist, k)) {
+              delete getter.params[k];
+              if (window.console) console.log("delete " + k +
+                                                   " because not in whitelist");
+            }
+          }
+        }
         getter.generateRequest();
       }
     });
