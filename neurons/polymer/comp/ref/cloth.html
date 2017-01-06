@@ -50,14 +50,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   closing tag
   -->
   <template spyne-id="template" spyne-write-contents>
-    <iron-ajax id="ajax_getter" url="[[data_source]]"
+    <iron-ajax id="ajax_getter"
+               url="{{dataSource}}"
                on-response="_process_getter_response"
                handle-as="json"> </iron-ajax>
-    <paper-dropdown-menu id="options" name="{{name}}" disabled="{{disabled}}"
-                         placeholder="{{placeholder}}" label="{{label}}">
-      <paper-listbox class="dropdown-contents" selected="0">
-        <paper-item></paper-item>
-
+    <paper-dropdown-menu id="dropdown" name="{{name}}" disabled="{{disabled}}"
+                         placeholder="{{placeholder}}" label="{{label}}"
+                         always-float-label="{{always_float_label}}">
+      <paper-listbox id="dropdown_list" class="dropdown-contents">
       </paper-listbox>
     </paper-dropdown-menu>
   </template>
@@ -67,9 +67,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       ,behaviors: [
         Polymer.IronFormElementBehavior
       ]
+      ,listeners: {
+        'params-changed': '_new_params'
+      }
       ,properties: {
-        data_source: {
+        dataSource: {
           type: String,
+          notify: true,
+          reflectToAttribute: true
+        }
+        ,always_float_label: {
+          type: Boolean,
           reflectToAttribute: true
         }
         ,attr_item_value: {
@@ -87,8 +95,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           reflectToAttribute: true
         }
         ,params: {
-          type: String,
-          reflectToAttribute: true
+          type: Object,
+          notify: true
         }
         ,need_parent_params: {
           type: Boolean,
@@ -117,12 +125,24 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         this._elements = {};
       }
       ,attached: function() {
-        var getter = this.$.ajax_getter;
-        getter.params = this.params;
-        getter.generateRequest();
-      }
-      ,_process_getter_response: function() {
 
+      }
+      ,_process_getter_response: function(e) {
+        if (window.console) console.log(e);
+      }
+      ,_contains: function (a, obj) {
+        var i = a.length;
+        while (i--) {
+          if (a[i] === obj) {
+            return true;
+          }
+        }
+        return false;
+      }
+      ,_new_params: function(e) {
+        var getter = this.$.ajax_getter;
+        getter.params = e.detail.value;
+        getter.generateRequest();
       }
     });
   </script>

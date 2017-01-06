@@ -94,7 +94,10 @@ class NeuronsComplexReference(HtmlFormElementBase):
     class Attributes(ComplexModel.Attributes):
         sub_name = 'neurons-complex-reference'
 
+    label = XmlAttribute(Unicode)
+    always_float_label = XmlAttribute(Boolean)
     data_source = XmlAttribute(Unicode(sub_name='data-source'))
+    param_whitelist = XmlAttribute(Unicode(sub_name='param-whitelist'))
     attr_item_value = XmlAttribute(Unicode(sub_name='attr-item-value'))
     attr_item_label = XmlAttribute(Unicode(sub_name='attr-item-label'))
     need_parent_params = XmlAttribute(Boolean(sub_name='need-parent-params'))

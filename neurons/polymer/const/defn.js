@@ -17,6 +17,13 @@ Polymer({is: "blabla"
         var getter = this.$.ajax_getter;
         getter.params = this._parameters;
         getter.generateRequest();
+
+        for (var k in this._elements) {
+            var elt = this._elements[k];
+            if (elt.getAttribute("need-parent-params")) {
+                elt.params = this._parameters;
+            }
+        }
     }
     ,_process_getter_response: function(e) {
         var resp = e.detail.response;
