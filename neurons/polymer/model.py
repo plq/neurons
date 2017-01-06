@@ -96,7 +96,7 @@ class NeuronsComplexReference(HtmlFormElementBase):
 
     data_source = XmlAttribute(Unicode(sub_name='data-source'))
     attr_item_value = XmlAttribute(Unicode(sub_name='attr-item-value'))
-    attr_item_label = XmlAttribute(Unicode(sub_name='attr-item-value'))
+    attr_item_label = XmlAttribute(Unicode(sub_name='attr-item-label'))
     need_parent_params = XmlAttribute(Boolean(sub_name='need-parent-params'))
 
 
