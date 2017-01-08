@@ -54,10 +54,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                url="{{dataSource}}"
                on-response="_process_getter_response"
                handle-as="json"> </iron-ajax>
-    <paper-dropdown-menu id="dropdown" name="{{name}}" disabled="{{disabled}}"
+    <paper-dropdown-menu name="{{name}}" disabled="{{disabled}}"
                          placeholder="{{placeholder}}" label="{{label}}"
                          always-float-label="{{always_float_label}}">
       <paper-listbox id="dropdown_list" class="dropdown-contents">
+        <template is="dom-repeat" items="[[remote_data]]">
+          <paper-item value="[[_getItemValue(item, index) ]]">
+            [[_getItemLabel(item, index)]]
+          </paper-item>
+        </template>
       </paper-listbox>
     </paper-dropdown-menu>
   </template>
@@ -110,6 +115,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           type: Boolean,
           reflectToAttribute: true
         }
+        ,remote_data: {
+          type: Object
+        }
 
         /* to imitate form elements */
         ,disabled: {
@@ -128,11 +136,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       ,created: function() {
         this._elements = {};
       }
-      ,attached: function() {
-
-      }
       ,_process_getter_response: function(e) {
-        if (window.console) console.log(e);
+        this.remote_data = e.detail.response;
       }
       ,_contains: function (a, obj) {
         var i = a.length;
@@ -150,12 +155,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           for (k in getter.params) {
             if (! this._contains(this.paramWhitelist, k)) {
               delete getter.params[k];
-              if (window.console) console.log("delete " + k +
-                                                   " because not in whitelist");
             }
           }
         }
         getter.generateRequest();
+      }
+      ,_getItemValue: function(item, i) {
+        return item[this.attr_item_value];
+      }
+      ,_getItemLabel: function(item, i) {
+        return item[this.attr_item_label];
       }
     });
   </script>
