@@ -31,12 +31,53 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from contextlib import closing
-
 from spyne import TTableModel, Integer32
 from spyne.store.relational import get_pk_columns
+from sqlalchemy.orm import make_transient
 
-TableModel = TTableModel()
+
+class TableModel(TTableModel()):
+    def __init__(self, *args, **kwargs):
+        super(TableModel, self).__init__(*args, **kwargs)
+
+        self._changes = set()
+
+    @classmethod
+    def __respawn__(cls, ctx=None):
+        has_db = ctx.app is not None and 'sql_main' in ctx.app.config.stores
+
+        if has_db and ctx is not None and ctx.in_object is not None \
+                    and len(ctx.in_object) > 0 and ctx.in_object[0] is not None:
+            in_object = ctx.in_object[0]
+
+            filters = {}
+            for k, v in get_pk_columns(cls):
+                filters[k] = getattr(in_object, k)
+
+            session = ctx.udc.get_main_session()
+            retval = session.query(cls) \
+                .with_polymorphic('*') \
+                .filter_by(**filters) \
+                .all()
+
+            if len(retval) == 0:
+                for k, v in get_pk_columns(cls):
+                    setattr(in_object, k, None)
+                return in_object
+
+            if len(retval) == 1:
+                retval = retval[0]
+
+                make_transient(retval)
+                for k in in_object._changes:
+                    setattr(retval, k, getattr(in_object, k))
+                return retval
+
+    def _safe_set(self, key, value, t):
+        retval = super(TableModel, self)._safe_set(key, value, t)
+        if retval:
+            self._changes.add(key)
+        return retval
 
 
 def TVersion(prefix, default_version):
@@ -47,25 +88,3 @@ def TVersion(prefix, default_version):
         version = Integer32(default=default_version)
 
     return Version
-
-
-def respawn(cls, ctx=None):
-    has_db = ctx.app is not None and 'sql_main' in ctx.app.config.stores
-
-    if ctx is not None and ctx.in_object is not None and len(ctx.in_object) > 0 \
-                       and ctx.in_object[0] is not None and has_db:
-        in_object = ctx.in_object[0]
-
-        filters = {}
-        for k, v in get_pk_columns(cls):
-            filters[k] = getattr(in_object, k)
-
-        db = ctx.app.config.stores['sql_main'].itself
-        with closing(db.Session()) as session:
-            return session.query(cls) \
-                .with_polymorphic('*') \
-                .filter_by(**filters) \
-                .one()
-
-
-TableModel.__respawn__ = classmethod(respawn)
