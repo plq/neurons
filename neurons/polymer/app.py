@@ -30,6 +30,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
+
 from spyne import Application
 from spyne.protocol.html import HtmlCloth
 from spyne.protocol.http import HttpRpc
@@ -64,7 +65,7 @@ def gen_component_app(config, prefix, classes, locale=None,
             ],
             tns='%s.comp' % config.name,
             in_protocol=HttpRpc(validator='soft'),
-            out_protocol=HtmlCloth(cloth=T_DOM_MODULE,
+            out_protocol=HtmlCloth(cloth=T_DOM_MODULE, strip_comments=True,
                                                      doctype='<!DOCTYPE html>'),
             config=config,
         )
@@ -84,7 +85,7 @@ def gen_screen_app(config, prefix, classes):
             ],
             tns='%s.scr' % config.name,
             in_protocol=HttpRpc(validator='soft'),
-            out_protocol=HtmlCloth(cloth=T_SCREEN,
+            out_protocol=HtmlCloth(cloth=T_SCREEN, strip_comments=True,
                                                      doctype='<!DOCTYPE html>'),
             config=config,
         )
