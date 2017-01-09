@@ -124,8 +124,6 @@ Polymer({is: "blabla"
         var resp = e.detail.response;
         this.submitStatus = "submit-success";
         this.submitError = '';
-
-        if (window.console) console.log(resp);
     }
     ,_process_putter_error: function(e) {
         var req = e.detail.request;
