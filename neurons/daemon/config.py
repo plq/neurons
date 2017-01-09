@@ -298,16 +298,19 @@ class HttpApplication(ComplexModel):
         from twisted.web.wsgi import WSGIResource
 
         if isinstance(self.app, Resource):
-            return self.app
+            retval = self.app
 
-        if isinstance(self.app, Application):
-            return TwistedWebResource(self.app)
+        elif isinstance(self.app, Application):
+            retval = TwistedWebResource(self.app)
 
-        if isinstance(self.app, (WsgiApplication, WsgiMounter)):
-            return WSGIResource(reactor, reactor.getThreadPool(), self.app)
+        elif isinstance(self.app, (WsgiApplication, WsgiMounter)):
+            retval = WSGIResource(reactor, reactor.getThreadPool(), self.app)
 
-        raise ValueError(self.app)
+        else:
+            raise ValueError(self.app)
 
+        retval.prepath = self.url
+        return retval
 
 class StaticFileServer(HttpApplication):
     path = String
@@ -323,10 +326,19 @@ class StaticFileServer(HttpApplication):
         from twisted.web.static import File
         from twisted.web.resource import ForbiddenResource
         from twisted.python.filepath import InsecurePath
+        from spyne.server.twisted.http import get_twisted_child_with_default
 
         d_exts = self.disallowed_exts
+        url = self.url
 
         class CheckedFile(File):
+            def __init__(self, *args, **kwargs):
+                File.__init__(self, *args, **kwargs)
+                self.prepath = url
+
+            def getChildWithDefault(self, path, request):
+                return get_twisted_child_with_default(self, path, request)
+
             def child(self, path):
                 retval = File.child(self, path)
 
@@ -336,7 +348,7 @@ class StaticFileServer(HttpApplication):
                 return retval
 
         if self.list_contents:
-            return File(abspath(self.path))
+            return CheckedFile(abspath(self.path))
 
         class StaticFile(CheckedFile):
             def directoryListing(self):
@@ -386,6 +398,7 @@ class HttpListener(Listener):
     def gen_site(self):
         from twisted.web.server import Site
         from twisted.web.resource import Resource
+        from spyne.server.twisted.http import get_twisted_child_with_default
 
         self.check_overrides()
 
@@ -409,8 +422,13 @@ class HttpListener(Listener):
         self._subapps = subapps
 
         root_app = self.subapps.get('', None)
+
+        class TwistedResource(Resource):
+            def getChildWithDefault(self, path, request):
+                return get_twisted_child_with_default(self, path, request)
+
         if root_app is None:
-            root = Resource()
+            root = TwistedResource()
         else:
             root = root_app.gen_resource()
 
