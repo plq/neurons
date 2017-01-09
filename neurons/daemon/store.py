@@ -139,7 +139,8 @@ class SqlDataStore(DataStoreBase):
         """Deferred from TxPostgres pool start()."""
 
     def add_txpool(self):
-        from txpostgres.txpostgres import Connection, ConnectionPool
+        # don't import twisted too soon
+        from txpostgres.txpostgres import ConnectionPool
         from txpostgres.reconnection import DeadConnectionDetector
 
         class LoggingDeadConnectionDetector(DeadConnectionDetector):
