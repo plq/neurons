@@ -77,4 +77,4 @@ def set_js_variable(tree, name, val):
         if isinstance(c, Node):
             set_js_variable(c, name, val)
 
-    return tree.to_ecma()
+    return tree

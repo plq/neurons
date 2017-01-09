@@ -6,6 +6,9 @@ import json
 
 from lxml.html.builder import E
 
+from slimit import mangler
+from slimit.visitors.minvisitor import ECMAMinifier
+
 from spyne import ComplexModel, Array, Unicode, XmlAttribute, AnyUri, \
     XmlData, Integer, UnsignedInteger, ComplexModelBase
 from spyne.protocol.html import HtmlCloth
@@ -272,6 +275,15 @@ class ScreenBase(ComplexModel):
         if self.scripts is None:
             self.scripts = []
         self.scripts.append(ScriptElement(what, type=type, id=id))
+
+    def append_script_tree(self, tree, id=None, minify=False):
+        if minify:
+            mangler.mangle(tree, toplevel=True)
+            ret = ECMAMinifier().visit(tree)
+        else:
+            ret = tree.to_ecma()
+
+        self.append_script(ret, type='text/javascript', id=id)
 
     def append_style(self, what, media=None):
         if self.styles is None:

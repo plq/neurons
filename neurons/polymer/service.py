@@ -39,6 +39,9 @@ import re
 from spyne import ServiceBase, rpc, Unicode, ComplexModel
 from spyne.protocol.html import HtmlCloth
 
+from slimit.mangler import mangle as slimit_mangler
+from slimit.visitors.minvisitor import ECMAMinifier
+
 from neurons.base.screen import Link
 from neurons.jsutil import get_js_parser, set_js_variable
 from neurons.polymer.const import POLYMER_PREAMBLE, DEFAULT_URL_POLYFILL
@@ -69,7 +72,7 @@ def gen_component_imports(deps):
             )
 
 
-def gen_polymer_defn(component_name, cls):
+def gen_polymer_defn(component_name, cls, minify=False):
     parser = get_js_parser()
     tree = parser.parse(POLYMER_DEFN_TEMPLATE)
 
@@ -80,10 +83,16 @@ def gen_polymer_defn(component_name, cls):
     assert e0.left.value == 'is'
     e0.right.value = '"{}"'.format(component_name)
 
-    return tree.to_ecma()
+    if minify:
+        slimit_mangler(tree, toplevel=True)
+        retval = ECMAMinifier().visit(tree)
+    else:
+        retval = tree.to_ecma()
+
+    return retval
 
 
-def gen_component(cls, component_name, DetailScreen, gen_css_imports):
+def gen_component(cls, component_name, DetailScreen, gen_css_imports, minify_js):
     deps = [
         'polymer',
 
@@ -120,7 +129,7 @@ def gen_component(cls, component_name, DetailScreen, gen_css_imports):
         getter=IronAjax(url=getter_url),
         putter=IronAjax(url=putter_url),
         dom_module_id=component_name,
-        definition=gen_polymer_defn(component_name, cls),
+        definition=gen_polymer_defn(component_name, cls, minify=minify_js),
         dependencies=gen_component_imports(deps),
     )
 
@@ -131,7 +140,7 @@ def gen_component(cls, component_name, DetailScreen, gen_css_imports):
 
 
 def TComponentGeneratorService(cls, prefix=None, locale=None,
-                                                         gen_css_imports=False):
+                                        gen_css_imports=False, minify_js=False):
     type_name = cls.get_type_name()
     component_name = _to_snake_case(type_name)
 
@@ -153,7 +162,7 @@ def TComponentGeneratorService(cls, prefix=None, locale=None,
                 ctx.locale = locale
                 logger.debug("Locale overridden to %s locally.", locale)
             return gen_component(cls, component_name, DetailScreen,
-                                                                gen_css_imports)
+                                                     gen_css_imports, minify_js)
 
     if locale is not None:
         def _fix_locale(ctx):
@@ -181,7 +190,7 @@ class ScreenParams(ComplexModel):
 
 
 def TScreenGeneratorService(cls, prefix=None, url_polyfill=DEFAULT_URL_POLYFILL,
-                                                       url_service_worker=None):
+                                      url_service_worker=None, minify_js=False):
     type_name = cls.get_type_name()
     component_name = _to_snake_case(type_name)
 
@@ -234,8 +243,8 @@ def TScreenGeneratorService(cls, prefix=None, url_polyfill=DEFAULT_URL_POLYFILL,
                 data['service_worker_url'] = url_service_worker
 
             tree = get_js_parser().parse(POLYMER_PREAMBLE)
-            preamble = set_js_variable(tree, 'polymer_init_options', data)
-            retval.append_script(preamble)
+            set_js_variable(tree, 'polymer_init_options', data)
+            retval.append_script_tree(tree, minify=minify_js)
 
             return retval
 
