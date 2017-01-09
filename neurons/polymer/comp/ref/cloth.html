@@ -179,15 +179,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         getter.generateRequest();
       }
       ,_new_complex_value: function(val) {
-        if (window.console) console.log("new complex value");
-        if (window.console) console.log(val);
         if (val.hasOwnProperty(this.attr_item_value)) {
           this.value = val[this.attr_item_value];
         }
       }
       ,_new_value: function(val) {
-        if (window.console) console.log("new value");
-        if (window.console) console.log(this.value);
         if (! this.remote_data) {
           return;
         }
@@ -205,8 +201,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           return;
         }
         if (idx in this.remote_data) {
-          if (window.console) console.log("new index " + idx);
-          if (window.console) console.log(this.value);
           this.complexValue = this.remote_data[idx];
         }
       }
