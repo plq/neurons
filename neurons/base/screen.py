@@ -54,7 +54,7 @@ TYPE_CHECKERS = """
 
 # http://stackoverflow.com/questions/728360#728694
 CLONE = """
-function clone(obj) {
+neurons.clone = function(obj) {
     var copy;
 
     // Handle the 3 simple types, and null or undefined
@@ -71,7 +71,7 @@ function clone(obj) {
     if (obj instanceof Array) {
         copy = [];
         for (var i = 0, len = obj.length; i < len; i++) {
-            copy[i] = clone(obj[i]);
+            copy[i] = neurons.clone(obj[i]);
         }
         return copy;
     }
@@ -80,7 +80,7 @@ function clone(obj) {
     if (obj instanceof Object) {
         copy = {};
         for (var attr in obj) {
-            if (obj.hasOwnProperty(attr)) copy[attr] = clone(obj[attr]);
+            if (obj.hasOwnProperty(attr)) copy[attr] = neurons.clone(obj[attr]);
         }
         return copy;
     }
