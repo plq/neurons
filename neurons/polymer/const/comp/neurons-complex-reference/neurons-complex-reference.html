@@ -46,7 +46,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 <dom-module id="neurons-complex-reference">
   <!--
   We parameterize this in order to be able to mark serialization method as xml
-  We need a space between iron-ajax because otherwise lxml will merge the
+  We need a space inside iron-ajax because otherwise lxml will merge the
   closing tag
   -->
   <template spyne-id="template" spyne-write-contents>
@@ -59,7 +59,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                          always-float-label="{{always_float_label}}">
       <paper-listbox class="dropdown-content" selected="{{currentItemIndex}}">
         <template is="dom-repeat" items="[[remote_data]]">
-          <paper-item value="[[_getItemValue(item, index) ]]">
+          <paper-item value="[[_getItemValue(item, index)]]">
             [[_getItemLabel(item, index)]]
           </paper-item>
         </template>

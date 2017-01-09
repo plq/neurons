@@ -47,6 +47,7 @@ except OSError:
 
 common_reqs = ('spyne>=2.12', 'SQLAlchemy<1.0.99', 'Twisted>=15.2',
     'lxml>=3.4.1', 'pyyaml', 'msgpack-python', 'pycrypto', 'slimit',
+    'txpostgres',
 )
 
 
@@ -129,8 +130,7 @@ setup(
     package_data={
         'neurons.form.const': ['*.html'],
         'neurons.polymer.const': ['*.html', "*.js"],
-        'neurons.polymer.comp.ref': ['*.html'],
-        'neurons.polymer.comp.date': ['*.html'],
+        'neurons.polymer.const.comp': ['neurons-*'],
         'neurons.daemon.dowser.const': ['*.html', '*.css'],
     },
 

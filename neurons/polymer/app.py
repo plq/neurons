@@ -31,22 +31,28 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from spyne import Application
+import logging
+logger = logging.getLogger(__name__)
+
+from os.path import abspath
+from spyne import Application, File, Unicode
+from spyne import ServiceBase, rpc
 from spyne.protocol.html import HtmlCloth
-from spyne.protocol.http import HttpRpc
+from spyne.protocol.http import HttpRpc, HttpPattern
 
-from neurons.polymer.comp.ref.code import ComplexReferenceComponentScreen
-from neurons.polymer.comp.date.code import DateComponentScreen
-
+from pkg_resources import resource_filename
 from .const import T_DOM_MODULE, T_SCREEN
 
 
-# FIXME: This is a hack to add DateComponentScreen to the interface.
-from spyne import ServiceBase, rpc
-class _DummyService(ServiceBase):
-    @rpc(DateComponentScreen, ComplexReferenceComponentScreen)
-    def dummy(self, one, two):
-        pass
+class ComponentService(ServiceBase):
+    @rpc(Unicode, _pattern=HttpPattern('neurons-<fn>.html', verb="GET"), _returns=File)
+    def get_component(ctx, fn):
+        ctx.out_protocol = HttpRpc()
+        fn = "neurons-" + fn
+        fullpath = abspath(resource_filename('neurons.polymer.const.comp',
+                                                     "{0}/{0}.html".format(fn)))
+        logger.debug("Returning component %s from path %s", fn, fullpath)
+        return File.Value(path=fullpath, type="text/html")
 
 
 def gen_component_app(config, prefix, classes, locale=None,
@@ -56,7 +62,7 @@ def gen_component_app(config, prefix, classes, locale=None,
 
     return \
         Application(
-            [_DummyService] +
+            [ComponentService] +
             [
                 TComponentGeneratorService(
                         cls.customize(prot=PolymerForm()),
@@ -77,7 +83,6 @@ def gen_screen_app(config, prefix, classes):
 
     return \
         Application(
-            [_DummyService] +
             [
                 TScreenGeneratorService(
                                       cls.customize(prot=PolymerForm()), prefix)

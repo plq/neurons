@@ -110,8 +110,8 @@ def gen_component(cls, component_name, DetailScreen, gen_css_imports, minify_js)
         'paper-dropdown-menu',
         'paper-dropdown-menu/paper-dropdown-menu-light',
 
-        HtmlImport(href='DateComponentScreen.definition'),
-        HtmlImport(href='ComplexReferenceComponentScreen.definition'),
+        HtmlImport(href='neurons-date-picker.html'),
+        HtmlImport(href='neurons-complex-reference.html'),
     ]
 
     styles = []
