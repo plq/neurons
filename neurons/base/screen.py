@@ -14,8 +14,8 @@ from spyne.util.dictdoc import get_object_as_simple_dict
 from spyne.util.six.moves.urllib.parse import urlencode
 
 
-SETUP_DATATABLES = """neurons.setup_datatables = function(selector, data, hide)
-{
+SETUP_DATATABLES = """
+neurons.setup_datatables = function(selector, data, hide) {
     var $table = $(selector);
     if (hide) {
         neurons.hide_empty_columns($table);
@@ -28,7 +28,8 @@ SETUP_DATATABLES = """neurons.setup_datatables = function(selector, data, hide)
 };
 """
 
-HIDE_EMPTY_COLUMNS = """neurons.hide_empty_columns = function ($table) {
+HIDE_EMPTY_COLUMNS = """
+neurons.hide_empty_columns = function ($table) {
     $($table.find("tr")[1]).find("td").each(function (_, elt) {
         setTimeout(function () {
             var cc = $(elt).attr("class").split(" ")[0];
@@ -42,7 +43,8 @@ HIDE_EMPTY_COLUMNS = """neurons.hide_empty_columns = function ($table) {
 """
 
 # http://stackoverflow.com/a/17772086
-TYPE_CHECKERS = """['Arguments', 'Function', 'String', 'Number', 'Date', 'RegExp'].forEach(
+TYPE_CHECKERS = """
+['Arguments', 'Function', 'String', 'Number', 'Date', 'RegExp'].forEach(
     function(name) {
         neurons['is' + name] = function(obj) {
               return toString.call(obj) == '[object ' + name + ']';
