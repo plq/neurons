@@ -34,12 +34,18 @@
 import logging
 logger = logging.getLogger(__name__)
 
+from spyne.util import DefaultAttrDict
+
 from neurons.base.const import ANON_USERNAME
 
 
 def on_method_call(ctx):
     if ctx.udc is None:
-        ctx.udc = ctx.service_class.get_context(ctx)
+        if ctx.service_class is not None:
+            ctx.udc = ctx.service_class.get_context(ctx)
+        else:
+            #FIXME: this is *wrong*.
+            ctx.udc = DefaultAttrDict(parent=ctx)
 
     ctx.udc.user = ANON_USERNAME
 
