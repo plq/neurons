@@ -57,7 +57,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <paper-dropdown-menu name="{{name}}" disabled="{{disabled}}"
                          placeholder="{{placeholder}}" label="{{label}}"
                          always-float-label="{{always_float_label}}">
-      <paper-listbox id="dropdown_list" class="dropdown-contents">
+      <paper-listbox class="dropdown-content" selected="{{currentItemIndex}}">
         <template is="dom-repeat" items="[[remote_data]]">
           <paper-item value="[[_getItemValue(item, index) ]]">
             [[_getItemLabel(item, index)]]
@@ -118,6 +118,22 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         ,remote_data: {
           type: Object
         }
+        ,complexValue: {
+          type: Object,
+          notify: true,
+          observer: "_new_complex_value",
+          reflectToAttribute: true
+        }
+        ,value: {
+          type: Object,
+          notify: true,
+          observer: "_new_value",
+          reflectToAttribute: true
+        }
+        ,currentItemIndex: {
+          type: Number,
+          observer: "_new_index"
+        }
 
         /* to imitate form elements */
         ,disabled: {
@@ -135,9 +151,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       }
       ,created: function() {
         this._elements = {};
+        this._skip_new_index_handler = false;
       }
       ,_process_getter_response: function(e) {
         this.remote_data = e.detail.response;
+        this._new_value(this.value);
       }
       ,_contains: function (a, obj) {
         var i = a.length;
@@ -150,7 +168,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       }
       ,_new_params: function(e) {
         var getter = this.$.ajax_getter;
-        getter.params = e.detail.value;
+        getter.params = neurons.clone(e.detail.value);
         if (this.paramWhitelist.length > 0) {
           for (k in getter.params) {
             if (! this._contains(this.paramWhitelist, k)) {
@@ -159,6 +177,38 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           }
         }
         getter.generateRequest();
+      }
+      ,_new_complex_value: function(val) {
+        if (window.console) console.log("new complex value");
+        if (window.console) console.log(val);
+        if (val.hasOwnProperty(this.attr_item_value)) {
+          this.value = val[this.attr_item_value];
+        }
+      }
+      ,_new_value: function(val) {
+        if (window.console) console.log("new value");
+        if (window.console) console.log(this.value);
+        if (! this.remote_data) {
+          return;
+        }
+        for (var i = 0, l = this.remote_data.length; i < l; ++i) {
+          if (this.remote_data[i][this.attr_item_value] == val) {
+            this._skip_new_index_handler = true;
+            this.currentItemIndex = i;
+            this._skip_new_index_handler = false;
+            break;
+          }
+        }
+      }
+      ,_new_index: function(idx) {
+        if (this._skip_new_index_handler) {
+          return;
+        }
+        if (idx in this.remote_data) {
+          if (window.console) console.log("new index " + idx);
+          if (window.console) console.log(this.value);
+          this.complexValue = this.remote_data[idx];
+        }
       }
       ,_getItemValue: function(item, i) {
         return item[this.attr_item_value];

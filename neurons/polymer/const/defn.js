@@ -68,7 +68,12 @@ Polymer({is: "blabla"
                 continue;
             }
 
-            elt.value = resp[k];
+            if (elt.tagName.toLowerCase() == 'neurons-complex-reference') {
+                elt.complexValue = resp[k];
+            }
+            else {
+                elt.value = resp[k];
+            }
         }
     }
     ,_register_element: function(e) {
@@ -79,11 +84,28 @@ Polymer({is: "blabla"
         e.preventDefault();
 
         var form_data = this.$.form.serialize();
+        for (var k in this._elements) {
+            var elt = this._elements[k];
+            if (elt.tagName.toLowerCase() == 'neurons-complex-reference') {
+                form_data[k] = {};
+                form_data[k][elt.attr_item_value] = elt.complexValue[elt.attr_item_value];
+            }
+        }
 
         var data = {};
-        for (var k in form_data) {
-            data["self." + k] = form_data[k];
-        }
+        var serialize = function(form_data, prefix) {
+            for (var k in form_data) {
+                var subval = form_data[k]
+                if (neurons.isString(subval) || neurons.isNumber(subval)) {
+                    data[prefix + k] = subval;
+                }
+                else {
+                    serialize(subval, prefix + k + ".");
+                }
+            }
+        };
+        serialize(form_data, 'self.');
+
         for (var k in this._parameters) {
             data[k] = this._parameters[k];
         }

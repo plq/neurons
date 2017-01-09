@@ -208,7 +208,9 @@ def TScreenGeneratorService(cls, prefix=None, url_polyfill=DEFAULT_URL_POLYFILL,
 
             retval = DetailScreen(ctx, title=type_name, main=query) \
                 .with_jquery() \
-                .with_xml_to_jsobj()
+                .with_xml_to_jsobj() \
+                .with_type_checkers() \
+                .with_clone()
 
             if params is not None and params.locale is not None:
                 retval.links = [

@@ -41,6 +41,51 @@ HIDE_EMPTY_COLUMNS = """neurons.hide_empty_columns = function ($table) {
 };
 """
 
+# http://stackoverflow.com/a/17772086
+TYPE_CHECKERS = """['Arguments', 'Function', 'String', 'Number', 'Date', 'RegExp'].forEach(
+    function(name) {
+        neurons['is' + name] = function(obj) {
+              return toString.call(obj) == '[object ' + name + ']';
+    };
+});
+"""
+
+# http://stackoverflow.com/questions/728360#728694
+CLONE = """
+function clone(obj) {
+    var copy;
+
+    // Handle the 3 simple types, and null or undefined
+    if (null == obj || "object" != typeof obj) return obj;
+
+    // Handle Date
+    if (obj instanceof Date) {
+        copy = new Date();
+        copy.setTime(obj.getTime());
+        return copy;
+    }
+
+    // Handle Array
+    if (obj instanceof Array) {
+        copy = [];
+        for (var i = 0, len = obj.length; i < len; i++) {
+            copy[i] = clone(obj[i]);
+        }
+        return copy;
+    }
+
+    // Handle Object
+    if (obj instanceof Object) {
+        copy = {};
+        for (var attr in obj) {
+            if (obj.hasOwnProperty(attr)) copy[attr] = clone(obj[attr]);
+        }
+        return copy;
+    }
+
+    throw new Error("Unable to copy obj! Its type isn't supported.");
+}
+"""
 
 class Link(ComplexModel):
     href = XmlAttribute(AnyUri)
@@ -205,8 +250,10 @@ class ScreenBase(ComplexModel):
         ComplexModel.__init__(self, *args, **kwargs)
 
         self._link_hrefs = set()
+        self._have_clone = False
         self._have_jquery = False
         self._have_namespace = False
+        self._have_type_checkers = False
         self._have_hide_empty_columns = False
         self._have_setup_datatables = False
 
@@ -300,5 +347,25 @@ class ScreenBase(ComplexModel):
             ]
 
             self.append_script(''.join(retval))
+
+        return self
+
+    def with_type_checkers(self):
+        if not self._have_type_checkers:
+            self.with_namespace()
+
+            self.append_script(TYPE_CHECKERS)
+
+            self._have_type_checkers = True
+
+        return self
+
+    def with_clone(self):
+        if not self._have_clone:
+            self.with_namespace()
+
+            self.append_script(CLONE)
+
+            self._have_clone = True
 
         return self
