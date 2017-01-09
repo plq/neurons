@@ -42,7 +42,7 @@ def read_file_contents(ns, fn):
 
     path = os.path.abspath(resource_filename(ns, fn))
     neurons.daemon.autorel.AutoReloader.FILES.add(path)
-    return open(path, 'rb').read()
+    return open(path, 'rb').read().decode("utf8")
 
 
 def read_cloth_file(ns, fn):

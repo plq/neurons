@@ -254,8 +254,8 @@ class ScreenBase(ComplexModel):
         self._have_jquery = False
         self._have_namespace = False
         self._have_type_checkers = False
-        self._have_hide_empty_columns = False
         self._have_setup_datatables = False
+        self._have_hide_empty_columns = False
 
         assert ctx.outprot_ctx.screen is None, \
                           "We are supposed to have only one screen per context."

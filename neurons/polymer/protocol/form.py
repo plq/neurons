@@ -34,6 +34,8 @@
 import logging
 logger = logging.getLogger(__name__)
 
+from lxml.html.builder import E
+
 from neurons.form import THtmlFormRoot, SimpleRenderWidget
 from neurons.polymer.model import NeuronsDatePicker, PaperCheckbox
 from neurons.polymer.protocol.widget import PolymerWidgetBase
@@ -93,6 +95,19 @@ class PolymerForm(THtmlFormRoot(PolymerWidgetBase)):
         attrib.update(self._get_form_action(ctx, self.get_cls_attrs(cls)))
 
         return attrib
+
+    def _write_submit_button(self, parent):
+        parent.write(
+            E.div(
+                E.input(
+                    value="Submit",
+                    type="submit",
+                    **{'class': 'submit'}
+                ),
+                E.div(**{"class$": "[[submitStatus]]"}),
+                E.div("[[submitError]]", **{'class': 'submit-error'}),
+            ),
+        )
 
     def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attr = self.get_cls_attrs(cls)

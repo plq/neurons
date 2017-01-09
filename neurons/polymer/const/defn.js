@@ -32,11 +32,15 @@
 
 Polymer({is: "blabla"
     ,properties: {
-
+        submitStatus: {
+            type: String,
+            notify: true
+        },
+        submitError: {}
     }
     ,listeners: {
       'iron-form-presubmit': '_presubmit',
-      'iron-form-element-register': '_register_element',
+      'iron-form-element-register': '_register_element'
     }
     ,created: function() {
         this._elements = {};
@@ -80,43 +84,61 @@ Polymer({is: "blabla"
         var elt = Polymer.dom(e).rootTarget;
         this._elements[elt.getAttribute('name')] = elt;
     }
+    ,_serialize: function(data, form_data, prefix) {
+        for (var k in form_data) {
+            var subval = form_data[k];
+            if (neurons.isString(subval) || neurons.isNumber(subval)) {
+                data[prefix + k] = subval;
+            }
+            else {
+                this._serialize(data, subval, prefix + k + ".");
+            }
+        }
+        return data;
+    }
     ,_presubmit: function(e) {
         e.preventDefault();
+        this.submitStatus = "submit-waiting";
+        this.submitError = '';
 
         var form_data = this.$.form.serialize();
         for (var k in this._elements) {
             var elt = this._elements[k];
             if (elt.tagName.toLowerCase() == 'neurons-complex-reference') {
                 form_data[k] = {};
-                form_data[k][elt.attr_item_value] = elt.complexValue[elt.attr_item_value];
+                form_data[k][elt.attr_item_value] =
+                                          elt.complexValue[elt.attr_item_value];
             }
         }
 
-        var data = {};
-        var serialize = function(form_data, prefix) {
-            for (var k in form_data) {
-                var subval = form_data[k]
-                if (neurons.isString(subval) || neurons.isNumber(subval)) {
-                    data[prefix + k] = subval;
-                }
-                else {
-                    serialize(subval, prefix + k + ".");
-                }
-            }
-        };
-        serialize(form_data, 'self.');
-
+        var params = this._serialize({}, form_data, 'self.');
         for (var k in this._parameters) {
-            data[k] = this._parameters[k];
+            params[k] = this._parameters[k];
         }
 
         var putter = this.$.ajax_putter;
-        putter.params = data;
+        putter.params = params;
         putter.generateRequest();
     }
     ,_process_putter_response: function(e) {
         var resp = e.detail.response;
+        this.submitStatus = "submit-success";
+        this.submitError = '';
+
         if (window.console) console.log(resp);
     }
+    ,_process_putter_error: function(e) {
+        var req = e.detail.request;
+        this.submitStatus = "submit-failure";
 
+        // FIXME: Make these locale-aware
+        if (req.status == 0) {
+            this.submitError = "Communication error, please try again";
+        }
+        else {
+            this.submitError = "Error " + req.status + ": " + req.statusText;
+        }
+
+        if (window.console) console.log(e);
+    }
 });

@@ -206,28 +206,10 @@ def THtmlFormRoot(Base):
                                 pass
 
                         finally:
-                            parent.write(
-                                E.p(
-                                    E.input(
-                                        value="Submit",
-                                        type="submit",
-                                        **{'class': "btn btn-default"}
-                                    ),
-                                    **{'class': "text-center"}
-                                )
-                            )
+                            self._write_submit_button(parent)
                             ctx.protocol.in_form = False
                     else:
-                        parent.write(
-                            E.p(
-                                E.input(
-                                    value="Submit",
-                                    type="submit",
-                                    **{'class': "btn btn-default"}
-                                ),
-                                **{'class': "text-center"}
-                            )
-                        )
+                        self._write_submit_button(parent)
                         ctx.protocol.in_form = False
 
             else:
@@ -244,6 +226,18 @@ def THtmlFormRoot(Base):
                             ret.throw(b)
                         except StopIteration:
                             pass
+
+        def _write_submit_button(self, parent):
+            parent.write(
+                E.p(
+                    E.input(
+                        value="Submit",
+                        type="submit",
+                        **{'class': "btn btn-default"}
+                    ),
+                    **{'class': "text-center"}
+                )
+            )
 
         def _gen_form_attrib(self, ctx, cls):
             cls_attrs = self.get_cls_attrs(cls)

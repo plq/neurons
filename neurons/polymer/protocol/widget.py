@@ -44,7 +44,6 @@ from spyne.util.cdict import cdict
 from spyne.protocol.cloth import XmlCloth
 from spyne.protocol.html import HtmlCloth
 
-
 from neurons.form.widget import camel_case_to_uscore
 from neurons.polymer.model import PaperInput, PaperDropdownMenu, PaperListbox, \
     PaperItem, NeuronsComplexReference
