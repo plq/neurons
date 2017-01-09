@@ -35,6 +35,15 @@
 import logging
 logger = logging.getLogger(__name__)
 
+from sqlalchemy import MetaData
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.engine import Engine
+
+
+try:
+    import ldap
+except ImportError:
+    ldap = None
 
 class DataStoreBase(object):
     def __init__(self, type):
@@ -49,7 +58,6 @@ class PythonLdapStore(DataStoreBase):
         self.parent = parent
 
     def apply_simple(self, bind_dn=None, password=None):
-        import ldap
         parent = self.parent
 
         if bind_dn is None:
@@ -108,10 +116,6 @@ class PythonLdapStore(DataStoreBase):
 class SqlDataStore(DataStoreBase):
     def __init__(self, connection_string=None, engine=None, metadata=None, **kwargs):
         DataStoreBase.__init__(self, type='sqlalchemy')
-
-        from sqlalchemy import MetaData
-        from sqlalchemy.orm import sessionmaker
-        from sqlalchemy.engine import Engine
 
         if engine is not None:
             assert isinstance(engine, Engine)
