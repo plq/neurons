@@ -52,9 +52,10 @@ class ReadContext(object):
         return True
 
     def sqla_finalize(self, session):
-        logger.warning("This is a read-only context!")
+        pass
 
-    def get_session(self, store, **kwargs):
+    def get_session(self, store_name, **kwargs):
+        store = self.parent.app.config.stores[store_name].itself
         if store.backend == 'sqlalchemy':
             sessions = self.sqla_sessions[id(store)]
             if len(sessions) == 0:
@@ -64,6 +65,19 @@ class ReadContext(object):
                 assert len(kwargs) == 0
                 session = sessions[0]
 
+            return session
+
+        raise NotImplementedError(store)
+
+    def get_main_session(self, **kwargs):
+        return self.get_session(self.parent.app.config.main_store, **kwargs)
+
+    def get_fresh_session(self, store_name, **kwargs):
+        store = self.parent.app.config.stores[store_name].itself
+        if store.backend == 'sqlalchemy':
+            session = store.Session(**kwargs)
+            sessions = self.sqla_sessions[id(store)]
+            sessions.append(session)
             return session
 
         raise NotImplementedError(store)
