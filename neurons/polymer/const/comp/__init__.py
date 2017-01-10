@@ -30,3 +30,16 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
+
+def _watch_files():
+    from glob import glob
+    from os.path import join, abspath
+    from pkg_resources import resource_listdir, resource_filename
+    from neurons.daemon.autorel import AutoReloader
+
+    root = abspath(resource_filename(__name__, ''))
+    for dirname in resource_listdir(__name__, ''):
+        for filename in glob(join(root, dirname, "*.html")):
+            AutoReloader.FILES.add(filename)
+
+del _watch_files
