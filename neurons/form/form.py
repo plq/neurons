@@ -352,10 +352,14 @@ def THtmlFormRoot(Base):
                 if not (s.fset is s.prev_fset):
                     self._change_fset(ctx, parent, k, s)
 
+                subname = subattr.sub_name
+                if subname is None:
+                    subname = k
+
                 if name is not None and len(name) > 0:
-                    child_key = self.hier_delim.join((name, k))
+                    subkey = self.hier_delim.join((name, subname))
                 else:
-                    child_key = k
+                    subkey = k
 
                 label_ctxs = []
                 if subattr.label:
@@ -373,10 +377,9 @@ def THtmlFormRoot(Base):
                             self.label_class, self.selsafe(name)))
 
                     with parent.element('label', label_attrib):
-                        parent.write(self.trc(v, ctx.locale, child_key))
+                        parent.write(self.trc(v, ctx.locale, subkey))
 
-                ret = self.to_parent(ctx, v, subinst, parent, child_key,
-                                                                       **kwargs)
+                ret = self.to_parent(ctx, v, subinst, parent, subkey, **kwargs)
                 if isgenerator(ret):
                     try:
                         while True:
