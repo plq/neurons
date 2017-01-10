@@ -41,3 +41,9 @@ POLYMER_DEFN_TEMPLATE = read_file_contents(__name__, 'defn.js')
 
 DEFAULT_URL_POLYFILL = \
             '/static/bower_components/webcomponentsjs/webcomponents-lite.min.js'
+
+from . import comp
+
+del read_cloth_file
+del read_file_contents
+del read_html_document
