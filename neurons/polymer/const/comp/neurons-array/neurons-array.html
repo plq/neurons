@@ -33,19 +33,30 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 <link rel="import"
       href="/static/bower_components/polymer/polymer.html">
 <link rel="import"
-      href="/static/bower_components/paper-dialog/paper-dialog.html">
-<link rel="import"
       href="/static/bower_components/paper-button/paper-button.html">
 <link rel="import"
       href="/static/bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
 <link rel="import"
       href="/static/bower_components/iron-form-element-behavior/iron-form-element-behavior.html">
 
+<link rel="import"
+      href="/static/bower_components/iron-data-table/iron-data-table.html">
+
 <link rel="import" spyne-id="dependencies">
 
 <dom-module id="neurons-array">
   <template>
+    <iron-ajax id="ajax_getter"
+               url="{{dataSource}}"
+               on-response="_process_getter_response"
+               handle-as="json"> </iron-ajax>
 
+    <fieldset>
+      <legend>{{ label }}</legend>
+      <iron-data-table id="table" items="[[complexValue]]">
+        <content></content>
+      </iron-data-table>
+    </fieldset>
   </template>
 
   <script>
@@ -60,24 +71,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         dataSource: {
           type: String,
           notify: true,
-          reflectToAttribute: true
-        }
-        ,always_float_label: {
-          type: Boolean,
-          reflectToAttribute: true
-        }
-        ,attr_item_value: {
-          type: String,
-          value: 'id',
-          reflectToAttribute: true
-        }
-        ,attr_item_label: {
-          type: String,
-          value: 'name',
-          reflectToAttribute: true
-        }
-        ,form_url: {
-          type: String,
           reflectToAttribute: true
         }
         ,params: {
@@ -102,8 +95,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         ,complexValue: {
           type: Object,
           notify: true,
-          observer: "_new_complex_value",
-          reflectToAttribute: true
+          observer: "_new_complex_value"
         }
         ,value: {
           type: Object,
@@ -123,6 +115,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         }
         ,label: {
           type: String,
+          notify: true,
           reflectToAttribute: true
         }
         ,placeholder: {
@@ -134,11 +127,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         this._elements = {};
         this._skip_new_index_handler = false;
       }
+      ,attached: function() {
+
+      }
       ,_process_getter_response: function(e) {
         this.remote_data = e.detail.response;
         this._new_value(this.value);
       }
-      ,_contains: function (a, obj) {
+      ,_contains: function(a, obj) {
         var i = a.length;
         while (i--) {
           if (a[i] === obj) {
@@ -160,9 +156,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         getter.generateRequest();
       }
       ,_new_complex_value: function(val) {
-        if (val.hasOwnProperty(this.attr_item_value)) {
-          this.value = val[this.attr_item_value];
-        }
+        if (window.console) console.log(val);
       }
       ,_new_value: function(val) {
         if (! this.remote_data) {
@@ -184,12 +178,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         if (idx in this.remote_data) {
           this.complexValue = this.remote_data[idx];
         }
-      }
-      ,_getItemValue: function(item, i) {
-        return item[this.attr_item_value];
-      }
-      ,_getItemLabel: function(item, i) {
-        return item[this.attr_item_label];
       }
     });
   </script>
