@@ -48,7 +48,16 @@ Polymer({is: "blabla"
     }
     ,attached: function() {
         var children = this.getEffectiveChildren();
+
+        // remove parameters from local dom
+        var this_dom = Polymer.dom(this);
+        for (var i = 0, l = children.length; i < l; ++i) {
+            this_dom.removeChild(children[i]);
+        }
+
+        // parse parameters
         this._parameters = neurons.xml_to_jsobj(children);
+
         var getter = this.$.ajax_getter;
         getter.params = this._parameters;
         getter.generateRequest();
