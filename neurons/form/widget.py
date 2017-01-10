@@ -517,7 +517,7 @@ class HrefWidget(HtmlFormWidget):
 
         self.serialization_handlers = cdict({
             ModelBase: self.model_base_to_parent,
-            AnyUri: self.anyuri_to_parent,
+            AnyUri: self.any_uri_to_parent,
             ComplexModelBase: self.not_supported,
         })
 
@@ -567,7 +567,7 @@ class HrefWidget(HtmlFormWidget):
         if self.hidden_input and (inst is not None or cls_attr.min_occurs >= 1):
             self._gen_input_hidden(cls, inst, parent, name, **kwargs)
 
-    def anyuri_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+    def any_uri_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         retval = self.gen_anchor(cls, inst, name, self.anchor_class)
         parent.write(retval)
 

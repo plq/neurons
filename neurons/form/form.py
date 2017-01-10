@@ -507,11 +507,11 @@ class HtmlForm(HtmlFormRoot):
             File: self.file_to_parent,
             Fault: self.fault_to_parent,
             Array: self.array_type_to_parent,
-            AnyUri: self._check_simple(self.anyuri_to_parent),
-            AnyXml: self._check_simple(self.anyxml_to_parent),
+            AnyUri: self._check_simple(self.any_uri_to_parent),
+            AnyXml: self._check_simple(self.any_xml_to_parent),
             Integer: self._check_simple(self.integer_to_parent),
             Unicode: self._check_simple(self.unicode_to_parent),
-            AnyHtml: self._check_simple(self.anyhtml_to_parent),
+            AnyHtml: self._check_simple(self.any_html_to_parent),
             Decimal: self._check_simple(self.decimal_to_parent),
             Boolean: self._check_simple(self.boolean_to_parent),
             Duration: self._check_simple(self.duration_to_parent),
@@ -552,7 +552,7 @@ class HtmlForm(HtmlFormRoot):
         cls_attrs, elt = self._gen_input_unicode(ctx, cls, inst, name, **kwargs)
         parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
 
-    def anyuri_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+    def any_uri_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         if isinstance(inst, AnyUri.Value):
             # FIXME: this could have beeen handled *way* better.
             inst = inst.href
@@ -582,8 +582,8 @@ class HtmlForm(HtmlFormRoot):
 
         return _ml_to_parent
 
-    anyhtml_to_parent = Tany_ml_to_parent.__func__(html)
-    anyxml_to_parent = Tany_ml_to_parent.__func__(etree)
+    any_html_to_parent = Tany_ml_to_parent.__func__(html)
+    any_xml_to_parent = Tany_ml_to_parent.__func__(etree)
 
     def uuid_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         kwargs.update({'attr_override': {'max_len': 36}})
