@@ -37,11 +37,12 @@ logger = logging.getLogger(__name__)
 from lxml.html.builder import E
 
 from neurons.form import THtmlFormRoot, SimpleRenderWidget
-from neurons.polymer.model import NeuronsDatePicker, PaperCheckbox
+from neurons.polymer.model import NeuronsDatePicker, PaperCheckbox, \
+    IronDataTable, NeuronsArray, IronAjax, IronDataTableColumn
 from neurons.polymer.protocol.widget import PolymerWidgetBase
 
 from spyne import ComplexModelBase, Unicode, Decimal, Boolean, DateTime, \
-    Integer, AnyUri, Fault, D
+    Integer, AnyUri, Fault, D, Array
 from spyne.util.cdict import cdict
 
 
@@ -108,8 +109,41 @@ class PolymerForm(THtmlFormRoot(PolymerWidgetBase)):
             ),
         )
 
-    def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+    def array_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls_attrs = self.get_cls_attrs(cls)
+
+        if issubclass(cls, Array):
+            cls, = cls._type_info.values()
+
+        fti = cls.get_flat_type_info(cls)
+
+        columns = []
+
+        for k, v in fti.items():
+            subcls_attrs = self.get_cls_attrs(v)
+            if subcls_attrs.exc:
+                continue
+
+            subname= self.trc(cls, ctx.locale, k)
+            columns.append(IronDataTableColumn(
+                name=subname, template="[[item.%s]]" % (k,)
+            ))
+
+        wgt_inst = NeuronsArray(
+            label=self.trc(cls, ctx.locale, name),
+            name=self._gen_input_name(name),
+            columns=columns,
+        )
+
+        self._add_label(ctx, cls, cls_attrs, name, wgt_inst, **kwargs)
+        self._write_elt_inst(ctx, wgt_inst, parent)
+
+    def complex_model_to_parent(self, ctx, cls, inst, parent, name,
+                                                      from_arr=False, **kwargs):
         cls_attr = self.get_cls_attrs(cls)
+
+        if not from_arr and issubclass(cls, Array) or cls_attr.max_occurs > 1:
+            return self.array_to_parent(ctx, cls, inst, parent, name, **kwargs)
 
         fieldset_attr = {'class': cls.get_type_name()}
 

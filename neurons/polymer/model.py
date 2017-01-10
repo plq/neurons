@@ -34,7 +34,7 @@
 from neurons.base.screen import ScreenBase
 
 from spyne import Unicode, ComplexModel, XmlAttribute, Array, AnyUri, Boolean, \
-    Integer, XmlData, Date
+    Integer, XmlData, Date, AnyHtml
 
 
 class HtmlImport(ComplexModel):
@@ -88,6 +88,30 @@ class NeuronsDatePicker(HtmlElementBase):
 
     min = Date
     max = Date
+
+
+class IronDataTableColumn(ComplexModel):
+    class Attributes(ComplexModel.Attributes):
+        sub_name = 'data-table-column'
+
+    name = XmlAttribute(Unicode)
+    template = AnyHtml
+
+
+class IronDataTable(ComplexModel):
+    class Attributes(ComplexModel.Attributes):
+        sub_name = 'iron-data-table'
+
+    items = XmlAttribute(Unicode)
+    columns = Array(IronDataTableColumn, wrapped=False)
+
+
+class NeuronsArray(HtmlFormElementBase):
+    class Attributes(ComplexModel.Attributes):
+        sub_name = 'neurons-array'
+
+    label = XmlAttribute(Unicode)
+    columns = Array(IronDataTableColumn, wrapped=False)
 
 
 class NeuronsComplexReference(HtmlFormElementBase):
