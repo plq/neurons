@@ -44,12 +44,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 <link rel="import" spyne-id="dependencies">
 
 <dom-module id="neurons-complex-reference">
-  <!--
-  We parameterize this in order to be able to mark serialization method as xml
-  We need a space inside iron-ajax because otherwise lxml will merge the
-  closing tag
-  -->
-  <template spyne-id="template" spyne-write-contents>
+  <template>
     <iron-ajax id="ajax_getter"
                url="{{dataSource}}"
                on-response="_process_getter_response"
@@ -93,10 +88,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         ,attr_item_label: {
           type: String,
           value: 'name',
-          reflectToAttribute: true
-        }
-        ,form_url: {
-          type: String,
           reflectToAttribute: true
         }
         ,params: {
