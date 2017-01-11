@@ -38,9 +38,9 @@ from sqlalchemy.orm import make_transient
 
 class TableModel(TTableModel()):
     def __init__(self, *args, **kwargs):
-        super(TableModel, self).__init__(*args, **kwargs)
-
         self._changes = set()
+
+        super(TableModel, self).__init__(*args, **kwargs)
 
     @classmethod
     def __respawn__(cls, ctx=None, filters=None):
