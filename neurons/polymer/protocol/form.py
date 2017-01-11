@@ -152,7 +152,11 @@ class PolymerForm(THtmlFormRoot(PolymerWidgetBase)):
                 pd.append('[[_urlencodeParams()]]')
 
                 mdid2key = ctx.app.interface.method_descriptor_id_to_key
-                href = mdid2key[id(md)].rsplit("}", 1)[-1]
+                method_key = mdid2key.get(id(md), None)
+                if method_key is None:
+                    continue
+
+                href = method_key.rsplit("}", 1)[-1]
                 href_with_params = "%s%s?%s" % \
                                       (self.mrpc_url_prefix, href, '&'.join(pd))
 
