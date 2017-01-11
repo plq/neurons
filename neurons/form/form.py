@@ -156,7 +156,8 @@ def THtmlFormRoot(Base):
                 cloth=None, cloth_parser=None, polymorphic=True, hier_delim='.',
                                      label=True, doctype=None, placeholder=None,
                input_class=None, input_div_class=None, input_wrapper_class=None,
-              label_class=None, action=None, method='POST', before_form=None):
+                 label_class=None, action=None, method='POST', before_form=None,
+                                                            mrpc_url_prefix=''):
 
             super(HtmlFormRoot, self).__init__(app=app, encoding=encoding,
                 doctype=doctype,
@@ -173,6 +174,7 @@ def THtmlFormRoot(Base):
                 self.event_manager.add_listener("before_form", before_form)
 
             self.simple = SimpleRenderWidget(label=label)
+            self.mrpc_url_prefix = mrpc_url_prefix
 
         @coroutine
         def start_to_parent(self, ctx, cls, inst, parent, name, **kwargs):

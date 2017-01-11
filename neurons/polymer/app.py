@@ -45,7 +45,8 @@ from .const import T_DOM_MODULE, T_SCREEN
 
 
 class ComponentService(ServiceBase):
-    @rpc(Unicode, _pattern=HttpPattern('neurons-<fn>.html', verb="GET"), _returns=File)
+    @rpc(Unicode, _pattern=HttpPattern('neurons-<fn>.html', verb="GET"),
+                                                                  _returns=File)
     def get_component(ctx, fn):
         ctx.out_protocol = HttpRpc()
         fn = "neurons-" + fn
@@ -56,7 +57,7 @@ class ComponentService(ServiceBase):
 
 
 def gen_component_app(config, prefix, classes, locale=None,
-        gen_css_imports=False):
+                                      gen_css_imports=False, api_url_prefix=''):
     from neurons.polymer.protocol import PolymerForm
     from neurons.polymer.service import TComponentGeneratorService
 
@@ -65,9 +66,15 @@ def gen_component_app(config, prefix, classes, locale=None,
             [ComponentService] +
             [
                 TComponentGeneratorService(
-                        cls.customize(prot=PolymerForm()),
-                                        prefix, locale, gen_css_imports)
-                                                              for cls in classes
+                    cls.customize(
+                        prot=PolymerForm(mrpc_url_prefix='/'),
+                    ),
+                    prefix,
+                    locale,
+                    gen_css_imports,
+                    api_url_prefix=api_url_prefix,
+                )
+                for cls in classes
             ],
             tns='%s.comp' % config.name,
             in_protocol=HttpRpc(validator='soft'),
@@ -77,17 +84,24 @@ def gen_component_app(config, prefix, classes, locale=None,
         )
 
 
-def gen_screen_app(config, prefix, classes):
+def gen_screen_services(prefix, classes, api_url_prefix=''):
     from neurons.polymer.protocol import PolymerForm
     from neurons.polymer.service import TScreenGeneratorService
 
+    return [
+        TScreenGeneratorService(
+            cls.customize(
+                prot=PolymerForm(mrpc_url_prefix='/'),
+            ),
+            prefix, api_url_prefix
+        ) for cls in classes
+    ]
+
+
+def gen_screen_app(config, prefix, classes, api_url_prefix=''):
     return \
         Application(
-            [
-                TScreenGeneratorService(
-                                      cls.customize(prot=PolymerForm()), prefix)
-                for cls in classes
-            ],
+            gen_screen_services(prefix, classes, api_url_prefix=api_url_prefix),
             tns='%s.scr' % config.name,
             in_protocol=HttpRpc(validator='soft'),
             out_protocol=HtmlCloth(cloth=T_SCREEN, strip_comments=True,

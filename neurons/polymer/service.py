@@ -92,7 +92,8 @@ def gen_polymer_defn(component_name, cls, minify=False):
     return retval
 
 
-def gen_component(cls, component_name, DetailScreen, gen_css_imports, minify_js):
+def gen_component(cls, component_name, DetailScreen, gen_css_imports, minify_js,
+                                                                api_url_prefix):
     deps = [
         'polymer',
 
@@ -118,12 +119,11 @@ def gen_component(cls, component_name, DetailScreen, gen_css_imports, minify_js)
     styles = []
     if gen_css_imports:
         styles.append('@import url("/static/screen/{}.css")'
-            .format(component_name))
+                                                        .format(component_name))
 
-    # FIXME: stop hardcoding /api
-    getter_url = "/api/{}.get".format(cls.get_type_name())
-
-    putter_url = "/api/{}.put".format(cls.get_type_name())
+    assert api_url_prefix == '/api/'
+    getter_url = "{}{}.get".format(api_url_prefix, cls.get_type_name())
+    putter_url = "{}{}.put".format(api_url_prefix, cls.get_type_name())
 
     retval = DetailScreen(
         main=cls(),
@@ -141,7 +141,7 @@ def gen_component(cls, component_name, DetailScreen, gen_css_imports, minify_js)
 
 
 def TComponentGeneratorService(cls, prefix=None, locale=None,
-                                        gen_css_imports=False, minify_js=False):
+                     gen_css_imports=False, minify_js=False, api_url_prefix=''):
     type_name = cls.get_type_name()
     component_name = _to_snake_case(type_name)
 
@@ -163,7 +163,7 @@ def TComponentGeneratorService(cls, prefix=None, locale=None,
                 ctx.locale = locale
                 logger.debug("Locale overridden to %s locally.", locale)
             return gen_component(cls, component_name, DetailScreen,
-                                                     gen_css_imports, minify_js)
+                                     gen_css_imports, minify_js, api_url_prefix)
 
     if locale is not None:
         def _fix_locale(ctx):

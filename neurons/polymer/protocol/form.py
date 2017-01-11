@@ -52,13 +52,14 @@ class PolymerForm(THtmlFormRoot(PolymerWidgetBase)):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
                 cloth=None, cloth_parser=None, polymorphic=True, hier_delim='.',
                      doctype=None, label=True, placeholder=None,
-                                  action=None, method='POST', before_form=None):
+              action=None, method='POST', before_form=None, mrpc_url_prefix=''):
 
         super(PolymerForm, self).__init__(app=app, doctype=doctype,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
                 cloth=cloth, cloth_parser=cloth_parser, polymorphic=polymorphic,
                     hier_delim=hier_delim, label=label, placeholder=placeholder,
-                          action=action, method=method, before_form=before_form)
+                          action=action, method=method, before_form=before_form,
+                                                mrpc_url_prefix=mrpc_url_prefix)
 
         self.serialization_handlers = cdict({
             # Date: self._check_simple(self.date_to_parent),
