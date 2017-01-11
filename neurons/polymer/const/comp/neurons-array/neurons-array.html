@@ -145,15 +145,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       }
       ,_new_params: function(e) {
         var getter = this.$.ajax_getter;
-        getter.params = neurons.clone(e.detail.value);
+        getter.params = this._effectiveParams(e.detail.value);
+      }
+      ,_effectiveParams: function(params) {
+        var retval = neurons.clone(params);
         if (this.paramWhitelist.length > 0) {
-          for (k in getter.params) {
+          for (k in retval) {
             if (! this._contains(this.paramWhitelist, k)) {
-              delete getter.params[k];
+              delete retval[k];
             }
           }
         }
-        getter.generateRequest();
+        return retval;
+      }
+      ,_urlencodeParams: function() {
+        return "&" + neurons.urlencode(this._effectiveParams(this.params));
       }
       ,_new_complex_value: function(val) {
         if (window.console) console.log(val);

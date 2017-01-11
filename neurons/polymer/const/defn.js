@@ -151,4 +151,18 @@ Polymer({is: "blabla"
 
         if (window.console) console.log(e);
     }
+    ,_effectiveParams: function(params) {
+        var retval = neurons.clone(params);
+        if (this.paramWhitelist && this.paramWhitelist.length > 0) {
+            for (k in retval) {
+                if (! this._contains(this.paramWhitelist, k)) {
+                    delete retval[k];
+                }
+            }
+        }
+        return retval;
+    }
+    ,_urlencodeParams: function() {
+        return neurons.urlencode(this._effectiveParams(this._parameters));
+    }
 });
