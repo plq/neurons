@@ -130,6 +130,37 @@ class PolymerForm(THtmlFormRoot(PolymerWidgetBase)):
                 name=subname, template="[[item.%s]]" % (k,)
             ))
 
+        methods = cls.Attributes.methods
+        if methods is not None and len(methods) > 0:
+            mrpc_delim_elt = E.span(" | ")  # TODO: parameterize this
+            first = True
+            for mn, md in methods.items():
+                if first:
+                    first = False
+
+                elif mrpc_delim_elt is not None:
+                    parent.write(" ")
+                    parent.write(mrpc_delim_elt)
+
+                # get first argument name
+                cls_arg_name = next(iter(md.in_message._type_info.keys()))
+
+                pd = []
+                for k, v in cls.get_identifiers():
+                    pd.append("{0}.{1}=[[item.{1}]]".format(cls_arg_name, k))
+                pd.append('[[_urlencodeParams()]]')
+
+                mdid2key = ctx.app.interface.method_descriptor_id_to_key
+                href = mdid2key[id(md)].rsplit("}", 1)[-1]
+                href_with_params = "%s%s?%s" % \
+                                      (self.mrpc_url_prefix, href, '&'.join(pd))
+
+                text = md.translate(ctx.locale, md.in_message.get_type_name())
+
+                columns.append(IronDataTableColumn(
+                    template=E.a(text, **{'href$': href_with_params}),
+                ))
+
         wgt_inst = NeuronsArray(
             label=self.trc(cls, ctx.locale, name),
             name=self._gen_input_name(name),
