@@ -38,7 +38,7 @@ from lxml.html.builder import E
 
 from neurons.form import THtmlFormRoot, SimpleRenderWidget
 from neurons.polymer.model import NeuronsDatePicker, PaperCheckbox, \
-    IronDataTable, NeuronsArray, IronAjax, IronDataTableColumn
+    NeuronsArray, IronDataTableColumn
 from neurons.polymer.protocol.widget import PolymerWidgetBase
 
 from spyne import ComplexModelBase, Unicode, Decimal, Boolean, DateTime, \
@@ -110,6 +110,7 @@ class PolymerForm(THtmlFormRoot(PolymerWidgetBase)):
             ),
         )
 
+    # FIXME: this can only handle the simplest of cases.
     def array_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
 
@@ -162,8 +163,8 @@ class PolymerForm(THtmlFormRoot(PolymerWidgetBase)):
                 ))
 
         wgt_inst = NeuronsArray(
-            label=self.trc(cls, ctx.locale, name),
             name=self._gen_input_name(name),
+            label=self.trc(cls, ctx.locale, name),
             columns=columns,
         )
 
