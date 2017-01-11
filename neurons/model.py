@@ -43,14 +43,16 @@ class TableModel(TTableModel()):
         self._changes = set()
 
     @classmethod
-    def __respawn__(cls, ctx=None):
+    def __respawn__(cls, ctx=None, filters=None):
         has_db = ctx.app is not None and 'sql_main' in ctx.app.config.stores
 
         if has_db and ctx is not None and ctx.in_object is not None \
                     and len(ctx.in_object) > 0 and ctx.in_object[0] is not None:
             in_object = ctx.in_object[0]
 
-            filters = {}
+            if filters is None:
+                filters = {}
+
             for k, v in get_pk_columns(cls):
                 filters[k] = getattr(in_object, k)
 
