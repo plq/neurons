@@ -90,6 +90,51 @@ neurons.clone = function(obj) {
 
     throw new Error("Unable to copy obj! Its type isn't supported.");
 }
+
+URLENCODE = """
+neurons.urlencode_str = function(str) {
+    var output = '';
+    var x = 0;
+    str = str.toString();
+    var regex = /(^[a-zA-Z0-9_.]*)/;
+
+    while (x < str.length) {
+        var match = regex.exec(str.substr(x));
+
+        if (match != null && match.length > 1 && match[1] != '') {
+            output += match[1];
+            x += match[1].length;
+        }
+        else {
+            if (str[x] == ' ') {
+                output += '+';
+            }
+            else {
+                var charCode = str.charCodeAt(x);
+                var hexVal = charCode.toString(16);
+                output += '%' + ( hexVal.length < 2 ? '0' : '' ) + hexVal.toUpperCase();
+            }
+            x++;
+        }
+    }
+
+    return output;
+};
+
+neurons.urlencode = function(obj) {
+    var i = 0;
+    var retval = "";
+    for (var k in obj) if (obj.hasOwnProperty(k) && obj[k]) {
+        if (i > 0) {
+            retval += "&";
+        }
+        retval += k + '=' + neurons.urlencode_str(obj[k]);
+
+        ++i;
+    }
+    return retval;
+};
+
 """
 
 class Link(ComplexModel):
@@ -258,6 +303,7 @@ class ScreenBase(ComplexModel):
         self._have_clone = False
         self._have_jquery = False
         self._have_namespace = False
+        self._have_urlencode = False
         self._have_type_checkers = False
         self._have_setup_datatables = False
         self._have_hide_empty_columns = False
@@ -381,5 +427,15 @@ class ScreenBase(ComplexModel):
             self.append_script(CLONE)
 
             self._have_clone = True
+
+        return self
+
+    def with_urlencode(self):
+        if not self._have_urlencode:
+            self.with_namespace()
+
+            self.append_script(URLENCODE)
+
+            self._have_urlencode = True
 
         return self
