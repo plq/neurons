@@ -34,16 +34,21 @@
 import logging
 logger = logging.getLogger(__name__)
 
+import json
+
 from lxml.html.builder import E
 
 from neurons.form import THtmlFormRoot, SimpleRenderWidget
 from neurons.polymer.model import NeuronsDatePicker, PaperCheckbox, \
-    NeuronsArray, IronDataTableColumn
+    NeuronsArray, IronDataTableColumn, Template
 from neurons.polymer.protocol.widget import PolymerWidgetBase
 
 from spyne import ComplexModelBase, Unicode, Decimal, Boolean, DateTime, \
     Integer, AnyUri, Fault, D, Array
 from spyne.util.cdict import cdict
+
+
+_NA_COUNTER = 0
 
 
 class PolymerForm(THtmlFormRoot(PolymerWidgetBase)):
@@ -112,6 +117,8 @@ class PolymerForm(THtmlFormRoot(PolymerWidgetBase)):
 
     # FIXME: this can only handle the simplest of cases.
     def array_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        global _NA_COUNTER
+
         cls_attrs = self.get_cls_attrs(cls)
 
         if issubclass(cls, Array):
@@ -128,10 +135,16 @@ class PolymerForm(THtmlFormRoot(PolymerWidgetBase)):
 
             subname= self.trc(cls, ctx.locale, k)
             columns.append(IronDataTableColumn(
-                name=subname, template="[[item.%s]]" % (k,)
+                name=subname, template=Template(data="[[item.%s]]" % (k,))
             ))
 
         methods = cls.Attributes.methods
+
+        na_id = "na-%d" % _NA_COUNTER
+        _NA_COUNTER += 1
+
+        pam = {}
+
         if methods is not None and len(methods) > 0:
             mrpc_delim_elt = E.span(" | ")  # TODO: parameterize this
             first = True
@@ -149,7 +162,7 @@ class PolymerForm(THtmlFormRoot(PolymerWidgetBase)):
                 pd = []
                 for k, v in cls.get_identifiers():
                     pd.append("{0}.{1}=[[item.{1}]]".format(cls_arg_name, k))
-                pd.append('[[_urlencodeParams()]]')
+                pd.append('[[_urlencodeParams("%s", "%s")]]' % (na_id, md.name))
 
                 mdid2key = ctx.app.interface.method_descriptor_id_to_key
                 method_key = mdid2key.get(id(md), None)
@@ -162,14 +175,21 @@ class PolymerForm(THtmlFormRoot(PolymerWidgetBase)):
 
                 text = md.translate(ctx.locale, md.in_message.get_type_name())
 
+                if md.udd.parent_arg_map is not None:
+                    pam[md.name] = md.udd.parent_arg_map
+
                 columns.append(IronDataTableColumn(
-                    template=E.a(text, **{'href$': href_with_params}),
+                    template=Template(
+                        data=E.a(text, **{'href$': href_with_params}),
+                    )
                 ))
 
         wgt_inst = NeuronsArray(
+            id=na_id,
             name=self._gen_input_name(name),
             label=self.trc(cls, ctx.locale, name),
             columns=columns,
+            arg_map=json.dumps(pam)
         )
 
         self._add_label(ctx, cls, cls_attrs, name, wgt_inst, **kwargs)

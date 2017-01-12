@@ -162,7 +162,14 @@ Polymer({is: "blabla"
         }
         return retval;
     }
-    ,_urlencodeParams: function() {
-        return neurons.urlencode(this._effectiveParams(this._parameters));
+    ,_urlencodeParams: function(elt_id, method_name) {
+        var params = this._effectiveParams(this._parameters);
+        var pam = this.$[elt_id].argMap[method_name];
+        for (var k in pam) {
+            var v = pam[k];
+            params[v] = params[k];
+            delete params[k];
+        }
+        return neurons.urlencode(params);
     }
 });

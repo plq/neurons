@@ -90,12 +90,16 @@ class NeuronsDatePicker(HtmlElementBase):
     max = Date
 
 
+class Template(ComplexModel):
+    data = XmlData(AnyHtml)
+
+
 class IronDataTableColumn(ComplexModel):
     class Attributes(ComplexModel.Attributes):
         sub_name = 'data-table-column'
 
     name = XmlAttribute(Unicode)
-    template = AnyHtml
+    template = Template
 
 
 class IronDataTable(ComplexModel):
@@ -112,6 +116,7 @@ class NeuronsArray(HtmlFormElementBase):
 
     label = XmlAttribute(Unicode)
     columns = Array(IronDataTableColumn, wrapped=False)
+    arg_map = XmlAttribute(Unicode(sub_name='arg-map'))
 
 
 class NeuronsComplexReference(HtmlFormElementBase):
