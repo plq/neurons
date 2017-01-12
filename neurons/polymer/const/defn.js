@@ -167,7 +167,9 @@ Polymer({is: "blabla"
         var pam = this.$[elt_id].argMap[method_name];
         for (var k in pam) {
             var v = pam[k];
-            params[v] = params[k];
+            if (v !== null) {
+                params[v] = params[k];
+            }
             delete params[k];
         }
         return neurons.urlencode(params);
