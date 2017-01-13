@@ -114,6 +114,7 @@ def gen_component(cls, component_name, DetailScreen, gen_css_imports, minify_js,
         HtmlImport(href='neurons-array.html'),
         HtmlImport(href='neurons-date-picker.html'),
         HtmlImport(href='neurons-complex-reference/neurons-complex-dropdown.html'),
+        HtmlImport(href='neurons-complex-reference/neurons-complex-href.html'),
     ]
 
     styles = []

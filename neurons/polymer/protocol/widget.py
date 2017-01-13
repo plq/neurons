@@ -46,7 +46,7 @@ from spyne.protocol.html import HtmlCloth
 
 from neurons.form.widget import camel_case_to_uscore
 from neurons.polymer.model import PaperInput, PaperDropdownMenu, PaperListbox, \
-    PaperItem, NeuronsComplexReference
+    PaperItem, NeuronsComplexReference, NeuronsComplexHref
 
 
 class PolymerWidgetBase(HtmlCloth):
@@ -272,6 +272,47 @@ class PolymerComplexDropdownWidget(PolymerWidgetBase):
         wgt_inst = NeuronsComplexReference(
             need_parent_params=self.need_parent_params,
             data_source=self.data_source,
+            attr_item_label=self.text_field, attr_item_value=self.id_field,
+                                                                **wgt_inst_data)
+
+        if self.param_whitelist is not None:
+            wgt_inst.param_whitelist = json.dumps(self.param_whitelist)
+
+        self._add_label(ctx, cls, cls_attrs, name, wgt_inst, **kwargs)
+        self._write_elt_inst(ctx, wgt_inst, parent)
+
+
+class PolymerComplexHrefWidget(PolymerWidgetBase):
+    def __init__(self, text_field=None, id_field=None,
+            need_parent_params=True, param_whitelist=None,
+                  app=None, encoding='utf8', mime_type=None, ignore_uncap=False,
+         ignore_wrappers=False, cloth=None, cloth_parser=None, polymorphic=True,
+                 strip_comments=True, hier_delim='.', doctype=None, label=True):
+
+        super(PolymerComplexHrefWidget, self) \
+            .__init__(app=app, encoding=encoding, doctype=doctype,
+                                 hier_delim=hier_delim, mime_type=mime_type,
+                     ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
+                cloth=cloth, cloth_parser=cloth_parser, polymorphic=polymorphic,
+                                     strip_comments=strip_comments, label=label)
+
+        self.serialization_handlers = cdict({
+            ComplexModelBase: self.complex_model_to_parent,
+        })
+
+        self.param_whitelist = param_whitelist
+        self.text_field = text_field
+        self.need_parent_params = need_parent_params
+        self.id_field = id_field
+
+    def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls_attrs = self.get_cls_attrs(cls)
+
+        wgt_inst_data = self._gen_widget_data(ctx, cls, inst, name, cls_attrs,
+                                                                       **kwargs)
+
+        wgt_inst = NeuronsComplexHref(
+            need_parent_params=self.need_parent_params,
             attr_item_label=self.text_field, attr_item_value=self.id_field,
                                                                 **wgt_inst_data)
 

@@ -119,6 +119,18 @@ class NeuronsArray(HtmlFormElementBase):
     arg_map = XmlAttribute(Unicode(sub_name='arg-map'))
 
 
+class NeuronsComplexHref(HtmlFormElementBase):
+    class Attributes(ComplexModel.Attributes):
+        sub_name = 'neurons-complex-href'
+
+    label = XmlAttribute(Unicode)
+    param_whitelist = XmlAttribute(Unicode(sub_name='param-whitelist'))
+    attr_item_value = XmlAttribute(Unicode(sub_name='attr-item-value'))
+    attr_item_label = XmlAttribute(Unicode(sub_name='attr-item-label'))
+    need_parent_params = XmlAttribute(Boolean(sub_name='need-parent-params'))
+    value = XmlAttribute(Boolean(sub_name='value'))
+
+
 class NeuronsComplexReference(HtmlFormElementBase):
     class Attributes(ComplexModel.Attributes):
         sub_name = 'neurons-complex-dropdown'

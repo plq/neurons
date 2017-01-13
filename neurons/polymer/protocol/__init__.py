@@ -32,4 +32,5 @@
 #
 
 from .form import PolymerForm
+from .widget import PolymerComplexHrefWidget
 from .widget import PolymerComplexDropdownWidget

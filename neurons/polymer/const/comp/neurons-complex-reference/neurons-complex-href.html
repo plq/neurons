@@ -1,0 +1,168 @@
+<!--
+This file is part of the Neurons project.
+Copyright (c), Arskom Ltd. (arskom.com.tr),
+               Burak Arslan <burak.arslan@arskom.com.tr>.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+* Neither the name of the Arskom Ltd. nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<link rel="import"
+      href="/static/bower_components/polymer/polymer.html">
+<link rel="import"
+      href="/static/bower_components/paper-dialog/paper-dialog.html">
+<link rel="import"
+      href="/static/bower_components/paper-button/paper-button.html">
+<link rel="import"
+      href="/static/bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import"
+      href="/static/bower_components/iron-form-element-behavior/iron-form-element-behavior.html">
+
+<link rel="import" spyne-id="dependencies">
+
+<dom-module id="neurons-complex-href">
+  <template>
+    <template is="dom-if" if="[[showLabel]]">
+      <div>
+        <div style="display: inline">[[label]]</div>
+        <a href$="{{_getItemValue(complexValue, attrItemValue)}}">{{_getItemValue(complexValue, attrItemLabel)}}</a>
+      </div>
+    </template>
+    <template is="dom-if" if="[[!showLabel]]">
+      <a href$="{{_getItemValue(complexValue, attrItemValue)}}">{{_getItemValue(complexValue, attrItemLabel)}}</a>
+    </template>
+  </template>
+
+  <script>
+    Polymer({"is": "neurons-complex-href"
+      ,behaviors: [
+        Polymer.IronFormElementBehavior
+      ]
+      ,listeners: {
+        'params-changed': '_new_params'
+      }
+      ,properties: {
+        attrItemValue: {
+          type: String,
+          value: 'id',
+          reflectToAttribute: true
+        }
+        ,attrItemLabel: {
+          type: String,
+          value: 'name',
+          reflectToAttribute: true
+        }
+        ,showLabel: {
+          type: Boolean
+        }
+        ,params: {
+          type: Object,
+          notify: true
+        }
+        ,paramWhitelist: {
+          type: Object,
+          value: []
+        }
+        ,need_parent_params: {
+          type: Boolean,
+          reflectToAttribute: true
+        }
+        ,show_add: {
+          type: Boolean,
+          reflectToAttribute: true
+        }
+        ,remote_data: {
+          type: Object
+        }
+        ,complexValue: {
+          type: Object,
+          notify: true,
+          observer: "_new_complex_value"
+        }
+        ,value: {
+          type: Object,
+          notify: true,
+          reflectToAttribute: true
+        }
+
+        /* to imitate form elements */
+        ,label: {
+          type: String,
+          value: null,
+          notify: true,
+          observer: "_new_label",
+          reflectToAttribute: true
+        }
+        ,disabled: {
+          type: Boolean,
+          reflectToAttribute: true
+        }
+      }
+      ,created: function() {
+        this._params = null
+      }
+      ,_contains: function (a, obj) {
+        var i = a.length;
+        while (i--) {
+          if (a[i] === obj) {
+            return true;
+          }
+        }
+        return false;
+      }
+      ,_new_params: function(e) {
+        this._params = neurons.clone(e.detail.value);
+        if (this.paramWhitelist.length > 0) {
+          for (k in this._params) {
+            if (! this._contains(this.paramWhitelist, k)) {
+              delete this._params[k];
+            }
+          }
+        }
+      }
+      ,_new_complex_value: function(val) {
+        if (val.hasOwnProperty(this.attrItemValue)) {
+          this.value = val[this.attrItemValue];
+        }
+      }
+      ,_new_label: function(val) {
+        this.showLabel = (val !== null);
+      }
+      ,_getItemValue: function(item, key) {
+        if (! item) {
+          return;
+        }
+
+        key = key.split(".");
+        for (var i = 0; i < key.length; ++i) {
+          item = item[key[i]];
+        }
+
+        return item;
+      }
+    });
+  </script>
+</dom-module>
