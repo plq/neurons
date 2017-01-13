@@ -43,7 +43,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 <link rel="import" spyne-id="dependencies">
 
-<dom-module id="neurons-complex-reference">
+<dom-module id="neurons-complex-dropdown">
   <template>
     <iron-ajax id="ajax_getter"
                url="{{dataSource}}"
@@ -54,8 +54,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                          always-float-label="{{always_float_label}}">
       <paper-listbox class="dropdown-content" selected="{{currentItemIndex}}">
         <template is="dom-repeat" items="[[remote_data]]">
-          <paper-item value="[[_getItemValue(item, index)]]">
-            [[_getItemLabel(item, index)]]
+          <paper-item value="[[_getItemValue(item, attrItemValue, index)]]">
+            [[_getItemValue(item, attrItemLabel, index)]]
           </paper-item>
         </template>
       </paper-listbox>
@@ -63,7 +63,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   </template>
 
   <script>
-    Polymer({"is": "neurons-complex-reference"
+    Polymer({"is": "neurons-complex-dropdown"
       ,behaviors: [
         Polymer.IronFormElementBehavior
       ]
@@ -80,12 +80,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           type: Boolean,
           reflectToAttribute: true
         }
-        ,attr_item_value: {
+        ,attrItemValue: {
           type: String,
           value: 'id',
           reflectToAttribute: true
         }
-        ,attr_item_label: {
+        ,attrItemLabel: {
           type: String,
           value: 'name',
           reflectToAttribute: true
@@ -112,8 +112,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         ,complexValue: {
           type: Object,
           notify: true,
-          observer: "_new_complex_value",
-          reflectToAttribute: true
+          observer: "_new_complex_value"
         }
         ,value: {
           type: Object,
@@ -141,7 +140,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         }
       }
       ,created: function() {
-        this._elements = {};
         this._skip_new_index_handler = false;
       }
       ,_process_getter_response: function(e) {
@@ -170,8 +168,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         getter.generateRequest();
       }
       ,_new_complex_value: function(val) {
-        if (val.hasOwnProperty(this.attr_item_value)) {
-          this.value = val[this.attr_item_value];
+        if (val.hasOwnProperty(this.attrItemValue)) {
+          this.value = val[this.attrItemValue];
         }
       }
       ,_new_value: function(val) {
@@ -179,7 +177,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           return;
         }
         for (var i = 0, l = this.remote_data.length; i < l; ++i) {
-          if (this.remote_data[i][this.attr_item_value] == val) {
+          if (this.remote_data[i][this.attrItemValue] == val) {
             this._skip_new_index_handler = true;
             this.currentItemIndex = i;
             this._skip_new_index_handler = false;
@@ -195,11 +193,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           this.complexValue = this.remote_data[idx];
         }
       }
-      ,_getItemValue: function(item, i) {
-        return item[this.attr_item_value];
-      }
-      ,_getItemLabel: function(item, i) {
-        return item[this.attr_item_label];
+      ,_getItemValue: function(item, key, idx) {
+        key = key.split(".");
+
+        for (var i = 0; i < key.length; ++i) {
+          item = item[key[i]];
+        }
+
+        return item;
       }
     });
   </script>

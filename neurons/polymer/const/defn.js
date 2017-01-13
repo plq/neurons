@@ -81,7 +81,7 @@ Polymer({is: "blabla"
                 continue;
             }
 
-            if (elt.tagName.toLowerCase() == 'neurons-complex-reference') {
+            if (elt.tagName.toLowerCase() == 'neurons-complex-dropdown') {
                 elt.complexValue = resp[k];
             }
             else if (elt.tagName.toLowerCase() == 'neurons-array') {

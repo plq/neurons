@@ -121,7 +121,7 @@ class NeuronsArray(HtmlFormElementBase):
 
 class NeuronsComplexReference(HtmlFormElementBase):
     class Attributes(ComplexModel.Attributes):
-        sub_name = 'neurons-complex-reference'
+        sub_name = 'neurons-complex-dropdown'
 
     label = XmlAttribute(Unicode)
     always_float_label = XmlAttribute(Boolean)

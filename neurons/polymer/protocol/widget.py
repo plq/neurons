@@ -239,14 +239,14 @@ class PolymerWidgetBase(HtmlCloth):
         return elt_inst
 
 
-class PolymerComplexReferenceWidget(PolymerWidgetBase):
+class PolymerComplexDropdownWidget(PolymerWidgetBase):
     def __init__(self, text_field=None, id_field=None, data_source=None,
                                   need_parent_params=True, param_whitelist=None,
                   app=None, encoding='utf8', mime_type=None, ignore_uncap=False,
          ignore_wrappers=False, cloth=None, cloth_parser=None, polymorphic=True,
                  strip_comments=True, hier_delim='.', doctype=None, label=True):
 
-        super(PolymerComplexReferenceWidget, self) \
+        super(PolymerComplexDropdownWidget, self) \
             .__init__(app=app, encoding=encoding, doctype=doctype,
                       hier_delim=hier_delim, mime_type=mime_type,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
