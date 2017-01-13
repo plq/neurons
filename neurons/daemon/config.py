@@ -312,6 +312,7 @@ class HttpApplication(ComplexModel):
         retval.prepath = self.url
         return retval
 
+
 class StaticFileServer(HttpApplication):
     path = String
     list_contents = Boolean(default=False)
@@ -334,6 +335,7 @@ class StaticFileServer(HttpApplication):
         class CheckedFile(File):
             def __init__(self, *args, **kwargs):
                 File.__init__(self, *args, **kwargs)
+
                 self.prepath = url
 
             def getChildWithDefault(self, path, request):

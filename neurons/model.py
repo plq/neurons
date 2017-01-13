@@ -32,7 +32,9 @@
 #
 
 from spyne import TTableModel, Integer32
+
 from spyne.store.relational import get_pk_columns
+
 from sqlalchemy.orm import make_transient
 
 
