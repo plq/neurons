@@ -77,6 +77,9 @@ class TableModel(TTableModel()):
                     setattr(retval, k, getattr(in_object, k))
                 return retval
 
+        if ctx.descriptor.default_on_null:
+            return cls.get_deserialization_instance(ctx)
+
     def _safe_set(self, key, value, t):
         retval = super(TableModel, self)._safe_set(key, value, t)
         if retval:
