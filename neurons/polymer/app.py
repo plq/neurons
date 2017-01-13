@@ -34,7 +34,7 @@
 import logging
 logger = logging.getLogger(__name__)
 
-from os.path import abspath
+from os.path import abspath, join
 from spyne import Application, File, Unicode
 from spyne import ServiceBase, rpc
 from spyne.protocol.html import HtmlCloth
@@ -45,13 +45,21 @@ from .const import T_DOM_MODULE, T_SCREEN
 
 
 class ComponentService(ServiceBase):
-    @rpc(Unicode, _pattern=HttpPattern('neurons-<fn>.html', verb="GET"),
-                                                                  _returns=File)
-    def get_component(ctx, fn):
+    @rpc(Unicode, Unicode,
+        _patterns=[
+            HttpPattern('neurons-<folder>/neurons-<file>.html', verb="GET"),
+            HttpPattern('neurons-<file>.html', verb="GET"),
+        ], _returns=File)
+    def get_component(ctx, folder, file):
         ctx.out_protocol = HttpRpc()
-        fn = "neurons-" + fn
-        fullpath = abspath(resource_filename('neurons.polymer.const.comp',
+        if folder is None:
+            fn = "neurons-" + file
+            fullpath = abspath(resource_filename('neurons.polymer.const.comp',
                                                      "{0}/{0}.html".format(fn)))
+        else:
+            fn = "neurons-%s/neurons-%s" % (folder, file)
+            fullpath = abspath(resource_filename('neurons.polymer.const.comp',
+                                                         "{0}.html".format(fn)))
         logger.debug("Returning component %s from path %s", fn, fullpath)
         return File.Value(path=fullpath, type="text/html")
 
