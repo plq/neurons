@@ -133,21 +133,6 @@ _jstag = lambda src: E.script(src=src, type="text/javascript")
 _csstag = lambda src: E.link(href=src, type="text/css", rel="stylesheet")
 
 
-# monkeypatch spyne <2.13
-if not hasattr(HtmlFormWidget, '_get_datetime_format'):
-    def _get_datetime_format(self, cls_attrs):
-        dt_format = cls_attrs.dt_format
-        if dt_format is None:
-            dt_format = cls_attrs.date_format
-        if dt_format is None:
-            dt_format = cls_attrs.out_format
-        if dt_format is None:
-            dt_format = cls_attrs.format
-
-        return dt_format
-
-    HtmlFormWidget._get_datetime_format = _get_datetime_format
-
 
 def THtmlFormRoot(Base):
     class HtmlFormRoot(Base):
