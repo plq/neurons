@@ -50,11 +50,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <template is="dom-if" if="[[showLabel]]">
       <div>
         <div class="floated-label-placeholder" aria-hidden="true">[[label]]</div>
-        <a href$="{{_getItemValue(complexValue, attrItemValue)}}">{{_getItemValue(complexValue, attrItemLabel)}}</a>
+        <a href$="[[baseHref]]?[[attrItemValue]]=[[_getItemValue(complexValue, attrItemValue)]]">[[_getItemValue(complexValue, attrItemLabel)]]</a>
       </div>
     </template>
     <template is="dom-if" if="[[!showLabel]]">
-      <a href$="{{_getItemValue(complexValue, attrItemValue)}}">{{_getItemValue(complexValue, attrItemLabel)}}</a>
+      <a href$="[[baseHref]]?[[attrItemValue]]=[[_getItemValue(complexValue, attrItemValue)]]">[[_getItemValue(complexValue, attrItemLabel)]]</a>
     </template>
   </template>
 
@@ -81,6 +81,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         ,attrItemLabel: {
           type: String,
           value: 'name',
+          reflectToAttribute: true
+        }
+        ,baseHref: {
+          type: String,
           reflectToAttribute: true
         }
         ,showLabel: {

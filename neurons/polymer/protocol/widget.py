@@ -284,7 +284,7 @@ class PolymerComplexDropdownWidget(PolymerWidgetBase):
 
 class PolymerComplexHrefWidget(PolymerWidgetBase):
     def __init__(self, text_field=None, id_field=None,
-            need_parent_params=True, param_whitelist=None,
+            need_parent_params=True, param_whitelist=None, base_href=None,
                   app=None, encoding='utf8', mime_type=None, ignore_uncap=False,
          ignore_wrappers=False, cloth=None, cloth_parser=None, polymorphic=True,
                  strip_comments=True, hier_delim='.', doctype=None, label=True):
@@ -304,14 +304,19 @@ class PolymerComplexHrefWidget(PolymerWidgetBase):
         self.text_field = text_field
         self.need_parent_params = need_parent_params
         self.id_field = id_field
+        self.base_href = base_href
 
     def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
 
         wgt_inst_data = self._gen_widget_data(ctx, cls, inst, name, cls_attrs,
                                                                        **kwargs)
+        base_href = self.base_href
+        if base_href is None:
+            base_href = camel_case_to_uscore(cls.get_type_name())
 
         wgt_inst = NeuronsComplexHref(
+            base_href=base_href,
             need_parent_params=self.need_parent_params,
             attr_item_label=self.text_field, attr_item_value=self.id_field,
                                                                 **wgt_inst_data)

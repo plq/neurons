@@ -124,6 +124,7 @@ class NeuronsComplexHref(HtmlFormElementBase):
         sub_name = 'neurons-complex-href'
 
     label = XmlAttribute(Unicode)
+    base_href = XmlAttribute(Unicode(sub_name='base-href'))
     param_whitelist = XmlAttribute(Unicode(sub_name='param-whitelist'))
     attr_item_value = XmlAttribute(Unicode(sub_name='attr-item-value'))
     attr_item_label = XmlAttribute(Unicode(sub_name='attr-item-label'))
