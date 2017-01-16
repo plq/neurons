@@ -39,12 +39,12 @@ import json
 from lxml.html.builder import E
 
 from neurons.form import THtmlFormRoot, SimpleRenderWidget
-from neurons.polymer.model import NeuronsDatePicker, PaperCheckbox, \
-    NeuronsArray, IronDataTableColumn, Template
+from neurons.polymer.model import PaperCheckbox, NeuronsArray, Template, \
+    IronDataTableColumn, NeuronsDateTimePicker
 from neurons.polymer.protocol.widget import PolymerWidgetBase
 
 from spyne import ComplexModelBase, Unicode, Decimal, Boolean, DateTime, \
-    Integer, AnyUri, Fault, D, Array
+    Integer, AnyUri, Fault, D, Array, Date, Time
 from spyne.util.cdict import cdict
 
 
@@ -67,8 +67,8 @@ class PolymerForm(THtmlFormRoot(PolymerWidgetBase)):
                                                 mrpc_url_prefix=mrpc_url_prefix)
 
         self.serialization_handlers = cdict({
-            # Date: self._check_simple(self.date_to_parent),
-            # Time: self._check_simple(self.time_to_parent),
+            Date: self._check_simple(self.date_to_parent),
+            Time: self._check_simple(self.time_to_parent),
             # Uuid: self._check_simple(self.uuid_to_parent),
             # File: self.file_to_parent,
             Fault: self.fault_to_parent,
@@ -266,8 +266,14 @@ class PolymerForm(THtmlFormRoot(PolymerWidgetBase)):
     def date_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
 
-        elt_inst = NeuronsDatePicker()
-        elt_inst.label = self.trd(cls_attrs.translations, ctx.locale, name)
+        elt_inst = self._gen_widget_inst(ctx, cls, inst, name, cls_attrs,
+                                         sugcls=NeuronsDateTimePicker, **kwargs)
+        elt_inst.no_time = True
+
+        date_format = self._get_date_format(cls_attrs)
+        if date_format is not None:
+            elt_inst.format = date_format \
+                  .replace('%Y', 'YYYY').replace('%m', 'MM').replace('%d', 'DD')
 
         self._add_label(ctx, cls, cls_attrs, name, elt_inst)
         self._write_elt_inst(ctx, elt_inst, parent)
@@ -275,27 +281,32 @@ class PolymerForm(THtmlFormRoot(PolymerWidgetBase)):
     def time_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
 
-        elt = self._gen_input(ctx, cls, inst, name, cls_attrs, **kwargs)
-        elt.attrib['type'] = 'text'
+        elt_inst = self._gen_widget_inst(ctx, cls, inst, name, cls_attrs,
+                                         sugcls=NeuronsDateTimePicker, **kwargs)
+        elt_inst.no_date = True
 
-        if cls_attrs.format is None:
-            time_format = 'HH:MM:SS'
+        time_format = self._get_time_format(cls_attrs)
+        if time_format is not None:
+            elt_inst.format = time_format \
+                    .replace('%H', 'HH').replace('%M', 'mm').replace('%S', 'ss')
 
-        else:
-            time_format = cls_attrs.format.replace('%H', 'HH') \
-                .replace('%M', 'MM') \
-                .replace('%S', 'SS')
-
-        div = self._wrap_with_label(ctx, cls, name, elt, **kwargs)
-        parent.write(div)
+        self._add_label(ctx, cls, cls_attrs, name, elt_inst)
+        self._write_elt_inst(ctx, elt_inst, parent)
 
     def datetime_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
 
-        if inst is not None:
-            inst = inst.isoformat(' ')
+        elt_inst = self._gen_widget_inst(ctx, cls, inst, name, cls_attrs,
+                                         sugcls=NeuronsDateTimePicker, **kwargs)
 
-        self.unicode_to_parent(ctx, cls, inst, parent, name, **kwargs)
+        dt_format = self._get_datetime_format(cls_attrs)
+        if dt_format is not None:
+            elt_inst.format = dt_format \
+                .replace('%Y', 'YYYY').replace('%m', 'MM').replace('%d', 'DD') \
+                .replace('%H', 'HH').replace('%M', 'mm').replace('%S', 'ss')
+
+        self._add_label(ctx, cls, cls_attrs, name, elt_inst)
+        self._write_elt_inst(ctx, elt_inst, parent)
 
     def boolean_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)

@@ -34,7 +34,7 @@
 from neurons.base.screen import ScreenBase
 
 from spyne import Unicode, ComplexModel, XmlAttribute, Array, AnyUri, Boolean, \
-    Integer, XmlData, Date, AnyHtml
+    Integer, XmlData, Date, AnyHtml, DateTime, Time
 
 
 class HtmlImport(ComplexModel):
@@ -53,6 +53,7 @@ class HtmlElementBase(ComplexModel):
 class HtmlFormElementBase(HtmlElementBase):
     name = XmlAttribute(Unicode)
     disabled = XmlAttribute(Boolean)
+    readonly = XmlAttribute(Boolean)
 
 
 class PaperItem(HtmlElementBase):
@@ -77,17 +78,25 @@ class PaperDropdownMenu(HtmlFormElementBase):
 
     listbox = PaperListbox
     noink = XmlAttribute(Boolean)
-    label = XmlAttribute(Boolean)
+    label = XmlAttribute(Unicode)
     no_animations = XmlAttribute(Boolean(sub_name='no-animations'))
     always_float_label = XmlAttribute(Boolean(sub_name='always-float-label'))
 
 
-class NeuronsDatePicker(HtmlElementBase):
+class NeuronsDateTimePicker(HtmlElementBase):
     class Attributes(ComplexModel.Attributes):
-        sub_name = 'neurons-date-picker'
+        sub_name = 'neurons-datetime-picker'
 
-    min = Date
-    max = Date
+    min = DateTime
+    max = DateTime
+    no_date = XmlAttribute(Boolean(sub_name='no-date'))
+    no_time = XmlAttribute(Boolean(sub_name='no-time'))
+    format = XmlAttribute(Unicode)
+
+    name = XmlAttribute(Unicode)
+    label = XmlAttribute(Unicode)
+    required = XmlAttribute(Boolean)
+    # always_float_label = XmlAttribute(Boolean(sub_name='always-float-label'))
 
 
 class Template(ComplexModel):

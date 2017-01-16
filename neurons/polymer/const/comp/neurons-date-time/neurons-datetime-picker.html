@@ -1,0 +1,295 @@
+<!--
+This file is part of the Neurons project.
+Copyright (c), Arskom Ltd. (arskom.com.tr),
+               Burak Arslan <burak.arslan@arskom.com.tr>.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+* Neither the name of the Arskom Ltd. nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<link rel="import" href="/static/bower_components/polymer/polymer.html">
+<link rel="import" href="/static/bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="/static/bower_components/paper-button/paper-button.html">
+<link rel="import" href="/static/bower_components/paper-time-picker/paper-time-picker.html">
+<link rel="import" href="/static/bower_components/paper-date-picker/paper-date-picker.html">
+<link rel="import" href="/static/bower_components/iron-form-element-behavior/iron-form-element-behavior.html">
+<link rel="import" href="neurons-moment-validator.html">
+
+<dom-module id="neurons-datetime-picker">
+  <template>
+    <style>
+      #btnConfirm {
+        color: white;
+        background-color: #5cb85c;
+      }
+    </style>
+
+    <style>
+      .no-margin-date {
+        margin-bottom: 0 !important;
+      }
+
+      .no-margin-time {
+        margin-top: 0  !important;
+      }
+    </style>
+
+
+    <paper-input-container always-float-label attr-for-value="value">
+      <label>[[label]]</label>
+      <neurons-moment-validator format=[[format]] required=[[required]] validator-name="moment"></neurons-moment-validator>
+      <input id="input" is="iron-input" class="paper-input-input"
+             validator='moment' bind-value="[[_dateFormat(rawValue, format)]]" readonly="[[readonly]]">
+
+      <template is="dom-if" if="[[_and(haveDate, haveTime)]]">
+        <paper-input-error>Invalid date and time!</paper-input-error>
+      </template>
+
+      <template is="dom-if" if="[[_trueFalse(haveDate, haveTime)]]">
+        <paper-input-error>Invalid date!</paper-input-error>
+      </template>
+
+      <template is="dom-if" if="[[_trueFalse(haveTime, haveDate)]]">
+        <paper-input-error>Invalid time!</paper-input-error>
+      </template>
+
+      <paper-button suffix raised on-tap="_showDialog">Change</paper-button>
+
+      <!-- FIXME: make modal -->
+      <paper-dialog modal id="dialog" class="datetime-picker-dialog" on-iron-overlay-closed="_dismissDialog">
+        <template is="dom-if" if="[[haveDate]]">
+          <paper-date-picker id="datePicker" date="[[_getDate(rawValue)]]"
+                          class$="[[_getDatePickerClass(haveDate, haveTime)]]"></paper-date-picker>
+        </template>
+
+        <template is="dom-if" if="[[haveTime]]">
+          <paper-time-picker id="timePicker" time="[[_getTime(rawValue)]]"
+                          class$="[[_getTimePickerClass(haveDate, haveTime)]]"></paper-time-picker>
+        </template>
+
+        <div class="buttons">
+          <paper-button id="btnDismiss" dialog-dismiss>[[btnDismissText]]</paper-button>
+          <paper-button id="btnConfirm" dialog-confirm>[[btnConfirmText]]</paper-button>
+        </div>
+      </paper-dialog>
+    </paper-input-container>
+  </template>
+
+  <script>
+    Polymer({"is": "neurons-datetime-picker"
+      ,behaviors: [
+        Polymer.IronFormElementBehavior
+      ]
+
+      ,properties: {
+        // http://momentjs.com/docs/#/parsing/string-format/
+        format: {
+          type: String,
+          value: null,
+          reflectToAttribute: true
+        }
+        ,btnDismissText: {
+          type: String,
+          value: "Cancel",
+          reflectToAttribute: true
+        }
+        ,rawValue: {
+          type: Date,
+          observer: "_newRawValue",
+          notify: true
+        }
+        ,value: {
+          type: String,
+          observer: "_newValue",
+          notify: true
+        }
+        ,btnConfirmText: {
+          type: String,
+          value: "OK",
+          reflectToAttribute: true
+        }
+        ,validator: {
+          type: String,
+          value: 'neurons-date-validator'
+        }
+        ,required: {
+          type: Boolean,
+          value: false,
+          reflectToAttribute: true
+        }
+        ,haveDate: {
+          type: Boolean,
+          value: true
+        }
+        ,haveTime: {
+          type: Boolean,
+          value: true
+        }
+        ,noDate: {
+          type: Boolean,
+          value: false,
+          reflectToAttribute: true
+        }
+        ,noTime: {
+          type: Boolean,
+          value: false,
+          reflectToAttribute: true
+        }
+        ,readonly: {
+          type: Boolean,
+          value: false,
+          reflectToAttribute: true
+        }
+      }
+
+      ,created: function() {
+        this._skip_new_raw_value_handler = false;
+        this._skip_new_value_handler = false;
+      }
+      ,attached: function() {
+        this.haveDate = (! this.noDate);
+        this.haveTime = (! this.noTime);
+
+        if (this.format === null) {
+          if (this.haveDate && this.haveTime) {
+            this.format = 'YYYY-MM-DD HH:mm:ss';
+          }
+          else if (this.haveDate) {
+            this.format = 'YYYY-MM-DD';
+          }
+          else if (this.haveTime) {
+            this.format = 'HH:mm';
+          }
+          else {
+            if (window.console) {
+              console.warning("You have specified an empty datetime picker.");
+            }
+          }
+        }
+
+        this._skip_new_raw_value_handler = false;
+        this._skip_new_value_handler = false;
+      }
+      ,_dateFormat: function(date, format) {
+        return moment(date).format(format);
+      }
+
+      ,_dismissDialog: function(event) {
+        if (event.detail.confirmed) {
+          var date, hour, minute;
+          if (this.haveDate) {
+            var dpicker = Polymer.dom(this.root).querySelector('#datePicker');
+            date = dpicker.date;
+          }
+          else {
+            date = new Date(0);
+          }
+
+          if (this.haveTime) {
+            var tpicker = Polymer.dom(this.root).querySelector('#timePicker');
+            hour = tpicker.hour;
+            minute = tpicker.minute;
+          }
+          else {
+            hour = 0;
+            minute = 0;
+          }
+
+          var newDate = new Date(
+            date.getFullYear(),
+            date.getMonth(),
+            date.getDate(),
+            hour,
+            minute,
+            0, // sec
+            0  // msec
+          );
+
+          this.rawValue = newDate;
+        }
+      }
+
+      ,_showDialog: function() {
+        this.$.dialog.toggle();
+      }
+
+      ,_getDate: function(dt) {
+        return dt;
+      }
+
+      ,_getTime: function(dt) {
+        return moment(dt).format("HH:mm:ss");
+      }
+
+      ,_newRawValue: function(dt) {
+        if (this._skip_new_raw_value_handler) {
+          return;
+        }
+
+        this._skip_new_value_handler = true;
+        this.value = dt.toISOString();
+        this._skip_new_value_handler = false;
+      }
+
+      ,_newValue: function(dt_str) {
+        if (this._skip_new_value_handler) {
+          return;
+        }
+
+        this._skip_new_raw_value_handler = true;
+        var val = dt_str;
+        if (val && val.length > 0) {
+          this.rawValue = new Date(val);
+        }
+        this._skip_new_raw_value_handler = false;
+      }
+      ,dateTimeValidator: function(val) {
+        if (window.console) console.log("validate this: " + val.toString());
+      }
+      ,validate: function() {
+        return this.$.input.validate();
+      }
+      ,_and: function(op1, op2) {
+        return op1 && op2;
+      }
+      ,_trueFalse: function(op1, op2) {
+        return op1 && (! op2);
+      }
+      ,_getDatePickerClass: function(haveDate, haveTime) {
+        if (haveDate && haveTime) {
+          return "no-margin-date";
+        }
+        return "";
+      }
+      ,_getTimePickerClass: function(haveDate, haveTime) {
+        if (haveDate && haveTime) {
+          return "no-margin-time";
+        }
+        return "";
+      }
+    })
+  </script>
+</dom-module>
