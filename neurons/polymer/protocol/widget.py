@@ -163,12 +163,12 @@ class PolymerWidgetBase(HtmlCloth):
             wgt_inst_data['required'] = True
 
         if cls_attrs.read_only:
-            wgt_inst_data['disabled'] = True
+            wgt_inst_data['readonly'] = True
 
-        # "is False" checks for an explicit False and not something that walks
+        # we need to check for an explicit False and not something that walks
         # and quacks like a False.
         if cls_attrs.write is False:
-            wgt_inst_data['disabled'] = True
+            wgt_inst_data['readonly'] = True
 
         return wgt_inst_data
 
