@@ -69,6 +69,11 @@ Polymer({is: "blabla"
                 elt.params = this._parameters;
             }
         }
+
+        var parent = this;
+        this.$.form.addEventListener('change', function(event) {
+            parent.$.form.disabled = !parent.$.form.validate();
+        });
     }
     ,_process_getter_response: function(e) {
         var resp = e.detail.response;
@@ -152,8 +157,6 @@ Polymer({is: "blabla"
         else {
             this.submitError = "Error " + req.status + ": " + req.statusText;
         }
-
-        if (window.console) console.log(e);
     }
     ,_effectiveParams: function(params) {
         var retval = neurons.clone(params);
