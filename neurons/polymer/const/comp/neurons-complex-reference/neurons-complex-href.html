@@ -35,6 +35,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 <link rel="import"
       href="/static/bower_components/paper-dialog/paper-dialog.html">
 <link rel="import"
+      href="/static/bower_components/paper-styles/typography.html">
+<link rel="import"
       href="/static/bower_components/paper-button/paper-button.html">
 <link rel="import"
       href="/static/bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
@@ -47,7 +49,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   <template>
     <template is="dom-if" if="[[showLabel]]">
       <div>
-        <div style="display: inline">[[label]]</div>
+        <div class="floated-label-placeholder" aria-hidden="true">[[label]]</div>
         <a href$="{{_getItemValue(complexValue, attrItemValue)}}">{{_getItemValue(complexValue, attrItemLabel)}}</a>
       </div>
     </template>
@@ -55,6 +57,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       <a href$="{{_getItemValue(complexValue, attrItemValue)}}">{{_getItemValue(complexValue, attrItemLabel)}}</a>
     </template>
   </template>
+
+  <style>
+    .floated-label-placeholder {
+      @apply(--paper-font-caption);
+    }
+  </style>
 
   <script>
     Polymer({"is": "neurons-complex-href"
