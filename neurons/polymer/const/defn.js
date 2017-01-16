@@ -64,6 +64,7 @@ Polymer({is: "blabla"
 
         for (var k in this._elements) {
             var elt = this._elements[k];
+            if (window.console) console.log("Setting params on " + elt.getAttribute("name"));
             if (elt.getAttribute("need-parent-params")) {
                 elt.params = this._parameters;
             }
