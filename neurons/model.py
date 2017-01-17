@@ -32,17 +32,25 @@
 #
 
 from spyne import TTableModel, Integer32
-
+from spyne.util.six import add_metaclass
 from spyne.store.relational import get_pk_columns
 
 from sqlalchemy.orm import make_transient
 
+from spyne.model import ComplexModelBase, ComplexModelMeta, TTableModelBase
 
-class TableModel(TTableModel()):
+
+class TableModelBase(TTableModelBase()):
     def __init__(self, *args, **kwargs):
         self._changes = set()
 
-        super(TableModel, self).__init__(*args, **kwargs)
+        super(TableModelBase, self).__init__(*args, **kwargs)
+
+    def _safe_set(self, key, value, t):
+        retval = super(TableModelBase, self)._safe_set(key, value, t)
+        if retval:
+            self._changes.add(key)
+        return retval
 
     @classmethod
     def __respawn__(cls, ctx=None, filters=None):
@@ -80,11 +88,9 @@ class TableModel(TTableModel()):
         if ctx.descriptor.default_on_null:
             return cls.get_deserialization_instance(ctx)
 
-    def _safe_set(self, key, value, t):
-        retval = super(TableModel, self)._safe_set(key, value, t)
-        if retval:
-            self._changes.add(key)
-        return retval
+
+class TableModel(TTableModel(base=TableModelBase)):
+    pass
 
 
 def TVersion(prefix, default_version):
