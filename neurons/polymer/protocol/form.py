@@ -272,6 +272,8 @@ class PolymerForm(THtmlFormRoot(PolymerWidgetBase)):
 
         date_format = self._get_date_format(cls_attrs)
         if date_format is not None:
+            # https://momentjs.com/docs/#/parsing/string-format/
+            # TODO: handle all date tokens, raise on ones that can't be handled
             elt_inst.format = date_format \
                   .replace('%Y', 'YYYY').replace('%m', 'MM').replace('%d', 'DD')
 
@@ -287,6 +289,8 @@ class PolymerForm(THtmlFormRoot(PolymerWidgetBase)):
 
         time_format = self._get_time_format(cls_attrs)
         if time_format is not None:
+            # https://momentjs.com/docs/#/parsing/string-format/
+            # TODO: handle all time tokens, raise on ones that can't be handled
             elt_inst.format = time_format \
                     .replace('%H', 'HH').replace('%M', 'mm').replace('%S', 'ss')
 
@@ -301,6 +305,9 @@ class PolymerForm(THtmlFormRoot(PolymerWidgetBase)):
 
         dt_format = self._get_datetime_format(cls_attrs)
         if dt_format is not None:
+            # https://momentjs.com/docs/#/parsing/string-format/
+            # TODO: handle all date/time tokens, raise on ones that can
+            # not be handled
             elt_inst.format = dt_format \
                 .replace('%Y', 'YYYY').replace('%m', 'MM').replace('%d', 'DD') \
                 .replace('%H', 'HH').replace('%M', 'mm').replace('%S', 'ss')
