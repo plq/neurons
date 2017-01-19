@@ -75,7 +75,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         <paper-input-error>Invalid time!</paper-input-error>
       </template>
 
-      <paper-button suffix raised on-tap="_showDialog">Change</paper-button>
+      <template is="dom-if" if="[[!readonly]]">
+        <paper-button suffix raised on-tap="_showDialog">Change</paper-button>
+      </template>
 
       <!-- FIXME: make modal -->
       <paper-dialog modal id="dialog" class="datetime-picker-dialog" on-iron-overlay-closed="_dismissDialog">

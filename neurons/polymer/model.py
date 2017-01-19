@@ -96,6 +96,7 @@ class NeuronsDateTimePicker(HtmlElementBase):
     name = XmlAttribute(Unicode)
     label = XmlAttribute(Unicode)
     required = XmlAttribute(Boolean)
+    readonly = XmlAttribute(Boolean)
     # always_float_label = XmlAttribute(Boolean(sub_name='always-float-label'))
 
 
