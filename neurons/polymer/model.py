@@ -142,11 +142,12 @@ class NeuronsComplexHref(HtmlFormElementBase):
     value = XmlAttribute(Boolean(sub_name='value'))
 
 
-class NeuronsComplexReference(HtmlFormElementBase):
+class NeuronsComplexDropdown(HtmlFormElementBase):
     class Attributes(ComplexModel.Attributes):
         sub_name = 'neurons-complex-dropdown'
 
     label = XmlAttribute(Unicode)
+    readonly = XmlAttribute(Boolean)
     always_float_label = XmlAttribute(Boolean)
     data_source = XmlAttribute(Unicode(sub_name='data-source'))
     param_whitelist = XmlAttribute(Unicode(sub_name='param-whitelist'))

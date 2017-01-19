@@ -46,7 +46,7 @@ from spyne.protocol.html import HtmlCloth
 
 from neurons.form.widget import camel_case_to_uscore
 from neurons.polymer.model import PaperInput, PaperDropdownMenu, PaperListbox, \
-    PaperItem, NeuronsComplexReference, NeuronsComplexHref
+    PaperItem, NeuronsComplexDropdown, NeuronsComplexHref
 
 
 class PolymerWidgetBase(HtmlCloth):
@@ -269,7 +269,7 @@ class PolymerComplexDropdownWidget(PolymerWidgetBase):
         wgt_inst_data = self._gen_widget_data(ctx, cls, inst, name, cls_attrs,
                                                                        **kwargs)
 
-        wgt_inst = NeuronsComplexReference(
+        wgt_inst = NeuronsComplexDropdown(
             need_parent_params=self.need_parent_params,
             data_source=self.data_source,
             attr_item_label=self.text_field, attr_item_value=self.id_field,
