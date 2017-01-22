@@ -422,7 +422,11 @@ def main(daemon_name, argv, init, bootstrap=None,
 
     if config.autoreload:
         from neurons.daemon.autorel import AutoReloader
-        assert AutoReloader().start() is not None
-        logger.info("Auto reloader init success.")
+        frequency = 0.5
+        autorel = AutoReloader(frequency=frequency)
+        assert autorel.start() is not None
+        num_files = len(autorel.sysfiles() | autorel.files)
+        logger.info("Auto reloader init success: Watching %d files "
+                    "every %g seconds.", num_files, frequency)
 
     return reactor.run()
