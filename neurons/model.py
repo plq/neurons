@@ -32,12 +32,10 @@
 #
 
 from spyne import TTableModel, Integer32
-from spyne.util.six import add_metaclass
+from spyne.model import TTableModelBase
 from spyne.store.relational import get_pk_columns
 
 from sqlalchemy.orm import make_transient
-
-from spyne.model import ComplexModelBase, ComplexModelMeta, TTableModelBase
 
 
 class TableModelBase(TTableModelBase()):
@@ -89,8 +87,7 @@ class TableModelBase(TTableModelBase()):
             return cls.get_deserialization_instance(ctx)
 
 
-class TableModel(TTableModel(base=TableModelBase)):
-    pass
+TableModel = TTableModel(base=TableModelBase)
 
 
 def TVersion(prefix, default_version):
