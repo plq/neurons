@@ -410,7 +410,7 @@ def main(daemon_name, argv, init, bootstrap=None,
     compile_mappers()
 
     # at this point it's safe to import the reactor (or anything else from
-    # twisted) because the decision to fork or not to fork is already made.
+    # twisted) because the decision on whether to fork has already been made.
     from twisted.internet import reactor
     from twisted.internet.task import deferLater
 
