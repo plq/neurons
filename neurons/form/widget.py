@@ -714,7 +714,7 @@ class ComplexRenderWidget(HtmlFormWidget):
     type_attrs = dict(validate_freq=False)
 
     def __init__(self, text_field=None, id_field=None, type=None,
-                             hidden_fields=None, label=True, null_str='[NULL]'):
+           hidden_fields=None, label=True, null_str='[NULL]', input_class=None):
         """A widget base that renders complex objects as simple html elements.
 
         :param text_field: The name of the field containing a human readable
@@ -729,7 +729,8 @@ class ComplexRenderWidget(HtmlFormWidget):
             relevant widget id.
         """
 
-        super(ComplexRenderWidget, self).__init__(label=label)
+        super(ComplexRenderWidget, self).__init__(label=label,
+                                                        input_class=input_class)
 
         if not six.PY2:
             str_types = (str,)
@@ -928,7 +929,8 @@ class ComplexHrefWidget(ComplexRenderWidget, HtmlColumnTableRowProtocol):
 class SelectWidgetBase(ComplexRenderWidget):
     def __init__(self, text_field, id_field, hidden_fields=None, label=True,
                    type=None, inst_type=None, others=None, others_order_by=None,
-                    override_parent=False, nonempty_widget=ComplexRenderWidget):
+                     override_parent=False, nonempty_widget=ComplexRenderWidget,
+                                                              input_class=None):
         """Widget that renders complex objects as <select> tags.
 
         Please see :class:`ComplexRenderWidget` docstring for more info.
@@ -952,11 +954,14 @@ class SelectWidgetBase(ComplexRenderWidget):
 
         :param inst_type: Also force instance type to given type. Defaults to
             whatever passed in as ``type``.
+
+        :param html_class: When not none, pass as class attribute to the
+            ``<input>`` or ``<select>`` element.
         """
 
         super(SelectWidgetBase, self).__init__(id_field=id_field,
                              text_field=text_field, hidden_fields=hidden_fields,
-                                                         label=label, type=type)
+                                label=label, type=type, input_class=input_class)
 
         self.others = others
         if callable(others):
