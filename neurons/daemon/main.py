@@ -414,7 +414,6 @@ def main(daemon_name, argv, init, bootstrap=None,
     from twisted.internet import reactor
     from twisted.internet.task import deferLater
 
-    gc.collect()
     logger.info("Starting reactor... Max. RSS: %f",
                     resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000.0)
 
