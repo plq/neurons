@@ -630,6 +630,10 @@ class Daemon(ComplexModel):
             default=False, help=u"Auto-relaunch daemon process when one of "
                                 u"the source files change.")),
 
+        ('dry_run', Boolean(
+            default=False, help=u"Do everything up until the reactor start and "
+                                u"exit instead of starting the reactor.")),
+
         ('_services', Array(Service, sub_name='services')),
         ('_loggers', Array(Logger, sub_name='loggers')),
     ]

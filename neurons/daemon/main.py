@@ -429,4 +429,7 @@ def main(daemon_name, argv, init, bootstrap=None,
         logger.info("Auto reloader init success: Watching %d files "
                     "every %g seconds.", num_files, frequency)
 
+    if config.dry_run:
+        return 0
+
     return reactor.run()
