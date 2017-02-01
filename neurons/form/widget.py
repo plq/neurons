@@ -624,6 +624,9 @@ class SimpleRenderWidget(HtmlFormWidget):
 
     def _gen_text_str(self, cls, inst, **kwargs):
         cls = self._get_cls(cls)
+        cls_attrs = self.get_cls_attrs(cls)
+
+        inst = self._cast(cls_attrs, inst)
 
         text_str = self.to_unicode(cls, inst, **kwargs)
 
