@@ -339,6 +339,12 @@ def _set_reactor_thread():
     neurons.REACTOR_THREAD = threading.current_thread()
 
 
+def _compile_mappers():
+    logger.info("Compiling object mappers...")
+    from sqlalchemy.orm import compile_mappers
+    compile_mappers()
+
+
 def main(daemon_name, argv, init, bootstrap=None,
                                   bootstrapper=BootStrapper, cls=ServiceDaemon):
     """A typical main function for daemons.
@@ -405,14 +411,12 @@ def main(daemon_name, argv, init, bootstrap=None,
             logger.info("Updating configuration file because new secret was "
                                                                     "generated")
 
-    logger.info("Compiling object mappers...")
-    from sqlalchemy.orm import compile_mappers
-    compile_mappers()
-
     # at this point it's safe to import the reactor (or anything else from
     # twisted) because the decision on whether to fork has already been made.
     from twisted.internet import reactor
     from twisted.internet.task import deferLater
+
+    deferLater(reactor, 0, _compile_mappers)
 
     logger.info("Starting reactor... Max. RSS: %f",
                     resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000.0)
