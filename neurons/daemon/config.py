@@ -1174,6 +1174,7 @@ class ServiceDaemon(Daemon):
     @classmethod
     def get_default(cls, daemon_name):
         return cls(
+            debug=True,
             uuid=cls.gen_uuid(),
             secret=cls.gen_secret(),
             name=daemon_name,
