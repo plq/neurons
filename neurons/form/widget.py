@@ -1317,41 +1317,57 @@ class TrueFalseWidget(SimpleRenderWidget):
         self.width = width
         self.addtl_css = addtl_css
 
+    def get_none(self):
+        if self.color:
+            return E.span(self.SYM_NONE,
+                style="{}color:{}".format(self.addtl_css, self.color_none),
+                **{"class": "widget-none widget-none-color"}
+            )
+
+        else:
+            return E.span(self.SYM_NONE,
+                style=self.addtl_css,
+                **{"class": "widget-none widget-none-dull"}
+            )
+
+    def get_true(self):
+        if self.color:
+            return E.span(self.SYM_TRUE,
+                style="{}color:{}".format(self.addtl_css, self.color_true),
+                **{"class": "widget-true widget-true-color"}
+            )
+
+        else:
+            return E.span(self.SYM_TRUE,
+                style=self.addtl_css,
+                **{"class": "widget-true widget-true-dull"}
+            )
+
+    def get_false(self):
+        if self.color:
+            return E.span(self.SYM_FALSE,
+                style="{}color:{}".format(self.addtl_css, self.color_false),
+                **{"class": "widget-false widget-false-color"}
+            )
+
+        else:
+            elt = E.span(self.SYM_FALSE,
+                style=self.addtl_css,
+                **{"class": "widget-false widget-false-dull"}
+            )
+
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         if self.type is not None:
             cls = self.type
 
-        if self.color:
-            if inst is None:
-                elt = E.span(self.SYM_NONE,
-                    style="{}color:{}".format(self.addtl_css, self.color_none),
-                    **{"class": "widget-none widget-none-color"}
-                )
-            elif inst:
-                elt = E.span(self.SYM_TRUE,
-                    style="{}color:{}".format(self.addtl_css, self.color_true),
-                    **{"class": "widget-true widget-true-color"}
-                )
+        if inst is None:
+            elt = self.get_none()
 
-            else:
-                elt = E.span(self.SYM_FALSE,
-                    style="{}color:{}".format(self.addtl_css, self.color_false),
-                    **{"class": "widget-false widget-false-color"}
-                )
+        elif inst:
+            elt = self.get_true()
+
         else:
-            if inst is None:
-                elt = E.span(self.SYM_NONE,
-                    style=self.addtl_css,
-                    **{"class": "widget-none widget-none-dull"})
-
-            elif inst:
-                elt = E.span(self.SYM_TRUE,
-                    style=self.addtl_css,
-                    **{"class": "widget-true widget-true-dull"})
-            else:
-                elt = E.span(self.SYM_FALSE,
-                    style=self.addtl_css,
-                    **{"class": "widget-false widget-false-dull"})
+            elt = self.get_false()
 
         styles = ["background: transparent"]
         if self.width:
