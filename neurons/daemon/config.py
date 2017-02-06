@@ -639,18 +639,18 @@ class Daemon(ComplexModel):
             help=u"Bootstrap the application. Create schema, insert initial "
                  u"data, etc.")),
 
-        ('log_rss', Boolean(
+        ('log_rss', Boolean(default=False,
             help=u"Prepend resident set size to all logging messages. "
                  u"Requires psutil")),
 
-        ('log_rpc', Boolean(help=u"Log protocol operations.")),
-        ('log_model', Boolean(help=u"Log model operations.")),
-        ('log_cloth', Boolean(help=u"Log cloth generation.")),
-        ('log_interface', Boolean(help=u"Log interface build process.")),
+        ('log_rpc', Boolean(default=False, help=u"Log protocol operations.")),
+        ('log_model', Boolean(default=False, help=u"Log model operations.")),
+        ('log_cloth', Boolean(default=False, help=u"Log cloth generation.")),
+        ('log_interface', Boolean(default=False,
+                                         help=u"Log interface build process.")),
 
-        ('write_config', Boolean(
-            no_file=True,
-            help=u"Write configuration file and exit.")),
+        ('write_config', Boolean(no_file=True,
+                                   help=u"Write configuration file and exit.")),
 
         ('alert_dests', Array(AlertDestination, default=[])),
 
