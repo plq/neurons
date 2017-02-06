@@ -131,6 +131,17 @@ class StorageInfo(ComplexModel):
     name = Unicode
     backend = Unicode
 
+    def __init__(self, *args, **kwargs):
+        self._parent = None
+
+        super(StorageInfo, self).__init__(*args, **kwargs)
+
+    def set_parent(self, parent):
+        assert self._parent is None
+        assert parent is not None
+
+        self._parent = parent
+
 
 class PoolConfig(ComplexModel):
     type = Unicode
@@ -239,6 +250,17 @@ class RelationalStore(StorageInfo):
 
 class Service(ComplexModel):
     name = Unicode
+
+    def __init__(self, *args, **kwargs):
+        self._parent = None
+
+        super(Service, self).__init__(*args, **kwargs)
+
+    def set_parent(self, parent):
+        assert self._parent is None
+        assert parent is not None
+
+        self._parent = parent
 
 
 class Listener(Service):
@@ -361,7 +383,6 @@ class StaticFileServer(HttpApplication):
 
 class HttpListener(Listener):
     _type_info = [
-        ('debug', Boolean(default=True)),
         ('static_dir', Unicode),
         ('_subapps', Array(HttpApplication, sub_name='subapps')),
     ]
@@ -387,12 +408,12 @@ class HttpListener(Listener):
 
         subapps = kwargs.get('subapps', None)
         if isinstance(subapps, dict):
-            self.subapps = _Twrdict('url')()
+            self.subapps = _Twrdict(self, 'url')()
             for k, v in subapps.items():
                 self.subapps[k] = v
 
         elif isinstance(subapps, (tuple, list)):
-            self.subapps = _Twrdict('url')()
+            self.subapps = _Twrdict(self, 'url')()
             for v in subapps:
                 assert v.url is not None, "%r.url is None" % v
                 self.subapps[v.url] = v
@@ -439,7 +460,9 @@ class HttpListener(Listener):
                 root.putChild(subapp.url, subapp.gen_resource())
 
         retval = Site(root)
-        retval.displayTracebacks = self.debug
+
+        assert isinstance(self._parent, Daemon)
+        retval.displayTracebacks = self._parent.debug
         return retval
 
     @property
@@ -486,6 +509,17 @@ class Logger(ComplexModel):
     path = Unicode
     level = Unicode(values=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'])
 
+    def __init__(self, *args, **kwargs):
+        self._parent = None
+
+        super(Logger, self).__init__(*args, **kwargs)
+
+    def set_parent(self, parent):
+        assert self._parent is None
+        assert parent is not None
+
+        self._parent = parent
+
     def apply(self):
         if self.path == '.':
             _logger = logging.getLogger()
@@ -511,7 +545,6 @@ class _wdict(odict):
         if len(args) > 0:
             if not key in self:
                 self[key], = args
-            return self[key]
         return self[key]
 
 
@@ -527,15 +560,17 @@ class _wrdict(_wdict):
         return retval
 
 
-def _Twrdict(keyattr=None):
+def _Twrdict(parent, keyattr=None):
     class wrdict(_wrdict):
         if keyattr is not None:
             def __setitem__(self, key, value):
                 super(_wrdict, self).__setitem__(key, value)
                 setattr(value, keyattr, key)
+                value._parent = parent
         else:
             def __setitem__(self, key, value):
                 super(_wrdict, self).__setitem__(key, value)
+                value._parent = parent
 
     return wrdict
 
@@ -634,6 +669,8 @@ class Daemon(ComplexModel):
             default=False, help=u"Do everything up until the reactor start and "
                                 u"exit instead of starting the reactor.")),
 
+        ('debug', Boolean(default=False)),
+
         ('_services', Array(Service, sub_name='services')),
         ('_loggers', Array(Logger, sub_name='loggers')),
     ]
@@ -646,20 +683,20 @@ class Daemon(ComplexModel):
         services = kwargs.get('services', None)
         if services is not None:
             self.services = services
-        if not hasattr(self, 'services') or self.services is None:
-            self.services = _Twrdict('name')()
-
-        stores = kwargs.get('stores', None)
-        if stores is not None:
-            self.stores = stores
-        if not hasattr(self, 'stores') or self.stores is None:
-            self.stores = _wdict()
+        if self.services is None:
+            self.services = _Twrdict(self, 'name')()
+        self._set_parent(self.services)
 
         loggers = kwargs.get('loggers', None)
         if loggers is not None:
             self.loggers = loggers
-        if not hasattr(self, 'loggers') or self.loggers is None:
+        if self.loggers is None:
             self.loggers = _wdict()
+        self._set_parent(self.loggers)
+
+    def _set_parent(self, wrd):
+        for v in wrd.values():
+            v.set_parent(self)
 
     @property
     def _services(self):
@@ -669,14 +706,14 @@ class Daemon(ComplexModel):
 
             return self.services.values()
 
-        self.services = _Twrdict('name')()
+        self.services = _Twrdict(self, 'name')()
         return []
 
     @_services.setter
     def _services(self, what):
         self.services = what
         if what is not None:
-            self.services = _Twrdict('name')([(s.name, s) for s in what])
+            self.services = _Twrdict(self, 'name')([(s.name, s) for s in what])
 
     @property
     def _loggers(self):
@@ -706,17 +743,14 @@ class Daemon(ComplexModel):
     @classmethod
     def get_default(cls, daemon_name):
         return cls(
+            debug=True,
             uuid=cls.gen_uuid(),
             secret=cls.gen_secret(),
             name=daemon_name,
-            log_rss=False,
+            log_rss=True,
             workdir=os.getcwd(),
             _loggers=[
                 Logger(path='.', level='DEBUG', format=cls.LOGGING_DEVEL_FORMAT),
-                # This produces too much output that's not very useful unless
-                # you're debugging *Cloth.
-                Logger(path='spyne.protocol.cloth.to_cloth.cloth',
-                                  level='INFO', format=cls.LOGGING_DEVEL_FORMAT),
             ],
         )
 
@@ -1118,6 +1152,7 @@ class ServiceDaemon(Daemon):
             self.stores = stores
         if not hasattr(self, 'stores') or self.stores is None:
             self.stores = _wdict()
+        self._set_parent(self.stores)
 
     @property
     def _stores(self):
