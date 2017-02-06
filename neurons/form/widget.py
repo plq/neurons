@@ -426,19 +426,19 @@ class HtmlFormWidget(HtmlBase):
         if cls_attrs.lt != Decimal.Attributes.lt:
             elt.attrib['max'] = str(cls_attrs.lt - epsilon)
 
-    def _get_cls(self, cls):
-        if self.type is not None:
+    def _switch_to_prot_type(self, cls, inst):
+        if self.type is not None and not (cls is self.type):
             cls = self.type
             if len(self.type_attrs) > 0:
                 cls = self.type.customize(**self.type_attrs)
 
-        return cls
+        return cls, inst
 
     def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        newcls = self._get_cls(cls)
+        newcls, newinst = self._switch_to_prot_type(cls, inst)
         if newcls is cls:
             return self.not_supported(ctx, cls)
-        return self.to_parent(ctx, newcls, inst, parent, name, **kwargs)
+        return self.to_parent(ctx, newcls, newinst, parent, name, **kwargs)
 
 
 class ConditionalRendererBase(HtmlFormWidget):
@@ -624,11 +624,6 @@ class SimpleRenderWidget(HtmlFormWidget):
         })
 
     def _gen_text_str(self, cls, inst, **kwargs):
-        cls = self._get_cls(cls)
-        cls_attrs = self.get_cls_attrs(cls)
-
-        inst = self._cast(cls_attrs, inst)
-
         text_str = self.to_unicode(cls, inst, **kwargs)
 
         if text_str is None:
@@ -651,6 +646,10 @@ class SimpleRenderWidget(HtmlFormWidget):
             parent.write(E.span(text_str, **span_attrib))
 
     def model_base_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        newcls, newinst = self._switch_to_prot_type(cls, inst)
+        if not (newcls is cls):
+            return self.to_parent(ctx, newcls, newinst, parent, name, **kwargs)
+
         text_str = self._gen_text_str(cls, inst, **kwargs)
         if text_str is None:
             return
@@ -667,6 +666,10 @@ class SimpleRenderWidget(HtmlFormWidget):
             self._gen_input_hidden(cls, inst, parent, name, **kwargs)
 
     def any_uri_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        newcls, newinst = self._switch_to_prot_type(cls, inst)
+        if not (newcls is cls):
+            return self.to_parent(ctx, newcls, newinst, parent, name, **kwargs)
+
         if isinstance(inst, AnyUri.Value):
             href_str = self._gen_text_str(cls, inst.href)
             link_str = inst.text
@@ -687,7 +690,9 @@ class SimpleRenderWidget(HtmlFormWidget):
             self._gen_input_hidden(cls, inst, parent, name, **kwargs)
 
     def any_html_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        cls = self._get_cls(cls)
+        newcls, newinst = self._switch_to_prot_type(cls, inst)
+        if not (newcls is cls):
+            return self.to_parent(ctx, newcls, newinst, parent, name, **kwargs)
 
         if isinstance(inst, six.string_types):
             inst = html.fromstring(inst)
@@ -809,13 +814,7 @@ class ComplexRenderWidget(HtmlFormWidget):
                             parent, self.hier_delim.join((name, key)), **kwargs)
 
     def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        if self.type is not None:
-            logger.debug("ComplexRenderWidget.type cls switch: %r => %r",
-                                                                 cls, self.type)
-            cls = self.type
-            if len(self.type_attrs) > 0:
-                cls = self.type.customize(**self.type_attrs)
-
+        cls, inst = self._switch_to_prot_type(cls, inst)
         fti = cls.get_flat_type_info(cls)
         _, text_str = self._prep_inst(cls, inst, fti)
 
@@ -1255,7 +1254,7 @@ class SimpleReadableNumberWidget(SimpleRenderWidget):
             self._gen_input_hidden(cls, inst, parent, name, **kwargs)
 
     def integer_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        cls = self._get_cls(cls)
+        cls, inst = self._switch_to_prot_type(cls, inst)
         cls_attrs = self.get_cls_attrs(cls)
 
         fstring = cls_attrs.format
@@ -1265,7 +1264,7 @@ class SimpleReadableNumberWidget(SimpleRenderWidget):
         self.write_number(ctx, cls, inst, parent, name, fstring, **kwargs)
 
     def decimal_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        cls = self._get_cls(cls)
+        cls, inst = self._switch_to_prot_type(cls, inst)
         cls_attrs = self.get_cls_attrs(cls)
 
         fstring = cls_attrs.format
