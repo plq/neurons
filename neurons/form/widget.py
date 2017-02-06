@@ -76,7 +76,8 @@ camel_case_to_uscore = lambda s: ''.join(camel_case_to_uscore_gen(s))
 def _gen_html5_epsilon():
     """See paragraph 17 at:
 
-    https://www.w3.org/TR/2012/WD-html5-20121025/common-microsyntaxes.html#rules-for-parsing-floating-point-number-values
+    https://www.w3.org/TR/2012/WD-html5-20121025/common-microsyntaxes.html
+                                 #rules-for-parsing-floating-point-number-values
     """
     import math
     return D('1e%s' % int(math.log(2 ** (-1024)) / math.log(10)))
@@ -137,8 +138,8 @@ class HtmlFormWidget(HtmlBase):
             if subprot.label_class is None:
                 subprot.label_class = self.label_class
 
-        return super(HtmlFormWidget, self).to_subprot(ctx, cls, inst, parent, name,
-                                                              subprot, **kwargs)
+        return super(HtmlFormWidget, self).to_subprot(ctx, cls, inst, parent,
+                                                        name, subprot, **kwargs)
 
     @staticmethod
     def _format_js(lines, **kwargs):
