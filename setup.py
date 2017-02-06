@@ -46,7 +46,7 @@ except OSError:
 
 
 common_reqs = ('spyne>=2.12', 'SQLAlchemy<1.0.99', 'Twisted>=15.2',
-    'lxml>=3.4.1', 'pyyaml', 'msgpack-python', 'pycrypto', 'slimit',
+    'lxml>=3.7.2', 'pyyaml', 'msgpack-python', 'pycrypto', 'slimit',
     'txpostgres',
 )
 
