@@ -130,7 +130,7 @@ setup(
     package_data={
         'neurons.form.const': ['*.html'],
         'neurons.polymer.const': ['*.html', "*.js"],
-        'neurons.polymer.const.comp': ['neurons-*'],
+        'neurons.polymer.const.comp': ['neurons-*/*'],
         'neurons.daemon.dowser.const': ['*.html', '*.css'],
     },
 
