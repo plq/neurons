@@ -189,6 +189,7 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
                 E.button('+', **{
                     "class": "%s_btn_add" % name,
                     "type": "button",
+                    "style": 'min-width:2em',
                 }),
             )
 
@@ -197,6 +198,7 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
                 E.button('-', **{
                     "class": "%s_btn_remove" % name,
                     "type": "button",
+                    "style": 'min-width:2em',
                 }),
             )
 
