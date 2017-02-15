@@ -36,3 +36,6 @@ from neurons.daemon.config import Daemon
 from neurons.daemon.config import ServiceDaemon
 from neurons.daemon import dowser
 from neurons.daemon import autorel
+
+config_data = None
+"""The last parsed ``Daemon`` instance."""

@@ -1048,6 +1048,9 @@ class Daemon(ComplexModel):
 
         retval.config_file = file_name
 
+        import neurons.daemon
+        neurons.daemon.config_data = retval
+
         return retval
 
     def do_write_config(self):
