@@ -345,11 +345,11 @@ def _compile_mappers():
     compile_mappers()
 
 
-def main(daemon_name, argv, init, bootstrap=None,
-                                  bootstrapper=BootStrapper, cls=ServiceDaemon):
+def main(config_name, argv, init, bootstrap=None,
+         bootstrapper=BootStrapper, cls=ServiceDaemon, daemon_name=None):
     """A typical main function for daemons.
 
-    :param daemon_name: Daemon name.
+    :param config_name: Configuration file name.
     :param argv: A sequence of command line arguments.
     :param init: A callable that returns the init dict.
     :param bootstrap: A callable that bootstraps daemon's environment.
@@ -357,11 +357,14 @@ def main(daemon_name, argv, init, bootstrap=None,
     :param bootstrapper: A factory for a callable that bootstraps daemon's
         environment. This is supposed to be run once for every new deployment.
     :param cls: Daemon class
+    :param daemon_name: Daemon name. If none, ``config_name`` is used.
     :return: Exit code of the daemon as int.
     """
 
-    config = cls.parse_config(daemon_name, argv)
+    config = cls.parse_config(config_name, argv)
     if config.name is None:
+        config.name = config_name
+    if daemon_name is not None:
         config.name = daemon_name
 
     # FIXME: Any better ideas?
