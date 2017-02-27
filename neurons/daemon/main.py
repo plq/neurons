@@ -356,8 +356,8 @@ def main(config_name, argv, init, bootstrap=None,
         It's deprecated in favor of bootstrapper.
     :param bootstrapper: A factory for a callable that bootstraps daemon's
         environment. This is supposed to be run once for every new deployment.
-    :param cls: Daemon class
-    :param daemon_name: Daemon name. If none, ``config_name`` is used.
+    :param cls: a class:`Daemon` subclass
+    :param daemon_name: Daemon name. If ``None``, ``config_name`` is used.
     :return: Exit code of the daemon as int.
     """
 
