@@ -43,7 +43,7 @@ from lxml import html, etree
 
 from neurons.polymer import PolymerForm
 
-from spyne import Application, NullServer, ServiceBase, rpc, Unicode, Integer, \
+from spyne import Application, NullServer, Service, rpc, Unicode, Integer, \
     ComplexModel, Decimal
 from spyne.util.test import show
 
@@ -52,7 +52,7 @@ def _test_type(cls, inst):
     # silence bogus warnings
     from spyne.util import appreg; appreg.applications.clear()
 
-    class SomeService(ServiceBase):
+    class SomeService(Service):
         @rpc(_returns=cls, _body_style='bare')
         def some_call(ctx):
             return inst

@@ -31,7 +31,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from spyne import ServiceBase
+from spyne import Service
 from spyne.util import memoize
 
 from neurons.base.event import on_method_call
@@ -39,22 +39,22 @@ from neurons.base.context import WriteContext, ReadContext
 
 
 @memoize
-def TReaderServiceBase(_LogEntry=None):
+def TReaderService(_LogEntry=None):
     # TODO: implement logging
-    class ReaderServiceBase(ServiceBase):
+    class ReaderService(Service):
         @classmethod
         def get_context(cls, ctx):
             return ReadContext(ctx)
 
-    ReaderServiceBase.event_manager.add_listener('method_call', on_method_call)
+    ReaderService.event_manager.add_listener('method_call', on_method_call)
 
-    return ReaderServiceBase
+    return ReaderService
 
 
 @memoize
-def TWriterServiceBase(_LogEntry=None):
-    class WriterServiceBase(TReaderServiceBase(_LogEntry)):
+def TWriterService(_LogEntry=None):
+    class WriterService(TReaderService(_LogEntry)):
         @classmethod
         def get_context(cls, ctx):
             return WriteContext(ctx)
-    return WriterServiceBase
+    return WriterService

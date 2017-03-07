@@ -45,7 +45,7 @@ from neurons.form.const import T_TEST
 
 from spyne.util.test import show
 from spyne.util.color import R
-from spyne import Application, NullServer, ServiceBase, rpc, ComplexModel, \
+from spyne import Application, NullServer, Service, rpc, ComplexModel, \
     Integer, Array, Unicode
 from lxml import etree, html
 
@@ -53,7 +53,7 @@ from lxml import etree, html
 def _test_type(cls, inst, prot_cls=HtmlFormTable):
     from spyne.util import appreg; appreg.applications.clear()
 
-    class SomeService(ServiceBase):
+    class SomeService(Service):
         @rpc(_returns=cls, _body_style='bare')
         def some_call(ctx):
             return inst

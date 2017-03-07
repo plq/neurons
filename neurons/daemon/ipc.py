@@ -5,7 +5,7 @@ import struct
 import psutil
 
 from spyne import rpc, UnsignedInteger16, Unicode
-from neurons.base.service import TReaderServiceBase
+from neurons.base.service import TReaderService
 
 
 def _gen_addr(base, num):
@@ -69,7 +69,7 @@ def get_own_mgmt_address():
     return get_mgmt_address_for_pid(os.getpid())
 
 
-class DaemonServices(TReaderServiceBase()):
+class DaemonServices(TReaderService()):
     @rpc(Unicode, UnsignedInteger16)
     def unlisten(self, host, port):
         pass

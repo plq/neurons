@@ -38,14 +38,14 @@ from os.path import abspath
 from pkg_resources import resource_filename
 
 from spyne import Application, File, Unicode
-from spyne import ServiceBase, rpc
+from spyne import Service, rpc
 from spyne.protocol.html import HtmlCloth
 from spyne.protocol.http import HttpRpc, HttpPattern
 
 from .const import T_DOM_MODULE, T_SCREEN
 
 
-class ComponentService(ServiceBase):
+class ComponentService(Service):
     @rpc(Unicode, Unicode,
         _patterns=[
             HttpPattern('neurons-<folder>/neurons-<file_name>.html', verb="GET"),

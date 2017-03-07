@@ -36,8 +36,8 @@ logger = logging.getLogger(__name__)
 
 import re
 
-from spyne import ServiceBase, rpc, Unicode, ComplexModel
-from spyne.protocol.html import HtmlCloth
+from spyne import Service, rpc, Unicode, ComplexModel
+from spyne.protocol.cloth import XmlCloth
 
 from slimit.mangler import mangle as slimit_mangler
 from slimit.visitors.minvisitor import ECMAMinifier
@@ -155,7 +155,7 @@ def TComponentGeneratorService(cls, prefix=None, locale=None,
         __type_name__ = '{}DetailComponent'.format(type_name)
         main = cls
 
-    class ComponentGeneratorService(ServiceBase):
+    class ComponentGeneratorService(Service):
         @rpc(Unicode(6), _returns=DetailScreen, _body_style='out_bare',
             _in_message_name=method_name,
             _internal_key_suffix='_' + component_name)
@@ -206,11 +206,11 @@ def TScreenGeneratorService(cls, prefix=None, url_polyfill=DEFAULT_URL_POLYFILL,
 
     class DetailScreen(PolymerScreen):
         main = getter_in_cls.customize(
-            protocol=HtmlCloth(),
+            protocol=XmlCloth(),
             sub_name=component_name,
         )
 
-    class ScreenGeneratorService(ServiceBase):
+    class ScreenGeneratorService(Service):
         @rpc(getter_in_cls, ScreenParams, _returns=PolymerScreen,
             _body_style='out_bare', _in_message_name=method_name,
             _internal_key_suffix='_' + component_name)

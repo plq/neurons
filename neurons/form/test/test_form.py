@@ -44,7 +44,7 @@ from datetime import date, time, datetime
 
 from lxml import etree, html
 
-from spyne import Application, NullServer, Unicode, ServiceBase, rpc, Decimal, \
+from spyne import Application, NullServer, Unicode, Service, rpc, Decimal, \
     Boolean, Date, Time, DateTime, Integer, ComplexModel, Array, Double, \
     Mandatory as M, AnyHtml, AnyXml
 from spyne.util.test import show
@@ -61,7 +61,7 @@ def _test_type(cls, inst):
     # silence bogus warnings
     from spyne.util import appreg; appreg.applications.clear()
 
-    class SomeService(ServiceBase):
+    class SomeService(Service):
         @rpc(_returns=cls, _body_style='bare')
         def some_call(ctx):
             return inst
@@ -90,7 +90,7 @@ def _test_type(cls, inst):
 def _test_type_no_root_cloth(cls, inst):
     from spyne.util import appreg; appreg.applications.clear()
 
-    class SomeService(ServiceBase):
+    class SomeService(Service):
         @rpc(_returns=cls, _body_style='bare')
         def some_call(ctx):
             return inst

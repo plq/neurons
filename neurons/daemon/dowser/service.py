@@ -47,7 +47,7 @@ from collections import defaultdict
 
 from neurons.daemon.dowser.const import ASSETS_DIR
 
-from spyne import rpc, Unicode, ServiceBase, ByteArray, AnyHtml
+from spyne import rpc, Unicode, Service, ByteArray, AnyHtml
 from spyne import Integer
 from spyne.protocol.http import HttpPattern, HttpRpc
 from spyne.util.six import BytesIO
@@ -94,7 +94,7 @@ def template(name, **params):
     return open(os.path.join(ASSETS_DIR, name)).read() % p
 
 
-class DowserServices(ServiceBase):
+class DowserServices(Service):
     period = 5
     maxhistory = 300
     history = {}
