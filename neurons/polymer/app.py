@@ -34,30 +34,31 @@
 import logging
 logger = logging.getLogger(__name__)
 
-from os.path import abspath, join
+from os.path import abspath
+from pkg_resources import resource_filename
+
 from spyne import Application, File, Unicode
 from spyne import ServiceBase, rpc
 from spyne.protocol.html import HtmlCloth
 from spyne.protocol.http import HttpRpc, HttpPattern
 
-from pkg_resources import resource_filename
 from .const import T_DOM_MODULE, T_SCREEN
 
 
 class ComponentService(ServiceBase):
     @rpc(Unicode, Unicode,
         _patterns=[
-            HttpPattern('neurons-<folder>/neurons-<file>.html', verb="GET"),
-            HttpPattern('neurons-<file>.html', verb="GET"),
+            HttpPattern('neurons-<folder>/neurons-<file_name>.html', verb="GET"),
+            HttpPattern('neurons-<file_name>.html', verb="GET"),
         ], _returns=File)
-    def get_component(ctx, folder, file):
+    def get_component(ctx, folder, file_name):
         ctx.out_protocol = HttpRpc()
         if folder is None:
-            fn = "neurons-" + file
+            fn = "neurons-" + file_name
             fullpath = abspath(resource_filename('neurons.polymer.const.comp',
                                                      "{0}/{0}.html".format(fn)))
         else:
-            fn = "neurons-%s/neurons-%s" % (folder, file)
+            fn = "neurons-%s/neurons-%s" % (folder, file_name)
             fullpath = abspath(resource_filename('neurons.polymer.const.comp',
                                                          "{0}.html".format(fn)))
         logger.debug("Returning component %s from path %s", fn, fullpath)
@@ -65,7 +66,7 @@ class ComponentService(ServiceBase):
 
 
 def gen_component_app(config, prefix, classes, locale=None,
-                                      gen_css_imports=False, api_url_prefix=''):
+        gen_css_imports=False, api_read_url_prefix='', api_write_url_prefix=''):
     from neurons.polymer.protocol import PolymerForm
     from neurons.polymer.service import TComponentGeneratorService
 
@@ -80,7 +81,8 @@ def gen_component_app(config, prefix, classes, locale=None,
                     prefix,
                     locale,
                     gen_css_imports,
-                    api_url_prefix=api_url_prefix,
+                    api_read_url_prefix=api_read_url_prefix,
+                    api_write_url_prefix=api_write_url_prefix,
                 )
                 for cls in classes
             ],
@@ -92,7 +94,7 @@ def gen_component_app(config, prefix, classes, locale=None,
         )
 
 
-def gen_screen_services(prefix, classes, api_url_prefix=''):
+def gen_screen_services(prefix, classes, comp_prefix=''):
     from neurons.polymer.protocol import PolymerForm
     from neurons.polymer.service import TScreenGeneratorService
 
@@ -101,15 +103,15 @@ def gen_screen_services(prefix, classes, api_url_prefix=''):
             cls.customize(
                 prot=PolymerForm(mrpc_url_prefix='/'),
             ),
-            prefix, api_url_prefix
+            prefix, comp_prefix=comp_prefix,
         ) for cls in classes
     ]
 
 
-def gen_screen_app(config, prefix, classes, api_url_prefix=''):
+def gen_screen_app(config, prefix, classes, comp_prefix=''):
     return \
         Application(
-            gen_screen_services(prefix, classes, api_url_prefix=api_url_prefix),
+            gen_screen_services(prefix, classes, comp_prefix=comp_prefix),
             tns='%s.scr' % config.name,
             in_protocol=HttpRpc(validator='soft'),
             out_protocol=HtmlCloth(cloth=T_SCREEN, strip_comments=True,

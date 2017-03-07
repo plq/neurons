@@ -93,7 +93,7 @@ def gen_polymer_defn(component_name, cls, minify=False):
 
 
 def gen_component(cls, component_name, DetailScreen, gen_css_imports, minify_js,
-                                                                api_url_prefix):
+                                     api_read_url_prefix, api_write_url_prefix):
     deps = [
         'polymer',
 
@@ -122,9 +122,8 @@ def gen_component(cls, component_name, DetailScreen, gen_css_imports, minify_js,
         styles.append('@import url("/static/screen/{}.css")'
                                                         .format(component_name))
 
-    assert api_url_prefix == '/api/'
-    getter_url = "{}{}.get".format(api_url_prefix, cls.get_type_name())
-    putter_url = "{}{}.put".format(api_url_prefix, cls.get_type_name())
+    getter_url = "{}{}.get".format(api_read_url_prefix, cls.get_type_name())
+    putter_url = "{}{}.put".format(api_write_url_prefix, cls.get_type_name())
 
     retval = DetailScreen(
         main=cls(),
@@ -142,7 +141,8 @@ def gen_component(cls, component_name, DetailScreen, gen_css_imports, minify_js,
 
 
 def TComponentGeneratorService(cls, prefix=None, locale=None,
-                     gen_css_imports=False, minify_js=False, api_url_prefix=''):
+                     gen_css_imports=False, minify_js=False,
+                               api_read_url_prefix='', api_write_url_prefix=''):
     type_name = cls.get_type_name()
     component_name = _to_snake_case(type_name)
 
@@ -164,7 +164,8 @@ def TComponentGeneratorService(cls, prefix=None, locale=None,
                 ctx.locale = locale
                 logger.debug("Locale overridden to %s locally.", locale)
             return gen_component(cls, component_name, DetailScreen,
-                                     gen_css_imports, minify_js, api_url_prefix)
+                             gen_css_imports, minify_js, api_read_url_prefix,
+                                                         api_write_url_prefix)
 
     if locale is not None:
         def _fix_locale(ctx):
@@ -192,7 +193,7 @@ class ScreenParams(ComplexModel):
 
 
 def TScreenGeneratorService(cls, prefix=None, url_polyfill=DEFAULT_URL_POLYFILL,
-                                      url_service_worker=None, minify_js=False):
+              url_service_worker=None, minify_js=False, comp_prefix=''):
     type_name = cls.get_type_name()
     component_name = _to_snake_case(type_name)
 
@@ -228,7 +229,7 @@ def TScreenGeneratorService(cls, prefix=None, url_polyfill=DEFAULT_URL_POLYFILL,
                 retval.links = [
                     Link(
                         rel='import',
-                        href="/comp/{}?locale={}".format(method_name,
+                        href="{}/{}?locale={}".format(comp_prefix, method_name,
                                                                   params.locale)
                     )
                 ]
@@ -237,7 +238,7 @@ def TScreenGeneratorService(cls, prefix=None, url_polyfill=DEFAULT_URL_POLYFILL,
                 retval.links = [
                     Link(
                         rel='import',
-                        href="/comp/{}".format(method_name)
+                        href="{}/{}".format(comp_prefix, method_name)
                     ),
                 ]
 
