@@ -126,7 +126,7 @@ def gen_component(cls, component_name, DetailScreen, gen_css_imports, minify_js,
     putter_url = "{}{}.put".format(api_write_url_prefix, cls.get_type_name())
 
     retval = DetailScreen(
-        main=cls(),
+        main=(cls.__orig__ or cls)(),
         getter=IronAjax(url=getter_url),
         putter=IronAjax(url=putter_url),
         dom_module_id=component_name,
