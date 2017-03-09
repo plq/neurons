@@ -317,7 +317,9 @@ def THtmlFormRoot(Base):
                 name = ''
 
             if in_fset:
-                parent.write(E.legend(cls.get_type_name()))
+                default_text = cls.get_type_name()
+                tr = self.trc(cls, ctx.locale, default_text)
+                parent.write(E.legend(tr))
 
             for k, v in fti:
                 subattr = self.get_cls_attrs(v)
