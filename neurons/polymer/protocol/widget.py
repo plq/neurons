@@ -204,6 +204,7 @@ class PolymerWidgetBase(HtmlCloth):
             logger.debug("\t\tinst %r label %r", inst_label, inst)
             item = PaperItem(value=inststr, label=inst_label)
             elt_inst.listbox.items.append(item)
+            elt_inst.listbox.selected = 0
 
         else:
             ever_selected = False
