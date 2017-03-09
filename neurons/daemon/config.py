@@ -1266,6 +1266,8 @@ class ServiceDaemon(Daemon):
             self._set_log_level('spyne.protocol.cloth.to_parent', logging.DEBUG)
             self._set_log_level('spyne.protocol.cloth.to_cloth.serializer',
                                                                   logging.DEBUG)
+            self._set_log_level('neurons.form', logging.DEBUG)
+            self._set_log_level('neurons.polymer.protocol', logging.DEBUG)
         else:
             self._set_log_level('spyne.protocol', logging.INFO)
             self._set_log_level('spyne.protocol.xml', logging.INFO)
@@ -1273,6 +1275,8 @@ class ServiceDaemon(Daemon):
             self._set_log_level('spyne.protocol.cloth.to_parent', logging.INFO)
             self._set_log_level('spyne.protocol.cloth.to_cloth.serializer',
                                                                    logging.INFO)
+            self._set_log_level('neurons.form', logging.INFO)
+            self._set_log_level('neurons.polymer.protocol', logging.INFO)
 
         if self.log_cloth:
             self._set_log_level('spyne.protocol.cloth.to_cloth.cloth',
