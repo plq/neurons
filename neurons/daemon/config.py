@@ -38,7 +38,11 @@ logger = logging.getLogger(__name__)
 
 import getpass
 import resource
+import threading
+import traceback
 import os, re, sys
+
+import neurons
 
 from os import access
 from uuid import uuid1
@@ -53,7 +57,7 @@ from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
 from spyne.protocol import ProtocolBase
 from spyne.protocol.yaml import YamlDocument
 from spyne.util.odict import odict
-from spyne.util.color import B, YEL, R, DARK_R
+from spyne.util.color import R, B, YEL, DARK_R, DARK_G
 
 from spyne.util import six
 from spyne.util.dictdoc import yaml_loads, get_object_as_yaml
@@ -121,7 +125,7 @@ class EmailAlert(AlertDestination):
     host = Unicode(default='localhost')
     port = UnsignedInteger16(default=25)
     user = Unicode
-    sender = Unicode(default='Joe Developer <robot@spyne.io>')
+    sender = Unicode(default='Joe Developer <somepoorhuman@spyne.io>')
     envelope_from = EmailAddress
     password = Unicode
     recipients = M(Array(M(EmailAddress)))
@@ -588,11 +592,20 @@ class LimitsChoice(ComplexModel):
     ]
 
 
+def _get_reactor_thread_sigil(record):
+    if neurons.REACTOR_THREAD_ID is None:
+        return ' '
+    if record.thread == neurons.REACTOR_THREAD_ID:
+        return DARK_R('R')
+    return DARK_G('P')
+
+
 class Daemon(ComplexModel):
     """This is a custom daemon with only pid files, forking, logging and initial
     setuid/setgid operations.
     """
 
+    LOGGING_DEBUG_FORMAT = "%(l)s %(r)s | %(module)-15s | %(message)s"
     LOGGING_DEVEL_FORMAT = "%(l)s | %(module)-15s | %(message)s"
     LOGGING_PROD_FORMAT = "%(l)s %(asctime)s | %(module)-8s | %(message)s"
 
@@ -670,6 +683,7 @@ class Daemon(ComplexModel):
                                 u"exit instead of starting the reactor.")),
 
         ('debug', Boolean(default=False)),
+        ('debug_reactor', Boolean(default=False)),
 
         ('_services', Array(Service, sub_name='services')),
         ('_loggers', Array(Logger, sub_name='loggers')),
@@ -815,6 +829,7 @@ class Daemon(ComplexModel):
                 assert isinstance(record, logging.LogRecord)
 
                 record.l = LOGLEVEL_MAP_ABB.get(record.levelno, "?")
+                record.r = _get_reactor_thread_sigil(record)
 
                 self._modify_record(record)
 
@@ -855,10 +870,16 @@ class Daemon(ComplexModel):
                                "rotate logs." % dirname(self.logger_dest))
                 log_dest = open(self.logger_dest, 'w+')
 
-            formatter = logging.Formatter(self.LOGGING_PROD_FORMAT)
+            if self.debug:
+                formatter = logging.Formatter(self.LOGGING_DEBUG_FORMAT)
+            else:
+                formatter = logging.Formatter(self.LOGGING_PROD_FORMAT)
 
         else:
-            formatter = logging.Formatter(self.LOGGING_DEVEL_FORMAT)
+            if self.debug:
+                formatter = logging.Formatter(self.LOGGING_DEBUG_FORMAT)
+            else:
+                formatter = logging.Formatter(self.LOGGING_DEVEL_FORMAT)
             log_dest = sys.stdout
 
             try:
@@ -892,6 +913,7 @@ class Daemon(ComplexModel):
                 record = logging.LogRecord('?', level, ns, lineno, text,
                                                                      None, None)
                 record.l = level
+                record.r = _get_reactor_thread_sigil(record)
                 record.module = ns.split('.')[-2]
 
                 return formatter.format(record)
@@ -1018,6 +1040,26 @@ class Daemon(ComplexModel):
                 logger.debug("Pid file is at: %r", self.pid_file)
 
         return self
+
+    def add_reactor_checks(self):
+        """Logs warnings when stuff that could be better off in a dedicated
+        thread is found running inside the reactor thread."""
+
+        from sqlalchemy import event
+
+        def before_cursor_execute(conn, cursor, statement, parameters, context,
+                                                                   executemany):
+            if threading.current_thread().ident == neurons.REACTOR_THREAD_ID:
+                logger.warning("SQL query found inside reactor thread. "
+                                    "Statement: %s Traceback: %s",
+                                   statement, ''.join(traceback.format_stack()))
+
+        for store in self._stores:
+            engine = store.itself.engine
+            event.listen(engine,
+                                 "before_cursor_execute", before_cursor_execute)
+
+            logger.info("Installed reactor warning hook for engine %s.", engine)
 
     @classmethod
     def parse_config(cls, daemon_name, argv=None):
@@ -1202,7 +1244,8 @@ class ServiceDaemon(Daemon):
                 Logger(
                     path=u'.',
                     level=u'DEBUG',
-                    format=cls.LOGGING_DEVEL_FORMAT
+                    # TODO: implement this
+                    # format=cls.LOGGING_DEVEL_FORMAT
                 ),
             ],
         )

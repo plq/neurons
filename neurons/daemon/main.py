@@ -236,6 +236,9 @@ def _inner_main(config, init, bootstrap, bootstrapper):
         if config.main_store is None:
             config.main_store = 'sql_main'
 
+        if config.debug_reactor:
+            config.add_reactor_checks()
+
         from neurons import TableModel
         TableModel.Attributes.sqla_metadata.bind = \
                                   config.get_main_store().engine
@@ -337,6 +340,7 @@ class BootStrapper(object):
 def _set_reactor_thread():
     import neurons
     neurons.REACTOR_THREAD = threading.current_thread()
+    neurons.REACTOR_THREAD_ID = neurons.REACTOR_THREAD.ident
 
 
 def _compile_mappers():

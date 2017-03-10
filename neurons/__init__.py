@@ -40,6 +40,7 @@ from neurons import daemon
 
 
 REACTOR_THREAD = None
+REACTOR_THREAD_ID = None
 
 def is_reactor_thread():
     import threading  # to keep the neurons ns clean
