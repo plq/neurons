@@ -63,7 +63,7 @@ from spyne.util import six
 from spyne.util.dictdoc import yaml_loads, get_object_as_yaml
 
 from neurons import __version__ as NEURONS_VERSION
-from neurons.daemon.daemonize import daemonize
+from neurons.daemon.daemonize import daemonize_do
 from neurons.daemon.store import SqlDataStore, PythonLdapStore
 from neurons.daemon.cli import spyne_to_argparse, config_overrides
 
@@ -1004,7 +1004,7 @@ class Daemon(ComplexModel):
         self.apply_limits_impl(SOFT, self.limits.soft)
         self.apply_limits_impl(HARD, self.limits.hard)
 
-    def apply(self, for_testing=False):
+    def apply(self, daemonize=True):
         """Daemonizes the process if requested, then sets up logging and pid
         files.
         """
@@ -1013,21 +1013,22 @@ class Daemon(ComplexModel):
         # It's best to know this in advance or you'll have to deal with daemons
         # that work perfectly well in development environments but won't boot
         # in production ones, solely because of fork()ingw.
-        if not for_testing and ('twisted' in sys.modules):
+        if daemonize and ('twisted' in sys.modules):
             import twisted
             raise Exception(
                  "Twisted is already imported from {}".format(twisted.__file__))
 
         self.sanitize()
-        if self.daemonize:
+        if daemonize and self.daemonize:
             assert self.logger_dest, "Refusing to start without any log output."
-            assert not for_testing, "Refusing to daemonize a test environment."
 
             workdir = self.workdir
             if workdir is None:
                 workdir = '/'
-            daemonize(workdir=workdir)
+            daemonize_do(workdir=workdir)
+
             update_meminfo()
+
         else:
             if self.workdir is not None:
                 os.chdir(self.workdir)
@@ -1035,7 +1036,7 @@ class Daemon(ComplexModel):
         self.apply_limits()
         self.apply_logging()
 
-        if self.pid_file is not None:
+        if daemonize and self.pid_file is not None:
             pid = os.getpid()
             with open(self.pid_file, 'w') as f:
                 f.write(str(pid))
@@ -1268,14 +1269,14 @@ class ServiceDaemon(Daemon):
 
         return self
 
-    def apply(self, for_testing=False):
+    def apply(self, daemonize=True):
         """Daemonizes the process if requested, then sets up logging and pid
         files plus data stores.
         """
 
         # FIXME: apply_storage could return a deferred due to txpool init.
 
-        super(ServiceDaemon, self).apply(for_testing=for_testing)
+        super(ServiceDaemon, self).apply(daemonize=daemonize)
 
         self.apply_storage()
 

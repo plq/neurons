@@ -32,7 +32,7 @@ import os
 MAXFD = 1024
 
 
-def daemonize(umask=0, workdir='/', maxfd=None, redirect_to=os.devnull):
+def daemonize_do(umask=0, workdir='/', maxfd=None, redirect_to=os.devnull):
     """Detach a process from the controlling terminal and run it in the
     background as a daemon.
 

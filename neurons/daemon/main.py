@@ -34,14 +34,13 @@
 from __future__ import print_function
 
 import logging
-
-import warnings
-
 logger = logging.getLogger(__name__)
 
-import os, gc, sys
+import os
+import sys
 import threading
 import resource
+import warnings
 
 from os.path import isfile, join, dirname
 
@@ -196,8 +195,7 @@ def _do_start_shell(config):
     session = db.Session()
 
     # these are just useful to have in a dev. shell
-    import IPython, traceback, inspect, sys
-    from pprint import pprint, pformat
+    import IPython
 
     header = (
         "Database handle is:  db\n"
@@ -306,6 +304,8 @@ class BootStrapper(object):
         print(store.conn_str, "did not exist, created.")
 
     def __call__(self, config):
+        # we are printing stuff here in case the log goes to a log file and the
+        # poor ops guy can't see a thing
         for store in config.stores.values():
             if isinstance(store, RelationalStore):
                 self.create_relational(store)
@@ -316,16 +316,17 @@ class BootStrapper(object):
             else:
                 raise ValueError(store)
 
-        config.log_results = True
-        config.apply()
+        config.apply(daemonize=False)
 
         main_engine = config.get_main_store().engine
 
         # reflect database just in case -- can be useful while bootstrapping
         self.meta_reflect.reflect(bind=main_engine)
+        print("Reflection")
 
         # Run init so that all relevant models get imported
         self.init(config)
+        print("Init")
 
         from neurons.model import TableModel
         TableModel.Attributes.sqla_metadata.bind = main_engine
@@ -333,8 +334,12 @@ class BootStrapper(object):
         self.before_tables(config)
 
         TableModel.Attributes.sqla_metadata.create_all(checkfirst=True)
+        print("All tables created")
 
         self.after_tables(config)
+
+        from spyne.util.color import G
+        print(G("Bootstrap complete."))
 
 
 def _set_reactor_thread():
@@ -369,7 +374,7 @@ def main(config_name, argv, init, bootstrap=None,
     if config.help:
         from neurons.daemon.cli import spyne_to_argparse
         print(spyne_to_argparse(cls, ignore_defaults=False).format_help())
-        return 0;
+        return 0
 
     if config.name is None:
         config.name = config_name
