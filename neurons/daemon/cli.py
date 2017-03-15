@@ -143,9 +143,9 @@ def _is_array_of_complexes(cls):
 
 _some_prot = ProtocolBase()
 
-def spyne_to_argparse(cls):
+def spyne_to_argparse(cls, ignore_defaults):
     fti = cls.get_flat_type_info(cls)
-    parser = ArgumentParser(description=cls.__doc__)
+    parser = ArgumentParser(description=cls.__doc__, add_help=False)
 
     parser.add_argument('-c', '--config-file', type=os.path.abspath,
                                              help="An alternative config file.")
@@ -166,7 +166,10 @@ def spyne_to_argparse(cls):
         if attrs.help is not None:
             kwargs['help'] = attrs.help
 
-        if attrs.default is not None:
+        if ignore_defaults:
+            kwargs['default'] = argparse.SUPPRESS
+
+        elif attrs.default is not None:
             kwargs['default'] = attrs.default
 
         # types

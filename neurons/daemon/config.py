@@ -611,6 +611,8 @@ class Daemon(ComplexModel):
 
     _type_info = [
         ('name', Unicode(no_cli=True, help="Daemon Name")),
+        ('help', Boolean(no_config=True, short='h',
+                                       help="Show this help message and exit")),
         ('file_version', Unicode(no_cli=True, sub_name=FILE_VERSION_KEY,
                                                       default=NEURONS_VERSION)),
         ('uuid', Uuid(
@@ -1067,7 +1069,7 @@ class Daemon(ComplexModel):
         retval = cls.get_default(daemon_name)
         file_name = abspath('%s.yaml' % daemon_name)
 
-        argv_parser = spyne_to_argparse(cls)
+        argv_parser = spyne_to_argparse(cls, ignore_defaults=True)
         cli = {}
         if argv is not None and len(argv) > 1:
             cli = dict(argv_parser.parse_args(argv[1:]).__dict__.items())
@@ -1075,6 +1077,7 @@ class Daemon(ComplexModel):
                 file_name = abspath(cli['config_file'])
                 del cli['config_file']
 
+        print(cli)
         exists = isfile(file_name) and os.access(file_name, os.R_OK)
         if exists and getsize(file_name) > 0:
             s = open(file_name, 'rb').read()

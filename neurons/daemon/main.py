@@ -366,6 +366,11 @@ def main(config_name, argv, init, bootstrap=None,
     """
 
     config = cls.parse_config(config_name, argv)
+    if config.help:
+        from neurons.daemon.cli import spyne_to_argparse
+        print(spyne_to_argparse(cls, ignore_defaults=False).format_help())
+        return 0;
+
     if config.name is None:
         config.name = config_name
     if daemon_name is not None:
