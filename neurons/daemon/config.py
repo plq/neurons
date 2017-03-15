@@ -1077,7 +1077,6 @@ class Daemon(ComplexModel):
                 file_name = abspath(cli['config_file'])
                 del cli['config_file']
 
-        print(cli)
         exists = isfile(file_name) and os.access(file_name, os.R_OK)
         if exists and getsize(file_name) > 0:
             s = open(file_name, 'rb').read()
