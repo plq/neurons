@@ -35,7 +35,7 @@ from spyne import Service
 from spyne.util import memoize
 
 from neurons.base.event import on_method_call
-from neurons.base.context import WriteContext, ReadContext
+from neurons.context import WriteContext, ReadContext
 
 
 @memoize

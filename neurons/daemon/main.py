@@ -276,6 +276,11 @@ def _inner_main(config, init, bootstrap, bootstrapper):
         config.do_write_config()
         return True
 
+    # Perform migrations
+    import neurons.version
+    for version in neurons.version.entries:
+        version.migrate(config)
+
     # if requested, drop to shell
     if config.shell or config.ikernel:
         retval = _do_start_shell(config)

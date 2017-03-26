@@ -88,13 +88,3 @@ class TableModelBase(TTableModelBase()):
 
 
 TableModel = TTableModel(base=TableModelBase)
-
-
-def TVersion(prefix, default_version):
-    class Version(TableModel):
-        __tablename__ = '%s_version' % prefix
-
-        id = Integer32(pk=True)
-        version = Integer32(default=default_version)
-
-    return Version
