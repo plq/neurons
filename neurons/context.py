@@ -36,49 +36,67 @@ logger = logging.getLogger(__name__)
 
 from collections import defaultdict
 
-from neurons.base.const import ANON_USERNAME
-
 
 class ReadContext(object):
     def __init__(self, parent):
+        self.trusted = False
+
         self.parent = parent
 
-        self.user = ANON_USERNAME
-        self.logged = True
+        self.domain = None
+        self.username = None
+
         self.log_entry = None
+
+        self.do_log = True
+        self.do_log_inbound = True
+        self.do_log_outbound = False
+        self.is_read_only = True
+
+        self.short_log_level = logging.INFO
+
         self.sqla_sessions = defaultdict(list)
 
-    def is_read_only(self):
-        return True
+        self._initialized = True
+
+    def __repr__(self):
+        if self.domain is None and self.username is None:
+           return "Context(ro={})".format(self.is_read_only)
+
+        if self.domain is None:
+           return "Context(ro={}, user={})".format(self.is_read_only,
+                                                                  self.username)
+
+        return "Context(ro={}, user={}@{})".format(self.is_read_only,
+                                                     self.username, self.domain)
 
     def sqla_finalize(self, session):
-        pass
+         pass
 
-    def get_session(self, store_name, **kwargs):
-        store = self.parent.app.config.stores[store_name].itself
-        if store.backend == 'sqlalchemy':
+    def get_du(self):
+        if self.domain is None:
+            return self.username
+        return "%s@%s" % (self.username, self.domain)
+
+    def get_main_session(self, **kwargs):
+        return self.get_session(self.parent.app.config.get_main_store(**kwargs))
+
+    def get_session(self, store, **kwargs):
+        if store.type == 'sqlalchemy':
             sessions = self.sqla_sessions[id(store)]
+
             if len(sessions) == 0:
                 session = store.Session(**kwargs)
                 self.sqla_sessions[id(store)].append(session)
+
             else:
                 assert len(kwargs) == 0
                 session = sessions[0]
 
             return session
 
-        raise NotImplementedError(store)
-
-    def get_main_session(self, **kwargs):
-        return self.get_session(self.parent.app.config.main_store, **kwargs)
-
-    def get_fresh_session(self, store_name, **kwargs):
-        store = self.parent.app.config.stores[store_name].itself
-        if store.backend == 'sqlalchemy':
-            session = store.Session(**kwargs)
-            sessions = self.sqla_sessions[id(store)]
-            sessions.append(session)
-            return session
+        elif store.type == 'ldap':
+            return store.conn
 
         raise NotImplementedError(store)
 
@@ -89,7 +107,22 @@ class ReadContext(object):
                     self.sqla_finalize(session)
                 session.close()
 
+        # TODO: Close LDAP sessions?
+
+    def has_role(self, role_cls):
+        for role in self.roles:
+            if role.role == role_cls.__role_name__:
+                return True
+
+        return False
+
 
 class WriteContext(ReadContext):
+    def __init__(self, parent):
+        super(WriteContext, self).__init__(parent)
+
+        self.is_read_only = False
+
     def sqla_finalize(self, session):
+        logger.debug("Committing transaction for ctx 0x%012X", id(self.parent))
         session.commit()
