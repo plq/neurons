@@ -221,7 +221,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
     if config.bootstrap:
         return _do_bootstrap(config, init, bootstrap, bootstrapper)
 
-    # if requested, perform bootstrap and exit
+    # if requested, drop all tables and exit
     if config.drop_all_tables:
         return _do_drop_all_tables(config, init)
 
@@ -363,7 +363,7 @@ def main(config_name, argv, init, bootstrap=None,
          bootstrapper=BootStrapper, cls=ServiceDaemon, daemon_name=None):
     """A typical main function for daemons.
 
-    :param config_name: Configuration file name.
+    :param config_name: Configuration file name. .yaml suffix is appended.
     :param argv: A sequence of command line arguments.
     :param init: A callable that returns the init dict.
     :param bootstrap: A callable that bootstraps daemon's environment.

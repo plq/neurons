@@ -89,10 +89,12 @@ def migrate_2(config, session):
 
 
 def TLogEntry(table_model=TableModel):
-    Version = TVersion("neurons_log", {}, SCHEMA_VERSION)
-    # Version = TVersion("neurons_log", {2: migrate_2}, SCHEMA_VERSION)
+    # Register version table for migration
+    TVersion("neurons_log", {}, SCHEMA_VERSION)
+    # TVersion("neurons_log", {2: migrate_2}, SCHEMA_VERSION)
 
     class LogEntry(table_model, LogEntryMixin):
         __namespace__ = 'http://spyne.io/neurons/log'
         __tablename__ = 'neurons_log'
+
     return LogEntry
