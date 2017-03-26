@@ -31,18 +31,22 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from spyne import ByteArray, ComplexModel, Unicode
+from spyne import ByteArray, ComplexModel, Unicode, UnsignedInteger
 
 
 class RequestHeader(ComplexModel):
     __namespace__ = 'http://spyne.io/neurons/base'
-
-    sid = ByteArray
-    lang = Unicode
+    _type_info = [
+        ('sid', ByteArray),  # short-term session data
+        ('cid', ByteArray),  # long-term session data
+        ('lang', Unicode),   # request language
+    ]
 
 
 class ResponseHeader(ComplexModel):
     __namespace__ = 'http://spyne.io/neurons/base'
-
-    sid = ByteArray
-    Location = Unicode
+    _type_info = [
+        ('sid', ByteArray),
+        ('cid', ByteArray),
+        ('Location', Unicode),
+    ]
