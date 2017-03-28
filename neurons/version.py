@@ -42,7 +42,7 @@ from neurons import TableModel
 entries = []
 
 
-def TVersion(prefix, migration_dict, current_version):
+def TVersion(prefix, migration_dict, current_version, migrate_init=None):
     table_name = '%s_version' % prefix
 
     class Version(TableModel):
@@ -67,6 +67,9 @@ def TVersion(prefix, migration_dict, current_version):
 
                 if len(versions) == 0:
                     session.add(Version(version=current_version))
+
+                    if migrate_init is not None:
+                        migrate_init(config, session)
 
                     logger.info("Initialized %s schema version to %d",
                                                         prefix, current_version)
