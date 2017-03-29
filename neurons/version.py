@@ -58,6 +58,7 @@ def TVersion(prefix, migration_dict, current_version, migrate_init=None):
 
         @staticmethod
         def migrate(config):
+            num_migops = 0
             Version.Attributes.sqla_table.create(checkfirst=True)
 
             db = config.get_main_store()
@@ -73,10 +74,14 @@ def TVersion(prefix, migration_dict, current_version, migrate_init=None):
                     session.add(Version(version=current_version))
 
                     if migrate_init is not None:
+                        num_migops += 1
                         migrate_init(config, session)
-
-                    logger.info("Initialized %s schema version to %d",
+                        logger.info("Performed before-init operations",
                                                         prefix, current_version)
+
+                    num_migops = -1
+                    logger.info("%s schema version management initialized. "
+                                 "Current version: %d", prefix, current_version)
 
                 elif len(versions) > 1:
                     session.query(Version).delete()
@@ -98,14 +103,19 @@ def TVersion(prefix, migration_dict, current_version, migrate_init=None):
 
                             session.commit()
 
+                            num_migops += 1
                             logger.info("%s schema migration to version %d was "
-                                        "performed successfully.",
-                                                                 prefix, vernum)
+                                    "performed successfully.", prefix, vernum)
 
                 session.commit()
 
-                logger.info("%s schema version %s initialized.",
+            if num_migops == 0:
+                logger.info("%s schema version detected as %s.",
                                                         prefix, current_version)
+            elif num_migops > 0:
+                logger.info("%s schema version upgraded to %s "
+                                    "after %d migration operations.",
+                                            prefix, current_version, num_migops)
 
     event.listen(
         Version.Attributes.sqla_table, "after_create",
