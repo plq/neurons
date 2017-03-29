@@ -32,6 +32,10 @@
 #
 
 import logging
+
+from sqlalchemy import DDL
+from sqlalchemy import event
+
 logger = logging.getLogger(__name__)
 
 from contextlib import closing
@@ -102,6 +106,12 @@ def TVersion(prefix, migration_dict, current_version, migrate_init=None):
 
                 logger.info("%s schema version %s initialized.",
                                                         prefix, current_version)
+
+    event.listen(
+        Version.Attributes.sqla_table, "after_create",
+        DDL("CREATE UNIQUE INDEX {0}_one_row "
+                            "ON {0}((version IS NOT NULL));".format(table_name))
+    )
 
     entries.append(Version)
 
