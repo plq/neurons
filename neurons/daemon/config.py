@@ -36,11 +36,13 @@ from __future__ import print_function
 import logging
 logger = logging.getLogger(__name__)
 
+import os
+import re
+import sys
 import getpass
 import resource
 import threading
 import traceback
-import os, re, sys
 
 import neurons
 
