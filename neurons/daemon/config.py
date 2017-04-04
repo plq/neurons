@@ -658,9 +658,13 @@ class Daemon(ComplexModel):
             help=u"The path to the log file. The server won't daemonize "
                  u"without this. Converted to an absolute path if not.")),
 
-        ('logger_dest_rotate_period', Unicode(
-            values=['DAILY', 'WEEKLY', 'MONTHLY'], default='WEEKLY',
+        ('logger_dest_rotation_period', Unicode(
+            values=['DAILY', 'WEEKLY', 'MONTHLY'],
             help="Logs rotation period")),
+
+        ('logger_dest_rotation_compression', Unicode(
+            values=['gzip'],
+            help="Logs rotation compression")),
 
         ('version', Boolean(help=u"Show version", no_file=True)),
 
@@ -1276,6 +1280,8 @@ class ServiceDaemon(Daemon):
                 ),
             ],
             main_store=u'sql_main',
+            logger_dest_rotation_period='WEEKLY',
+            logger_dest_rotation_compression='gzip',
             _loggers=[
                 Logger(
                     path=u'.',
