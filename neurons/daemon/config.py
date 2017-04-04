@@ -48,6 +48,7 @@ from os import access
 from uuid import uuid1
 from pprint import pformat
 from argparse import Action
+from datetime import date
 from os.path import isfile, abspath, dirname, getsize
 
 from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
@@ -655,6 +656,10 @@ class Daemon(ComplexModel):
             help=u"The path to the log file. The server won't daemonize "
                  u"without this. Converted to an absolute path if not.")),
 
+        ('logger_dest_rotate_period', Unicode(
+            values=['DAILY', 'WEEKLY', 'MONTHLY'], default='WEEKLY',
+            help="Logs rotation period")),
+
         ('version', Boolean(help=u"Show version", no_file=True)),
 
         ('bootstrap', Boolean(
@@ -860,9 +865,10 @@ class Daemon(ComplexModel):
         if self.logger_dest is not None:
             from twisted.python.logfile import DailyLogFile
 
-            class DailyLogWithLeadingZero(DailyLogFile):
+            class DynamicallyRotatedLog(DailyLogFile):
                 def suffix(self, tupledate):
-                    # this closely imitates the same function from parent class
+                    # this just adds leading zeroes to dates. it's otherwise
+                    # same with parent
                     try:
                         return '-'.join(("%02d" % i for i in tupledate))
                     except:
@@ -870,10 +876,33 @@ class Daemon(ComplexModel):
                         return '-'.join(("%02d" % i for i in
                                                         self.toDate(tupledate)))
 
+                if self.logger_dest_rotate_period == "DAILY":
+                    print("install shouldRotate DAILY")
+                    def shouldRotate(self):
+                        print("run shouldRotate DAILY")
+                        return self.toDate() != self.lastDate
+
+                elif self.logger_dest_rotate_period == "WEEKLY":
+                    print("install shouldRotate WEEKLY")
+                    def shouldRotate(self):
+                        print("run shouldRotate WEEKLY")
+                        today = date(*self.toDate())
+                        last = date(*self.lastDate)
+                        return (today.year != last.year or
+                                today.isocalendar()[1] != last.isocalendar()[1])
+
+                elif self.logger_dest_rotate_period == "MONTHLY":
+                    print("install shouldRotate MONTHLY")
+                    def shouldRotate(self):
+                        print("run shouldRotate MONTHLY")
+                        return self.toDate()[:2] != self.lastDate[:2]
+
+                else:
+                    raise ValueError(self.logger_dest_rotate_period)
+
             self.logger_dest = abspath(self.logger_dest)
             if access(dirname(self.logger_dest), os.R_OK | os.W_OK):
-                log_dest = DailyLogWithLeadingZero \
-                                                 .fromFullPath(self.logger_dest)
+                log_dest = DynamicallyRotatedLog.fromFullPath(self.logger_dest)
 
             else:
                 Logger().warn("%r is not accessible. We need rwx on it to "
