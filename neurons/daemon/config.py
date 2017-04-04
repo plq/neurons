@@ -877,24 +877,18 @@ class Daemon(ComplexModel):
                                                         self.toDate(tupledate)))
 
                 if self.logger_dest_rotate_period == "DAILY":
-                    print("install shouldRotate DAILY")
                     def shouldRotate(self):
-                        print("run shouldRotate DAILY")
                         return self.toDate() != self.lastDate
 
                 elif self.logger_dest_rotate_period == "WEEKLY":
-                    print("install shouldRotate WEEKLY")
                     def shouldRotate(self):
-                        print("run shouldRotate WEEKLY")
                         today = date(*self.toDate())
                         last = date(*self.lastDate)
                         return (today.year != last.year or
                                 today.isocalendar()[1] != last.isocalendar()[1])
 
                 elif self.logger_dest_rotate_period == "MONTHLY":
-                    print("install shouldRotate MONTHLY")
                     def shouldRotate(self):
-                        print("run shouldRotate MONTHLY")
                         return self.toDate()[:2] != self.lastDate[:2]
 
                 else:
