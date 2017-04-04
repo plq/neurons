@@ -946,7 +946,7 @@ class Daemon(ComplexModel):
 
         self.pre_logging_apply()
 
-        for l in self._loggers or []:
+        for l in self.loggers.values() or []:
             l.apply()
 
         return self
@@ -1221,7 +1221,7 @@ class ServiceDaemon(Daemon):
             return self.stores.values()
 
         self.stores = _wdict()
-        return []
+        return self.stores.values()
 
     @_stores.setter
     def _stores(self, what):
@@ -1262,7 +1262,7 @@ class ServiceDaemon(Daemon):
         )
 
     def apply_storage(self):
-        for store in self._stores or []:
+        for store in self.stores.values():
             try:
                 store.apply()
             except Exception as e:
