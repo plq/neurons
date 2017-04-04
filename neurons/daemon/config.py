@@ -886,19 +886,19 @@ class Daemon(ComplexModel):
                     def shouldRotate(self):
                         return self.toDate() != self.lastDate
 
-                elif self.logger_dest_rotate_period == "WEEKLY":
+                elif self.logger_dest_rotation_period == "WEEKLY":
                     def shouldRotate(self):
                         today = date(*self.toDate())
                         last = date(*self.lastDate)
                         return (today.year != last.year or
                                 today.isocalendar()[1] != last.isocalendar()[1])
 
-                elif self.logger_dest_rotate_period == "MONTHLY":
+                elif self.logger_dest_rotation_period == "MONTHLY":
                     def shouldRotate(self):
                         return self.toDate()[:2] != self.lastDate[:2]
 
                 else:
-                    raise ValueError(self.logger_dest_rotate_period)
+                    raise ValueError(self.logger_dest_rotation_period)
 
             self.logger_dest = abspath(self.logger_dest)
             if access(dirname(self.logger_dest), os.R_OK | os.W_OK):
