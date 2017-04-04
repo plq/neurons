@@ -191,6 +191,14 @@ class LdapStore(StorageInfo):
         else:
             raise ValueError(self.backend)
 
+class FileStore(StorageInfo):
+    path = M(Unicode)
+
+    def apply(self):
+        self.path = abspath(self.path)
+        if not os.path.isdir(self.path):
+            os.makedirs(self.path)
+
 
 class RelationalStore(StorageInfo):
     conn_str = Unicode
