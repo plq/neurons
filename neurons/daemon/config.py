@@ -39,6 +39,8 @@ logger = logging.getLogger(__name__)
 import os
 import re
 import sys
+import gzip
+import shutil
 import getpass
 import resource
 import threading
@@ -48,6 +50,7 @@ import neurons
 
 from os import access
 from uuid import uuid1
+from time import time
 from pprint import pformat
 from argparse import Action
 from datetime import date
@@ -871,6 +874,7 @@ class Daemon(ComplexModel):
         if self.logger_dest is not None:
             from twisted.python.logfile import DailyLogFile
 
+            comp_method = self.logger_dest_rotation_compression
             class DynamicallyRotatedLog(DailyLogFile):
                 def suffix(self, tupledate):
                     # this just adds leading zeroes to dates. it's otherwise
@@ -882,7 +886,61 @@ class Daemon(ComplexModel):
                         return '-'.join(("%02d" % i for i in
                                                         self.toDate(tupledate)))
 
-                if self.logger_dest_rotate_period == "DAILY":
+                def compress_rotated_file(self, file_name):
+                    start = time()
+                    if comp_method == 'gzip':
+                        target_file_name = '{}.gz'.format(file_name)
+
+                        with open(file_name, 'rb') as f_in, \
+                                     gzip.open(target_file_name, 'wb') as f_out:
+                            shutil.copyfileobj(f_in, f_out)
+
+                        os.unlink(file_name)
+
+                    logger.info(
+                        "Rotated log file '%s' => '%s', took %f seconds.",
+                                    file_name, target_file_name, time() - start)
+
+                def rotate(self):
+                    """Rotate the file and create a new one.
+
+                    If it's not possible to open new logfile, this will fail
+                    silently, and continue logging to old logfile.
+                    """
+
+                    # copied from base class and modified with call to
+                    # compress_rotated_file
+
+                    if not (os.access(self.directory, os.W_OK) and os.access(
+                        self.path, os.W_OK)):
+                        return
+
+                    newpath = "%s.%s" % (self.path, self.suffix(self.lastDate))
+
+                    if os.path.exists(newpath):
+                        newpath_tmpl = "%s_{}" % newpath
+                        i = 0
+                        while os.path.exists(newpath):
+                            i += 1
+
+                            newpath = newpath_tmpl.format(i)
+
+                    self._file.close()
+
+
+                    os.rename(self.path, newpath)
+                    self._openFile()
+
+                    if 'twisted' in sys.modules:
+                        from twisted.internet.threads import deferToThread
+                        deferToThread(self.compress_rotated_file, newpath) \
+                            .addErrback(
+                                      lambda err: logger.error("%r", err.value))
+
+                    else:
+                        self.compress_rotated_file(newpath)
+
+                if self.logger_dest_rotation_period == "DAILY":
                     def shouldRotate(self):
                         return self.toDate() != self.lastDate
 
