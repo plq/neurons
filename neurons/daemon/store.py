@@ -57,9 +57,12 @@ class DataStoreBase(object):
         self.type = type
 
 
-class PythonLdapStore(DataStoreBase):
-    def __init__(self, parent):
-        DataStoreBase.__init__(self, type='ldap')
+class LdapDataStore(DataStoreBase):
+    SUPPORTED_BACKENDS = ('python-ldap', )  # TODO: add ldaptor for python3
+
+    def __init__(self, parent, type='python-ldap'):
+        assert type in LdapDataStore.SUPPORTED_BACKENDS
+        DataStoreBase.__init__(self, type=type)
 
         self.conn = None
         self.parent = parent

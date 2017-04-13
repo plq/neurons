@@ -70,7 +70,7 @@ from spyne.util.dictdoc import yaml_loads, get_object_as_yaml
 
 from neurons import __version__ as NEURONS_VERSION
 from neurons.daemon.daemonize import daemonize_do
-from neurons.daemon.store import SqlDataStore, PythonLdapStore
+from neurons.daemon.store import SqlDataStore, LdapDataStore
 from neurons.daemon.cli import spyne_to_argparse, config_overrides
 
 FILE_VERSION_KEY = 'file-version'
@@ -190,8 +190,8 @@ class LdapStore(StorageInfo):
         self.itself = None
 
     def apply(self):
-        if self.backend == 'python-ldap':
-            self.itself = PythonLdapStore(self)
+        if self.backend in LdapDataStore.SUPPORTED_BACKENDS:
+            self.itself = LdapDataStore(self)
             self.itself.apply()
 
         else:
