@@ -35,6 +35,11 @@
 import logging
 logger = logging.getLogger(__name__)
 
+import threading
+import traceback
+
+import neurons
+
 from sqlalchemy import MetaData
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine import Engine
@@ -148,15 +153,34 @@ class SqlDataStore(DataStoreBase):
         self.txpool_start_deferred = None
         """Deferred from TxPostgres pool start()."""
 
+    @property
+    def txpool(self):
+        if neurons.REACTOR_THREAD_ID is not None and \
+                  neurons.REACTOR_THREAD_ID != threading.current_thread().ident:
+
+            logger.warning("Using txpostgres outside of reactor thread is "
+                           "dangerous.")
+
+            for elt in traceback.format_stack():
+                for line in elt.split("\n"):
+                    if len(line) > 0:
+                        logger.warning(line)
+
+        return self._txpool
+
+    @txpool.setter
+    def txpool(self, what):
+        self._txpool = what
+
     def add_txpool(self):
         # don't import twisted too soon
-        from txpostgres.txpostgres import ConnectionPool
+        from txpostgres.txpostgres import Connection, ConnectionPool
         from txpostgres.reconnection import DeadConnectionDetector
 
         class LoggingDeadConnectionDetector(DeadConnectionDetector):
-            def startReconnecting(self, f):
-                logger.warning('TxPool database connection down: %r)', f.value)
-                return DeadConnectionDetector.startReconnecting(self, f)
+            def startReconnecting(self, err):
+                logger.warning('TxPool database connection down: %r)', err.value)
+                return DeadConnectionDetector.startReconnecting(self, err)
 
             def reconnect(self):
                 logger.warning('TxPool reconnecting...')
@@ -168,10 +192,21 @@ class SqlDataStore(DataStoreBase):
 
         dsn = self.engine.raw_connection().connection.dsn
 
-        self.txpool = ConnectionPool("heleleley", dsn, min=1)
+        class NeuronsConnectionPool(ConnectionPool):
+            @staticmethod
+            def connectionFactory(reactor=None, cooperator=None):
+                retval = Connection(reactor=reactor, cooperator=cooperator,
+                                       detector=LoggingDeadConnectionDetector())
+
+                logger.debug("Spawning postgresql backend")
+
+                return retval
+
+        self.txpool = NeuronsConnectionPool("heleleley", dsn, min=1)
         self.txpool_start_deferred = self.txpool.start()
-        self.txpool_start_deferred.addCallback(
-                                 lambda p: logger.info("TxPool %r started.", p))
+        self.txpool_start_deferred \
+            .addCallback(lambda p: logger.info("TxPool %r started.", p)) \
+            .addErrback(lambda err: err.printTraceback())
         return self.txpool_start_deferred
 
     def connect(self):
