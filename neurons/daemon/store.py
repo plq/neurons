@@ -42,8 +42,15 @@ from sqlalchemy.engine import Engine
 
 try:
     import ldap
-except ImportError:
-    ldap = None
+except ImportError as e:
+    class _catchall(object):
+        def __getattribute__(self, item):
+            raise e
+
+    ldap = _catchall()
+
+    del _catchall
+
 
 class DataStoreBase(object):
     def __init__(self, type):
