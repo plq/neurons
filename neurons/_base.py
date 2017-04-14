@@ -31,13 +31,20 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-__version__ = '0.7.1'
 
-REACTOR_THREAD = None
-REACTOR_THREAD_ID = None
+import neurons
 
-from neurons._base import _is_reactor_thread_raise as is_reactor_thread
+import threading
 
-from neurons.application import Application
-from neurons.model import TableModel
-from neurons.context import ReadContext, WriteContext
+from spyne import LogicError
+
+# don't import these directly, import the correct one directly from root
+# neurons package.
+
+def _is_reactor_thread():
+    return threading.current_thread().ident == neurons.REACTOR_THREAD_ID
+
+
+def _is_reactor_thread_raise():
+    assert neurons.REACTOR_THREAD_ID is None
+    raise LogicError('"neurons.REACTOR_THREAD" is not set yet')

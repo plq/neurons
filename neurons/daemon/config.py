@@ -43,7 +43,6 @@ import gzip
 import shutil
 import getpass
 import resource
-import threading
 import traceback
 
 import neurons
@@ -69,6 +68,7 @@ from spyne.util import six
 from spyne.util.dictdoc import yaml_loads, get_object_as_yaml
 
 from neurons import __version__ as NEURONS_VERSION
+from neurons import is_reactor_thread
 from neurons.daemon.daemonize import daemonize_do
 from neurons.daemon.store import SqlDataStore, LdapDataStore
 from neurons.daemon.cli import spyne_to_argparse, config_overrides
@@ -1046,7 +1046,7 @@ class Daemon(ComplexModel):
 
         logging.info("Booting daemon '%s'. We have spyne-%s, neurons-%s, "
                      "sqlalchemy-%s and twisted-%s.",
-                        self.name, B(spyne.__version__), B(neurons.__version__),
+                        self.name, B(spyne.__version__), B(NEURONS_VERSION),
                           B(sqlalchemy.__version__), B(twisted.version.short()))
 
     @staticmethod
@@ -1147,7 +1147,7 @@ class Daemon(ComplexModel):
 
         def before_cursor_execute(conn, cursor, statement, parameters, context,
                                                                    executemany):
-            if threading.current_thread().ident == neurons.REACTOR_THREAD_ID:
+            if is_reactor_thread():
                 logger.warning("SQL query found inside reactor thread. "
                                     "Statement: %s Traceback: %s",
                                    statement, ''.join(traceback.format_stack()))

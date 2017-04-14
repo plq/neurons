@@ -351,6 +351,7 @@ def _set_reactor_thread():
     import neurons
     neurons.REACTOR_THREAD = threading.current_thread()
     neurons.REACTOR_THREAD_ID = neurons.REACTOR_THREAD.ident
+    neurons.is_reactor_thread = neurons._base._is_reactor_thread
 
 
 def _compile_mappers():
