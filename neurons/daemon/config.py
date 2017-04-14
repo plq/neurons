@@ -958,7 +958,8 @@ class Daemon(ComplexModel):
                         return self.toDate()[:2] != self.lastDate[:2]
 
                 else:
-                    raise ValueError(self.logger_dest_rotation_period)
+                    def shouldRotate(self):
+                        return False
 
             self.logger_dest = abspath(self.logger_dest)
             if access(dirname(self.logger_dest), os.R_OK | os.W_OK):
