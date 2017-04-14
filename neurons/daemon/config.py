@@ -539,7 +539,7 @@ class Logger(ComplexModel):
         self._parent = parent
 
     def apply(self):
-        if self.path == '.':
+        if self.path in (None, '', '.'):
             _logger = logging.getLogger()
         else:
             _logger = logging.getLogger(self.path)
