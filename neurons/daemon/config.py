@@ -609,8 +609,10 @@ class LimitsChoice(ComplexModel):
 def _get_reactor_thread_sigil(record):
     if neurons.REACTOR_THREAD_ID is None:
         return ' '
+
     if record.thread == neurons.REACTOR_THREAD_ID:
         return DARK_R('R')
+
     return DARK_G('P')
 
 

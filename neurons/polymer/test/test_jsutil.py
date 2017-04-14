@@ -31,7 +31,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from neurons.jsutil import set_js_variable, get_js_parser
+from neurons.polymer.jsutil import set_js_variable, get_js_parser
 
 
 def test_set_js_variable():

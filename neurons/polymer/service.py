@@ -36,14 +36,14 @@ logger = logging.getLogger(__name__)
 
 import re
 
-from spyne import Service, rpc, Unicode, ComplexModel
+from spyne import Service, rpc, Unicode, ComplexModel, XmlAttribute
 from spyne.protocol.cloth import XmlCloth
 
 from slimit.mangler import mangle as slimit_mangler
 from slimit.visitors.minvisitor import ECMAMinifier
 
 from neurons.base.screen import Link
-from neurons.jsutil import get_js_parser, set_js_variable
+from neurons.polymer.jsutil import get_js_parser, set_js_variable
 from neurons.polymer.const import POLYMER_PREAMBLE, DEFAULT_URL_POLYFILL
 from neurons.polymer.const import POLYMER_DEFN_TEMPLATE
 
