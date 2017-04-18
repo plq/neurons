@@ -61,10 +61,10 @@ from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
 
 from spyne.protocol import ProtocolBase
 from spyne.protocol.yaml import YamlDocument
-from spyne.util.odict import odict
-from spyne.util.color import R, B, YEL, DARK_R, DARK_G
 
 from spyne.util import six
+from spyne.util.odict import odict
+from spyne.util.color import R, B, YEL, DARK_R, DARK_G
 from spyne.util.dictdoc import yaml_loads, get_object_as_yaml
 
 from neurons import __version__ as NEURONS_VERSION
