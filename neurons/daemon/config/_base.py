@@ -364,38 +364,15 @@ class StaticFileServer(HttpApplication):
         ComplexModelBase.__init__(self, *args, **kwargs)
 
     def gen_resource(self):
-        from twisted.web.static import File
-        from twisted.web.resource import ForbiddenResource
-        from twisted.python.filepath import InsecurePath
-        from spyne.server.twisted.http import get_twisted_child_with_default
-
-        class CheckedFile(File):
-            def __init__(self, disallowed_exts, prepath, *args, **kwargs):
-                File.__init__(self, *args, **kwargs)
-
-                self.disallowed_exts = disallowed_exts
-                self.prepath = prepath
-
-            def getChildWithDefault(self, path, request):
-                return get_twisted_child_with_default(self, path, request)
-
-            def child(self, path):
-                retval = File.child(self, path)
-
-                if path.rsplit(".", 1)[-1] in self.disallowed_exts:
-                    raise InsecurePath("%r is disallowed." % (path,))
-
-                return retval
-
         if self.list_contents:
+            from neurons.daemon.config.static_file import CheckedFile
+
             return CheckedFile(self.disallowed_exts, self.url,
                                                              abspath(self.path))
 
-        class StaticFile(CheckedFile):
-            def directoryListing(self):
-                return ForbiddenResource()
+        from neurons.daemon.config.static_file import StaticFile
 
-        return StaticFile(abspath(self.path))
+        return StaticFile(self.disallowed_exts, self.url, abspath(self.path))
 
 
 class HttpListener(Listener):
@@ -463,11 +440,8 @@ class HttpListener(Listener):
 
         root_app = self.subapps.get('', None)
 
-        class TwistedResource(Resource):
-            def getChildWithDefault(self, path, request):
-                return get_twisted_child_with_default(self, path, request)
-
         if root_app is None:
+            from neurons.daemon.config.resource import TwistedResource
             root = TwistedResource()
         else:
             root = root_app.gen_resource()
