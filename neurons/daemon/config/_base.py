@@ -864,11 +864,8 @@ class Daemon(ComplexModel):
 
                 t = self.format(record)
 
-                if six.PY2 and isinstance(t, str):
-                    # Libraries outside of our control can throw exceptions with
-                    # a "str with known encoding", which can cause issues down
-                    # the logging pipeline. Her
-                    t = t.decode('utf8', errors='replace')
+                if six.PY2 and not isinstance(t, str):
+                    t = t.encode('utf8')
 
                 _logger.emit(LOGLEVEL_TWISTED_MAP[record.levelno], log_text=t)
 
@@ -886,6 +883,12 @@ class Daemon(ComplexModel):
                         # try taking a float unixtime
                         return '-'.join(("%02d" % i for i in
                                                         self.toDate(tupledate)))
+
+                def write(self, data):
+                    if isinstance(data, six.text_type):
+                        data = data.encode('utf8')
+
+                    DailyLogFile.write(self, data)
 
                 def compress_rotated_file(self, file_name):
                     start = time()
