@@ -32,9 +32,32 @@
 #
 
 
-from neurons.daemon.config.store import FileStore
-from neurons.daemon.config.store import LdapStore
-from neurons.daemon.config.store import RelationalStore
-from neurons.daemon.config.static_file import CheckedFile
-from neurons.daemon.config.static_file import StaticFile
-from neurons.daemon.config._base import *
+from twisted.web.static import File
+from twisted.web.resource import ForbiddenResource
+from twisted.python.filepath import InsecurePath
+
+from spyne.server.twisted.http import get_twisted_child_with_default
+
+
+class CheckedFile(File):
+    def __init__(self, disallowed_exts, prepath, *args, **kwargs):
+        File.__init__(self, *args, **kwargs)
+
+        self.disallowed_exts = disallowed_exts
+        self.prepath = prepath
+
+    def getChildWithDefault(self, path, request):
+        return get_twisted_child_with_default(self, path, request)
+
+    def child(self, path):
+        retval = File.child(self, path)
+
+        if path.rsplit(".", 1)[-1] in self.disallowed_exts:
+            raise InsecurePath("%r is disallowed." % (path,))
+
+        return retval
+
+
+class StaticFile(CheckedFile):
+    def directoryListing(self):
+        return ForbiddenResource()
