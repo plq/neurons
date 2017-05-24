@@ -414,8 +414,6 @@ class HttpListener(Listener):
 
     def gen_site(self):
         from twisted.web.server import Site
-        from twisted.web.resource import Resource
-        from spyne.server.twisted.http import get_twisted_child_with_default
 
         self.check_overrides()
 
@@ -496,37 +494,6 @@ LOGLEVEL_MAP_ABB = {
 }
 
 
-class Logger(ComplexModel):
-    path = Unicode
-    level = Unicode(values=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'])
-
-    def __init__(self, *args, **kwargs):
-        self._parent = None
-
-        super(Logger, self).__init__(*args, **kwargs)
-
-    def set_parent(self, parent):
-        assert self._parent is None
-        assert parent is not None
-
-        self._parent = parent
-
-    def apply(self):
-        if self.path in (None, '', '.'):
-            _logger = logging.getLogger()
-        else:
-            _logger = logging.getLogger(self.path)
-
-        _logger.setLevel(LOGLEVEL_MAP[self.level])
-
-        if self.path == '.':
-            logger.info("Root Logger level override: %s", self.level)
-        else:
-            logger.info("Logger level override %s = %s", self.path, self.level)
-
-        return self
-
-
 class ServiceDisabled(Exception):
     pass
 
@@ -594,9 +561,9 @@ class Daemon(ComplexModel):
     setuid/setgid operations.
     """
 
-    LOGGING_DEBUG_FORMAT = "%(l)s %(r)s | %(module)-15s | %(message)s"
-    LOGGING_DEVEL_FORMAT = "%(l)s | %(module)-15s | %(message)s"
-    LOGGING_PROD_FORMAT = "%(l)s %(asctime)s | %(module)-8s | %(message)s"
+    LOGGING_DEBUG_FORMAT = u"%(l)s %(r)s | %(module)-15s | %(message)s"
+    LOGGING_DEVEL_FORMAT = u"%(l)s | %(module)-15s | %(message)s"
+    LOGGING_PROD_FORMAT = u"%(l)s %(asctime)s | %(module)-8s | %(message)s"
 
     _type_info = [
         ('name', Unicode(no_cli=True, help="Daemon Name")),
@@ -794,148 +761,13 @@ class Daemon(ComplexModel):
     def apply_logging(self):
         # We're using twisted logging only for IO.
         from twisted.logger import FileLogObserver
-        from twisted.logger import Logger, LogLevel, globalLogPublisher
-
-        LOGLEVEL_TWISTED_MAP = {
-            logging.DEBUG: LogLevel.debug,
-            logging.INFO: LogLevel.info,
-            logging.WARN: LogLevel.warn,
-            logging.ERROR: LogLevel.error,
-            logging.CRITICAL: LogLevel.critical,
-        }
-
-        TWISTED_LOGLEVEL_MAP = {v: k for k, v in LOGLEVEL_TWISTED_MAP.items()}
+        from twisted.logger import Logger, globalLogPublisher
 
         loggers = {}
 
-        config = self
-
-        class TwistedHandler(logging.Handler):
-            if config.log_rss:
-                if _meminfo is None:
-                    def _modify_record(self, record):
-                        record.msg = '[psutil?] %s' % record.msg
-                else:
-                    def _modify_record(self, record):
-                        meminfo = _meminfo()
-                        record.msg = '[%.2f] %s' % (meminfo.rss / 1024.0 ** 2,
-                                                                     record.msg)
-            else:
-                def _modify_record(self, record):
-                    pass
-
-            def emit(self, record):
-                assert isinstance(record, logging.LogRecord)
-
-                record.l = LOGLEVEL_MAP_ABB.get(record.levelno, "?")
-                record.r = _get_reactor_thread_sigil(record)
-
-                self._modify_record(record)
-
-                _logger = loggers.get(record.name, None)
-                if _logger is None:
-                    _logger = loggers[record.name] = Logger(record.name)
-
-                t = self.format(record)
-
-                if six.PY2 and not isinstance(t, str):
-                    t = t.encode('utf8')
-
-                _logger.emit(LOGLEVEL_TWISTED_MAP[record.levelno], log_text=t)
-
         if self.logger_dest is not None:
-            from twisted.python.logfile import DailyLogFile
-
-            comp_method = self.logger_dest_rotation_compression
-            class DynamicallyRotatedLog(DailyLogFile):
-                def suffix(self, tupledate):
-                    # this just adds leading zeroes to dates. it's otherwise
-                    # same with parent
-                    try:
-                        return '-'.join(("%02d" % i for i in tupledate))
-                    except:
-                        # try taking a float unixtime
-                        return '-'.join(("%02d" % i for i in
-                                                        self.toDate(tupledate)))
-
-                def write(self, data):
-                    if isinstance(data, six.text_type):
-                        data = data.encode('utf8')
-
-                    DailyLogFile.write(self, data)
-
-                def compress_rotated_file(self, file_name):
-                    start = time()
-                    if comp_method == 'gzip':
-                        target_file_name = '{}.gz'.format(file_name)
-
-                        with open(file_name, 'rb') as f_in, \
-                                     gzip.open(target_file_name, 'wb') as f_out:
-                            shutil.copyfileobj(f_in, f_out)
-
-                        os.unlink(file_name)
-
-                    logger.info(
-                        "Rotated log file '%s' => '%s', took %f seconds.",
-                                    file_name, target_file_name, time() - start)
-
-                def rotate(self):
-                    """Rotate the file and create a new one.
-
-                    If it's not possible to open new logfile, this will fail
-                    silently, and continue logging to old logfile.
-                    """
-
-                    # copied from base class and modified with call to
-                    # compress_rotated_file
-
-                    if not (os.access(self.directory, os.W_OK) and os.access(
-                        self.path, os.W_OK)):
-                        return
-
-                    newpath = "%s.%s" % (self.path, self.suffix(self.lastDate))
-
-                    if os.path.exists(newpath):
-                        newpath_tmpl = "%s_{}" % newpath
-                        i = 0
-                        while os.path.exists(newpath):
-                            i += 1
-
-                            newpath = newpath_tmpl.format(i)
-
-                    self._file.close()
-
-
-                    os.rename(self.path, newpath)
-                    self._openFile()
-
-                    if 'twisted' in sys.modules:
-                        from twisted.internet.threads import deferToThread
-                        deferToThread(self.compress_rotated_file, newpath) \
-                            .addErrback(
-                                      lambda err: logger.error("%r", err.value))
-
-                    else:
-                        self.compress_rotated_file(newpath)
-
-                if self.logger_dest_rotation_period == "DAILY":
-                    def shouldRotate(self):
-                        return self.toDate() != self.lastDate
-
-                elif self.logger_dest_rotation_period == "WEEKLY":
-                    def shouldRotate(self):
-                        today = date(*self.toDate())
-                        last = date(*self.lastDate)
-                        return (today.year != last.year or
-                                today.isocalendar()[1] != last.isocalendar()[1])
-
-                elif self.logger_dest_rotation_period == "MONTHLY":
-                    def shouldRotate(self):
-                        return self.toDate()[:2] != self.lastDate[:2]
-
-                else:
-                    def shouldRotate(self):
-                        return False
+            DynamicallyRotatedLog = TDynamicallyRotatedLog(self,
+                                          self.logger_dest_rotation_compression)
 
             self.logger_dest = abspath(self.logger_dest)
             if access(dirname(self.logger_dest), os.R_OK | os.W_OK):
@@ -966,45 +798,12 @@ class Daemon(ComplexModel):
             except Exception as e:
                 logger.debug("coloarama not loaded: %r" % e)
 
-        def record_as_string(record):
-            if 'log_failure' in record:
-                failure = record['log_failure']
-                try:
-                    s = pformat(vars(failure.value))
-                except TypeError:
-                    # vars() argument must have __dict__ attribute
-                    s = repr(failure.value)
-                return "%s: %s" % (failure.type, s)
-
-            if 'log_text' in record:
-                return record['log_text'] + "\n"
-
-            if 'log_format' in record:
-                level = record.get('log_level', LogLevel.debug)
-                level = LOGLEVEL_MAP_ABB[TWISTED_LOGLEVEL_MAP[level]]
-
-                text = record['log_format'].format(**record) + "\n"
-                ns = record.get('log_namespace', "???")
-                lineno = 0
-                record = logging.LogRecord('?', level, ns, lineno, text,
-                                                                     None, None)
-                record.l = level
-                record.r = _get_reactor_thread_sigil(record)
-                record.module = ns.split('.')[-2]
-
-                return formatter.format(record)
-
-            if 'log_io' in record:
-                return record['log_io'] + "\n"
-
-            if 'message' in record:
-                return record['message'] + "\n"
-
-            return pformat(record)
-
+        record_as_string = Trecord_as_string(formatter)
         observer = FileLogObserver(log_dest, record_as_string)
         globalLogPublisher.addObserver(observer)
         self._clear_other_observers(globalLogPublisher, observer)
+
+        TwistedHandler = TTwistedHandler(self, loggers, _meminfo)
 
         handler = TwistedHandler()
         handler.setFormatter(formatter)
@@ -1019,7 +818,6 @@ class Daemon(ComplexModel):
 
     def boot_message(self):
         import spyne
-        import neurons
         import twisted
         import sqlalchemy
 

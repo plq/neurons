@@ -33,3 +33,6 @@
 
 
 from neurons.daemon.config._base import *
+from neurons.daemon.config.store import FileStore
+from neurons.daemon.config.store import LdapStore
+from neurons.daemon.config.store import RelationalStore
