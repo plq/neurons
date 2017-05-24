@@ -31,7 +31,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 
 import logging
 logger = logging.getLogger(__name__)
