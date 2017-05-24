@@ -36,11 +36,7 @@ from __future__ import print_function, absolute_import
 import logging
 logger = logging.getLogger(__name__)
 
-import os
-import re
-import sys
-import gzip
-import shutil
+import os, re, sys
 import getpass
 import resource
 import traceback
@@ -49,20 +45,17 @@ import neurons
 
 from os import access
 from uuid import uuid1
-from time import time
 from pprint import pformat
 from argparse import Action
-from datetime import date
 from os.path import isfile, abspath, dirname, getsize
 
 from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
-    UnsignedInteger16, Array, String, Application, ComplexModelBase, M, Double,\
-    Decimal, UnsignedInteger
+    UnsignedInteger16, Array, String, Application, ComplexModelBase, M, Double, \
+    UnsignedInteger
 
 from spyne.protocol import ProtocolBase
 from spyne.protocol.yaml import YamlDocument
 
-from spyne.util import six
 from spyne.util.odict import odict
 from spyne.util.color import R, B, YEL, DARK_R, DARK_G
 from spyne.util.dictdoc import yaml_loads, get_object_as_yaml
@@ -70,8 +63,12 @@ from spyne.util.dictdoc import yaml_loads, get_object_as_yaml
 from neurons import __version__ as NEURONS_VERSION
 from neurons import is_reactor_thread
 from neurons.daemon.daemonize import daemonize_do
-from neurons.daemon.store import SqlDataStore, LdapDataStore
 from neurons.daemon.cli import spyne_to_argparse, config_overrides
+from neurons.daemon.config.logutils import Logger, Trecord_as_string, \
+    TDynamicallyRotatedLog, TTwistedHandler
+from neurons.daemon.config.store import RelationalStore
+from neurons.daemon.config.store import StorageInfo
+
 
 FILE_VERSION_KEY = 'file-version'
 STATIC_DESC_ROOT = "Directory that contains static files for the root url."
@@ -135,135 +132,6 @@ class EmailAlert(AlertDestination):
     envelope_from = EmailAddress
     password = Unicode
     recipients = M(Array(M(EmailAddress)))
-
-
-class StorageInfo(ComplexModel):
-    name = Unicode
-    backend = Unicode
-
-    def __init__(self, *args, **kwargs):
-        self._parent = None
-
-        super(StorageInfo, self).__init__(*args, **kwargs)
-
-    def set_parent(self, parent):
-        assert self._parent is None
-        assert parent is not None
-
-        self._parent = parent
-
-
-class PoolConfig(ComplexModel):
-    type = Unicode
-
-
-class AsyncPoolConfig(ComplexModel):
-    type = Unicode(values=['txpostgres'])
-
-
-class SyncPoolConfig(ComplexModel):
-    type = Unicode(values=[
-            'SingletonThreadPool', 'QueuePool', 'NullPool',
-            'StaticPool', 'AssertionPool'
-        ])
-
-
-DistinguishedName = Unicode
-
-
-class LdapStore(StorageInfo):
-    method = M(Unicode(values=['simple', 'gssapi']))
-    backend = M(Unicode(values=['python-ldap']))
-
-    host = M(Unicode)
-    port = UnsignedInteger16(default=389)
-    base_dn = DistinguishedName
-    bind_dn = DistinguishedName
-    password = Unicode
-    timeout = Decimal(gt=0, default=10)
-    version = UnsignedInteger(default=3, vaues=[2, 3])
-    use_tls = Boolean(default=False)
-    referrals = Boolean(default=False)
-
-    def __init__(self, *args, **kwargs):
-        super(LdapStore, self).__init__(*args, **kwargs)
-        self.itself = None
-
-    def apply(self):
-        if self.backend in LdapDataStore.SUPPORTED_BACKENDS:
-            self.itself = LdapDataStore(self)
-            self.itself.apply()
-
-        else:
-            raise ValueError(self.backend)
-
-class FileStore(StorageInfo):
-    path = M(Unicode)
-
-    def apply(self):
-        self.path = abspath(self.path)
-        if not os.path.isdir(self.path):
-            os.makedirs(self.path)
-
-
-class RelationalStore(StorageInfo):
-    conn_str = Unicode
-
-    # move these to QueuePool config.
-    pool_size = UnsignedInteger(default=10)
-    pool_recycle = UnsignedInteger(default=3600)
-    pool_timeout = UnsignedInteger(default=30)
-    max_overflow = UnsignedInteger(default=3)
-    echo_pool = Boolean(default=False)
-
-    sync_pool = Boolean(default=True)
-    sync_pool_type = Unicode(
-        default='QueuePool',
-        values=[
-            'SingletonThreadPool', 'QueuePool', 'NullPool',
-            'StaticPool', 'AssertionPool'
-        ],
-    )
-
-    async_pool = Boolean(default=True)
-
-    def __init__(self, *args, **kwargs):
-        super(RelationalStore, self).__init__(*args, **kwargs)
-        self.itself = None
-
-    def apply(self):
-        self.itself = SqlDataStore(self.conn_str, pool_size=self.pool_size,
-                                                       echo_pool=self.echo_pool)
-        if not (self.async_pool or self.sync_pool):
-            logger.debug("Store '%s' is disabled.", self.name)
-
-        if self.async_pool:
-            if self.conn_str.startswith('postgres'):
-                self.itself.add_txpool()
-            else:
-                self.async_pool = False
-
-        if not self.sync_pool:
-            self.itself.Session = None
-            self.itself.metadata = None
-            self.itself.engine.dispose()
-            self.itself.engine = None
-
-        return self
-
-    def close(self):
-        if self.async_pool:
-            self.itself.txpool.close()
-
-        if self.sync_pool:
-            self.itself.Session = None
-            self.itself.metadata = None
-            self.itself.engine.dispose()
-            self.itself.engine = None
-
-        self.itself = None
-
-        return self
 
 
 class Service(ComplexModel):
@@ -366,12 +234,10 @@ class StaticFileServer(HttpApplication):
     def gen_resource(self):
         if self.list_contents:
             from neurons.daemon.config.static_file import CheckedFile
-
             return CheckedFile(self.disallowed_exts, self.url,
                                                              abspath(self.path))
 
         from neurons.daemon.config.static_file import StaticFile
-
         return StaticFile(self.disallowed_exts, self.url, abspath(self.path))
 
 
