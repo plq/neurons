@@ -369,14 +369,12 @@ class StaticFileServer(HttpApplication):
         from twisted.python.filepath import InsecurePath
         from spyne.server.twisted.http import get_twisted_child_with_default
 
-        d_exts = self.disallowed_exts
-        url = self.url
-
         class CheckedFile(File):
-            def __init__(self, *args, **kwargs):
+            def __init__(self, disallowed_exts, prepath, *args, **kwargs):
                 File.__init__(self, *args, **kwargs)
 
-                self.prepath = url
+                self.disallowed_exts = disallowed_exts
+                self.prepath = prepath
 
             def getChildWithDefault(self, path, request):
                 return get_twisted_child_with_default(self, path, request)
@@ -384,13 +382,14 @@ class StaticFileServer(HttpApplication):
             def child(self, path):
                 retval = File.child(self, path)
 
-                if path.rsplit(".", 1)[-1] in d_exts:
+                if path.rsplit(".", 1)[-1] in self.disallowed_exts:
                     raise InsecurePath("%r is disallowed." % (path,))
 
                 return retval
 
         if self.list_contents:
-            return CheckedFile(abspath(self.path))
+            return CheckedFile(self.disallowed_exts, self.url,
+                                                             abspath(self.path))
 
         class StaticFile(CheckedFile):
             def directoryListing(self):
