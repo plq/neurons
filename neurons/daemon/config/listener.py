@@ -148,12 +148,15 @@ class StaticFileServer(HttpApplication):
 
     def gen_resource(self):
         if self.list_contents:
-            from neurons.daemon.config.static_file import CheckedFile
-            return CheckedFile(self.disallowed_exts, self.url,
-                                                             abspath(self.path))
+            from neurons.daemon.config.static_file import TCheckedFile
+            CheckedFile = TCheckedFile(self.disallowed_exts, self.url)
 
-        from neurons.daemon.config.static_file import StaticFile
-        return StaticFile(self.disallowed_exts, self.url, abspath(self.path))
+            return CheckedFile(abspath(self.path))
+
+        from neurons.daemon.config.static_file import TStaticFile
+        StaticFile = TStaticFile(self.disallowed_exts, self.url)
+
+        return StaticFile(abspath(self.path))
 
 
 class HttpListener(Listener):
