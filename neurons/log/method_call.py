@@ -32,32 +32,7 @@
 #
 
 
-FILE_VERSION_KEY = 'file-version'
-STATIC_DESC_ROOT = "Directory that contains static files for the root url."
-STATIC_DESC_URL = "Directory that contains static files for the url '%s'."
+import logging
+logger = logging.getLogger(__name__)
 
 
-class ServiceDisabled(Exception):
-    pass
-
-
-from neurons.daemon.config._base import LOGLEVEL_MAP
-from neurons.daemon.config._base import LOGLEVEL_MAP_ABB
-from neurons.daemon.config._base import LOGLEVEL_STR_MAP
-
-from neurons.daemon.config.listener import Service
-from neurons.daemon.config.listener import Listener
-from neurons.daemon.config.listener import SslListener
-from neurons.daemon.config.listener import HttpListener
-from neurons.daemon.config.listener import WsgiListener
-from neurons.daemon.config.listener import HttpApplication
-from neurons.daemon.config.listener import StaticFileServer
-
-from neurons.daemon.config.store import FileStore
-from neurons.daemon.config.store import LdapStore
-from neurons.daemon.config.store import RelationalStore
-
-from neurons.daemon.config.daemon import Daemon
-from neurons.daemon.config.daemon import ServiceDaemon
-from neurons.daemon.config.daemon import EmailAlert
-from neurons.daemon.config.daemon import AlertDestination

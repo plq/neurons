@@ -31,12 +31,42 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from twisted.web.resource import Resource
 
-from spyne.server.twisted.http import get_twisted_child_with_default
+from spyne.util.odict import odict
+
+from neurons.daemon.config import ServiceDisabled
 
 
-class TwistedResource(Resource):
-    def getChildWithDefault(self, path, request):
-        return get_twisted_child_with_default(self, path, request)
+class wdict(odict):
+    def getwrite(self, key, *args):
+        if len(args) > 0:
+            if not key in self:
+                self[key], = args
+        return self[key]
 
+
+class wrdict(wdict):
+    def getwrite(self, key, *args):
+        """Raises ServiceDisabled when the service has disabled == True"""
+
+        retval = super(wrdict, self).getwrite(key, *args)
+
+        if getattr(retval, 'disabled', None):
+            raise ServiceDisabled(getattr(retval, 'name', "??"))
+
+        return retval
+
+
+def Twrdict(parent, keyattr=None):
+    class twrdict(wrdict):
+        if keyattr is not None:
+            def __setitem__(self, key, value):
+                super(wrdict, self).__setitem__(key, value)
+                setattr(value, keyattr, key)
+                value._parent = parent
+        else:
+            def __setitem__(self, key, value):
+                super(wrdict, self).__setitem__(key, value)
+                value._parent = parent
+
+    return twrdict
