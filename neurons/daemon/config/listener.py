@@ -265,4 +265,3 @@ class HttpListener(Listener):
 class WsgiListener(HttpListener):
     thread_min = UnsignedInteger
     thread_max = UnsignedInteger
-
