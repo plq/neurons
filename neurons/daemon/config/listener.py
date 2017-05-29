@@ -45,7 +45,7 @@ from spyne import Application, UnsignedInteger, ComplexModel, Unicode, \
     UnsignedInteger16, Boolean, String, Array, ComplexModelBase
 
 from neurons.daemon.cli import config_overrides
-from neurons.daemon.config._wdict import wdict, wrdict
+from neurons.daemon.config._wdict import wdict, wrdict, Twrdict
 
 
 class Service(ComplexModel):
@@ -186,12 +186,12 @@ class HttpListener(Listener):
 
         subapps = kwargs.get('subapps', None)
         if isinstance(subapps, dict):
-            self.subapps = _Twrdict(self, 'url')()
+            self.subapps = Twrdict(self, 'url')()
             for k, v in subapps.items():
                 self.subapps[k] = v
 
         elif isinstance(subapps, (tuple, list)):
-            self.subapps = _Twrdict(self, 'url')()
+            self.subapps = Twrdict(self, 'url')()
             for v in subapps:
                 assert v.url is not None, "%r.url is None" % v
                 self.subapps[v.url] = v
