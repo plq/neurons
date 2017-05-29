@@ -231,6 +231,7 @@ class HttpListener(Listener):
                     return get_twisted_child_with_default(self, path, request)
 
             root = TwistedResource()
+            root.prepath = '/'
         else:
             root = root_app.gen_resource()
 
