@@ -152,6 +152,10 @@ def TTwistedHandler(config, loggers, _meminfo):
             if _logger is None:
                 _logger = loggers[record.name] = Logger(record.name)
 
+            if six.PY2 and hasattr(record, 'msg') \
+                                                and isinstance(record.msg, str):
+                record.msg = record.msg.decode('utf8')
+
             t = self.format(record)
 
             if six.PY2 and isinstance(t, str):
