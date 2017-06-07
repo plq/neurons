@@ -57,4 +57,4 @@ from neurons.form.table import HtmlFormTable
 
 def tou(name):
     if name is not None:
-        return name.encode('utf8')
+        return name
