@@ -166,6 +166,9 @@ def spyne_to_argparse(cls, ignore_defaults):
         if attrs.help is not None:
             kwargs['help'] = attrs.help
 
+        if attrs.metavar is not None:
+            kwargs['metavar'] = attrs.metavar
+
         if ignore_defaults:
             kwargs['default'] = argparse.SUPPRESS
 
