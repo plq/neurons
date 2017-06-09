@@ -34,12 +34,6 @@
 from __future__ import print_function, absolute_import
 
 import logging
-
-from neurons.daemon.config import LOGLEVEL_STR_MAP
-from neurons.daemon.config._wdict import wdict, Twrdict
-from spyne.protocol import ProtocolBase
-from spyne.protocol.yaml import YamlDocument
-
 logger = logging.getLogger(__name__)
 
 import os, sys
@@ -54,14 +48,18 @@ from argparse import Action
 
 from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
     Array, String, Double, UnsignedInteger16, M
-
+from spyne.protocol import ProtocolBase
+from spyne.protocol.yaml import YamlDocument
 from spyne.util.color import B
 from spyne.util.dictdoc import yaml_loads, get_object_as_yaml
 
 from neurons import __version__ as NEURONS_VERSION
 from neurons import is_reactor_thread
 from neurons.daemon.daemonize import daemonize_do
+from neurons.daemon.config import LOGLEVEL_STR_MAP
+from neurons.daemon.config._wdict import wdict, Twrdict
 from neurons.daemon.cli import spyne_to_argparse
+
 
 from neurons.daemon.config import FILE_VERSION_KEY
 from neurons.daemon.config.listener import Service
@@ -631,11 +629,11 @@ class ServiceDaemon(Daemon):
     _type_info = [
         ('write_wsdl', Unicode(
             help="Write Wsdl document(s) to the given directory and exit. "
-                 "It is created if missing", no_file=True)),
+                 "It is created if missing", no_file=True, metavar='WSDL_DIR')),
 
         ('write_xsd', Unicode(
             help="Write Xml Schema document(s) to given directory and exit. "
-                 "It is created if missing", no_file=True)),
+                 "It is created if missing", no_file=True, metavar='XSD_DIR')),
 
         ('log_queries', Boolean(help="Log SQL queries.")),
         ('log_results', Boolean(help="Log SQL query results in addition to "
