@@ -63,6 +63,8 @@ def TVersion(prefix, migration_dict, current_version, migrate_init=None):
 
             db = config.get_main_store()
             with closing(db.Session()) as session:
+                logger.info("Locking table '%s' for schema version checks",
+                                                                     table_name)
                 session.connection().execute(
                             "lock %s in access exclusive mode;" % (table_name,))
 
@@ -110,11 +112,12 @@ def TVersion(prefix, migration_dict, current_version, migrate_init=None):
                 session.commit()
 
             if num_migops == 0:
-                logger.info("%s schema version detected as %s.",
+                logger.info("%s schema version detected as %s. Table unlocked.",
                                                         prefix, current_version)
+
             elif num_migops > 0:
                 logger.info("%s schema version upgraded to %s "
-                                    "after %d migration operations.",
+                               "after %d migration operations. Table unlocked.",
                                             prefix, current_version, num_migops)
 
     event.listen(
