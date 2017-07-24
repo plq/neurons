@@ -348,7 +348,7 @@ class BootStrapper(object):
         self.before_tables(config)
 
         TableModel.Attributes.sqla_metadata.create_all(checkfirst=True)
-        print("All tables created")
+        print("All tables created.")
 
         self.after_tables(config)
 
@@ -370,7 +370,7 @@ def _compile_mappers():
 
 
 def main(config_name, argv, init, bootstrap=None,
-         bootstrapper=BootStrapper, cls=ServiceDaemon, daemon_name=None):
+                bootstrapper=BootStrapper, cls=ServiceDaemon, daemon_name=None):
     """A typical main function for daemons.
 
     :param config_name: Configuration file name. .yaml suffix is appended.
