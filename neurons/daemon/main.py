@@ -49,7 +49,7 @@ from spyne.store.relational.util import database_exists, create_database
 
 from sqlalchemy import MetaData
 
-from neurons.daemon.config import ServiceDisabled, ServiceDaemon, \
+from neurons.daemon.config import FileStore, ServiceDisabled, ServiceDaemon, \
     RelationalStore, LdapStore
 
 
@@ -317,6 +317,15 @@ class BootStrapper(object):
 
             elif isinstance(store, LdapStore):
                 warnings.warn("LDAP bootstrap is not implemented.")
+
+            elif isinstance(store, FileStore):
+                try:
+                    os.makedirs(store.path)
+                    print("File store", store.name, "directory", store.path,
+                                                            'has been created.')
+                except OSError:
+                    print("File store", store.name, "directory", store.path,
+                                                              'already exists.')
 
             else:
                 raise ValueError(store)
