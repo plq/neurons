@@ -78,8 +78,7 @@ def TVersion(prefix, migration_dict, current_version, migrate_init=None):
                     if migrate_init is not None:
                         num_migops += 1
                         migrate_init(config, session)
-                        logger.info("Performed before-init operations",
-                                                        prefix, current_version)
+                        logger.info("Performed before-init operations")
 
                     num_migops = -1
                     logger.info("%s schema version management initialized. "
