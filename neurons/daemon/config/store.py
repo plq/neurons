@@ -62,6 +62,9 @@ class StorageInfo(ComplexModel):
 
         self._parent = parent
 
+    def close(self):
+        pass
+
 
 class PoolConfig(ComplexModel):
     type = Unicode
