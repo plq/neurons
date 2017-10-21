@@ -186,9 +186,9 @@ def TDynamicallyRotatedLog(config, comp_method):
 
             DailyLogFile.write(self, data)
 
-        def compress_rotated_file(self, file_name):
-            start = time()
-            if comp_method == 'gzip':
+        if comp_method == 'gzip':
+            def compress_rotated_file(self, file_name):
+                start = time()
                 target_file_name = '{}.gz'.format(file_name)
 
                 with open(file_name, 'rb') as f_in, \
@@ -197,9 +197,12 @@ def TDynamicallyRotatedLog(config, comp_method):
 
                 os.unlink(file_name)
 
-            logger.info(
-                "Rotated log file '%s' => '%s', took %f seconds.",
-                file_name, target_file_name, time() - start)
+                logger.info(
+                    "Rotated log file '%s' => '%s', took %f seconds.",
+                    file_name, target_file_name, time() - start)
+        else:
+            def compress_rotated_file(self, file_name):
+                pass
 
         def rotate(self):
             """Rotate the file and create a new one.
@@ -234,8 +237,8 @@ def TDynamicallyRotatedLog(config, comp_method):
                 from twisted.internet.threads import deferToThread
 
                 deferToThread(self.compress_rotated_file, newpath) \
-                    .addErrback(
-                    lambda err: logger.error("%r", err.value))
+                    .addErrback(lambda err:
+                                         logger.error("%s", err.getTraceBack()))
 
             else:
                 self.compress_rotated_file(newpath)
