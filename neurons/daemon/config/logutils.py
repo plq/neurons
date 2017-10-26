@@ -238,7 +238,7 @@ def TDynamicallyRotatedLog(config, comp_method):
 
                 deferToThread(self.compress_rotated_file, newpath) \
                     .addErrback(lambda err:
-                                         logger.error("%s", err.getTraceBack()))
+                                         logger.error("%s", err.getTraceback()))
 
             else:
                 self.compress_rotated_file(newpath)
