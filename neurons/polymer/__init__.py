@@ -41,7 +41,8 @@ def read_file_contents(ns, fn):
     import neurons.daemon.autorel
     from pkg_resources import resource_filename
 
-    path = os.path.abspath(resource_filename(ns, fn))
+    resfn = resource_filename(ns, fn)
+    path = os.path.abspath(resfn)
     neurons.daemon.autorel.AutoReloader.FILES.add(path)
     return open(path, 'rb').read().decode("utf8")
 
