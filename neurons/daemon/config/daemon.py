@@ -489,6 +489,7 @@ class Daemon(ComplexModel):
         else:
             if self.workdir is not None:
                 os.chdir(self.workdir)
+                logger.debug("Change working directory to: %s", self.workdir)
 
         self.apply_limits()
         self.apply_logging()

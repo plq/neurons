@@ -59,6 +59,8 @@ __version__ = "0.2"
 
 
 import os
+import logging
+logger = logging.getLogger(__name__)
 
 
 # Default maximum for the number of available file descriptors.
@@ -133,6 +135,7 @@ def daemonize_do(umask=0, workdir='/', maxfd=None, redirect_to=os.devnull):
             # Since the current working directory may be a mounted filesystem,
             # we avoid the issue of not being able to unmount the filesystem at
             # shutdown time by changing it to the root directory.
+            logger.debug("Change working directory to: %s", workdir)
             os.chdir(workdir)
 
             # We probably don't want the file mode creation mask inherited from
