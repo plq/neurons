@@ -403,12 +403,13 @@ class Daemon(ComplexModel):
 
     def boot_message(self):
         import spyne
+        import neurons
         import twisted
         import sqlalchemy
 
         logging.info("Booting daemon '%s'. We have spyne-%s, neurons-%s, "
                      "sqlalchemy-%s and twisted-%s.",
-                        self.name, B(spyne.__version__), B(NEURONS_VERSION),
+                        self.name, B(spyne.__version__), B(neurons.__version__),
                           B(sqlalchemy.__version__), B(twisted.version.short()))
 
     @staticmethod
