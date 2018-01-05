@@ -34,10 +34,10 @@
 def _watch_files():
     from glob import glob
     from os.path import join, abspath
-    from pkg_resources import resource_listdir, resource_filename
-    from neurons.daemon.autorel import AutoReloader
+    from pkg_resources import resource_listdir, get_resource_path
+    from spyne.util.autorel import AutoReloader
 
-    root = abspath(resource_filename(__name__, ''))
+    root = (get_resource_path(__name__, ''))
     for dirname in resource_listdir(__name__, ''):
         for filename in glob(join(root, dirname, "*.html")):
             AutoReloader.FILES.add(filename)

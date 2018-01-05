@@ -35,7 +35,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from os.path import abspath
-from pkg_resources import resource_filename
+from spyne.util.resource import get_resource_path
 
 from spyne import Application, File, Unicode
 from spyne import Service, rpc
@@ -55,11 +55,11 @@ class ComponentService(Service):
         ctx.out_protocol = HttpRpc()
         if folder is None:
             fn = "neurons-" + file_name
-            fullpath = abspath(resource_filename('neurons.polymer.const.comp',
+            fullpath = (get_resource_path('neurons.polymer.const.comp',
                                                      "{0}/{0}.html".format(fn)))
         else:
             fn = "neurons-%s/neurons-%s" % (folder, file_name)
-            fullpath = abspath(resource_filename('neurons.polymer.const.comp',
+            fullpath = (get_resource_path('neurons.polymer.const.comp',
                                                          "{0}.html".format(fn)))
         logger.debug("Returning component %s from path %s", fn, fullpath)
         return File.Value(path=fullpath, type="text/html")

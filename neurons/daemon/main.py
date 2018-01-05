@@ -456,7 +456,7 @@ def main(config_name, argv, init, bootstrap=None,
     deferLater(reactor, 0, _set_reactor_thread)
 
     if config.autoreload:
-        from neurons.daemon.autorel import AutoReloader
+        from spyne.util.autorel import AutoReloader
         frequency = 0.5
         autorel = AutoReloader(frequency=frequency)
         assert autorel.start() is not None

@@ -35,12 +35,12 @@
 #
 
 from os.path import isfile, dirname
-from pkg_resources import resource_filename
+from spyne.util.resource import get_resource_path
 
-T_TREE = resource_filename(__name__, 'tree.html')
-T_TRACE = resource_filename(__name__, 'trace.html')
-T_GRAPH = resource_filename(__name__, 'graphs.html')
-CSS_MAIN = resource_filename(__name__, 'main.css')
+T_TREE = get_resource_path(__name__, 'tree.html')
+T_TRACE = get_resource_path(__name__, 'trace.html')
+T_GRAPH = get_resource_path(__name__, 'graphs.html')
+CSS_MAIN = get_resource_path(__name__, 'main.css')
 
 assert isfile(T_TREE), "%s not a file" % T_TREE
 assert isfile(T_TRACE), "%s not a file" % T_TRACE

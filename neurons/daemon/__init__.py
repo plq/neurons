@@ -31,11 +31,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+from neurons.daemon import dowser
 from neurons.daemon.main import main
 from neurons.daemon.config import Daemon
 from neurons.daemon.config import ServiceDaemon
-from neurons.daemon import dowser
-from neurons.daemon import autorel
 
 config_data = None
 """The last parsed ``Daemon`` instance."""

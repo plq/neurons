@@ -33,9 +33,9 @@
 
 from os.path import abspath
 from os.path import isfile
-from pkg_resources import resource_filename
+from spyne.util.resource import get_resource_path
 
 _ROOT = __name__
 
-T_TEST = abspath(resource_filename(_ROOT, 'test.html'))
+T_TEST = (get_resource_path(_ROOT, 'test.html'))
 assert isfile(T_TEST)

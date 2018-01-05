@@ -31,34 +31,3 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from neurons.polymer.protocol import PolymerForm
-from neurons.polymer.protocol import PolymerComplexHrefWidget
-from neurons.polymer.protocol import PolymerComplexDropdownWidget
-
-
-def read_file_contents(ns, fn):
-    import os.path
-    import neurons.daemon.autorel
-    from pkg_resources import resource_filename
-
-    resfn = resource_filename(ns, fn)
-    path = os.path.abspath(resfn)
-    neurons.daemon.autorel.AutoReloader.FILES.add(path)
-    return open(path, 'rb').read().decode("utf8")
-
-
-def read_cloth_file(ns, fn):
-    from lxml import html
-
-    retval = html.fragment_fromstring(read_file_contents(ns, fn),
-                                                     create_parent='spyne-root')
-    retval.attrib['spyne-tagbag'] = ''
-    return retval
-
-
-def read_html_document(ns, fn):
-    from lxml import html
-
-    retval = html.fromstring(read_file_contents(ns, fn))
-
-    return retval

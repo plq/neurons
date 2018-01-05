@@ -33,8 +33,8 @@
 
 from os.path import abspath, isfile
 
-from pkg_resources import resource_filename
+from spyne.util.resource import get_resource_path
 
-T_INDEX = abspath(resource_filename(__name__, 'index.html'))
+T_INDEX = (get_resource_path(__name__, 'index.html'))
 
 assert isfile(T_INDEX)
