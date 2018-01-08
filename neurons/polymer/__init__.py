@@ -31,3 +31,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+
+from neurons.polymer.protocol import PolymerForm
+from neurons.polymer.protocol import PolymerComplexHrefWidget
+from neurons.polymer.protocol import PolymerComplexDropdownWidget
