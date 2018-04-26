@@ -45,8 +45,9 @@ except OSError:
     pass
 
 
-common_reqs = ('spyne>=2.12', 'SQLAlchemy', 'Twisted>=15.2',
-    'lxml>=3.4.1', 'pyyaml', 'msgpack-python', 'pycrypto',
+common_reqs = ('spyne>=2.12', 'SQLAlchemy<1.0.99', 'Twisted>=15.2',
+    'lxml>=3.8.0', 'pyyaml', 'msgpack-python', 'pycrypto', 'slimit',
+    'txpostgres',
 )
 
 
@@ -102,6 +103,8 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Operating System :: OS Independent',
@@ -126,6 +129,8 @@ setup(
 
     package_data={
         'neurons.form.const': ['*.html'],
+        'neurons.polymer.const': ['*.html', "*.js"],
+        'neurons.polymer.const.comp': ['neurons-*/*'],
         'neurons.daemon.dowser.const': ['*.html', '*.css'],
     },
 

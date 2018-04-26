@@ -15,8 +15,8 @@
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
 #
-# * Neither the name of the Arskom Ltd. nor the names of its
-#   contributors may be used to endorse or promote products derived from
+# * Neither the name of the Arskom Ltd., the neurons project nor the names of
+#   its its contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -31,18 +31,22 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from spyne import ByteArray, ComplexModel, Unicode
+from spyne import ByteArray, ComplexModel, Unicode, UnsignedInteger
 
 
 class RequestHeader(ComplexModel):
     __namespace__ = 'http://spyne.io/neurons/base'
-
-    sid = ByteArray
-    lang = Unicode
+    _type_info = [
+        ('sid', ByteArray),  # short-term session data
+        ('cid', ByteArray),  # long-term session data
+        ('lang', Unicode),   # request language
+    ]
 
 
 class ResponseHeader(ComplexModel):
     __namespace__ = 'http://spyne.io/neurons/base'
-
-    sid = ByteArray
-    Location = Unicode
+    _type_info = [
+        ('sid', ByteArray),
+        ('cid', ByteArray),
+        ('Location', Unicode),
+    ]

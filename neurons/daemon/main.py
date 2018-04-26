@@ -15,8 +15,8 @@
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
 #
-# * Neither the name of the Arskom Ltd. nor the names of its
-#   contributors may be used to endorse or promote products derived from
+# * Neither the name of the Arskom Ltd., the neurons project nor the names of
+#   its its contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -36,16 +36,21 @@ from __future__ import print_function
 import logging
 logger = logging.getLogger(__name__)
 
-import os, gc, sys
+import os
+import sys
 import threading
 import resource
+import warnings
 
 from os.path import isfile, join, dirname
 
 from spyne.util.six import StringIO
 from spyne.store.relational.util import database_exists, create_database
 
-from neurons.daemon.config import ServiceDisabled, ServiceDaemon
+from sqlalchemy import MetaData
+
+from neurons.daemon.config import FileStore, ServiceDisabled, ServiceDaemon, \
+    RelationalStore, LdapStore
 
 
 def get_package_version(pkg_name):
@@ -190,13 +195,12 @@ def _do_start_shell(config):
     session = db.Session()
 
     # these are just useful to have in a dev. shell
-    import IPython, traceback, inspect, sys
-    from pprint import pprint, pformat
+    import IPython
 
     header = (
-        "Database handle is:           db\n"
+        "Database handle is:  db\n"
         "There's also an open session: session\n"
-        "Imported packages:  traceback, inspect, sys\n"
+        "Imported packages: traceback, inspect, sys\n"
         "Imported functions: pprint(), pformat()"
     )
 
@@ -217,7 +221,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
     if config.bootstrap:
         return _do_bootstrap(config, init, bootstrap, bootstrapper)
 
-    # if requested, perform bootstrap and exit
+    # if requested, drop all tables and exit
     if config.drop_all_tables:
         return _do_drop_all_tables(config, init)
 
@@ -229,6 +233,9 @@ def _inner_main(config, init, bootstrap, bootstrapper):
     if isinstance(config, ServiceDaemon):
         if config.main_store is None:
             config.main_store = 'sql_main'
+
+        if config.debug_reactor:
+            config.add_reactor_checks()
 
         from neurons import TableModel
         TableModel.Attributes.sqla_metadata.bind = \
@@ -251,6 +258,8 @@ def _inner_main(config, init, bootstrap, bootstrapper):
             continue
 
         try:
+            logger.info("Initializing service %s...", k)
+
             handles[k] = v(config)
         except ServiceDisabled:
             logger.info("Service '%s' is disabled.", k)
@@ -267,6 +276,11 @@ def _inner_main(config, init, bootstrap, bootstrapper):
         config.do_write_config()
         return True
 
+    # Perform migrations
+    import neurons.version
+    for version in neurons.version.entries:
+        version.migrate(config)
+
     # if requested, drop to shell
     if config.shell or config.ikernel:
         retval = _do_start_shell(config)
@@ -275,52 +289,111 @@ def _inner_main(config, init, bootstrap, bootstrapper):
 
 
 class BootStrapper(object):
+    """Creates all databases """
     def __init__(self, init):
         self.init = init
+        self.meta_reflect = MetaData()
+
+    def before_tables(self, config):
+        pass
+
+    def after_tables(self, config):
+        pass
+
+    def create_relational(self, store):
+        if database_exists(store.conn_str):
+            print(store.conn_str, "already exists.")
+            return
+
+        create_database(store.conn_str)
+        print(store.conn_str, "did not exist, created.")
 
     def __call__(self, config):
+        # we are printing stuff here in case the log goes to a log file and the
+        # poor ops guy can't see a thing
         for store in config.stores.values():
-            if database_exists(store.conn_str):
-                print(store.conn_str, "already exists.")
-                continue
+            if isinstance(store, RelationalStore):
+                self.create_relational(store)
 
-            create_database(store.conn_str)
-            print(store.conn_str, "did not exist, created.")
+            elif isinstance(store, LdapStore):
+                warnings.warn("LDAP bootstrap is not implemented.")
 
-        config.log_results = True
-        config.apply()
+            elif isinstance(store, FileStore):
+                try:
+                    os.makedirs(store.path)
+                    print("File store", store.name, "directory", store.path,
+                                                            'has been created.')
+                except OSError:
+                    print("File store", store.name, "directory", store.path,
+                                                              'already exists.')
+
+            else:
+                raise ValueError(store)
+
+        config.apply(daemonize=False)
+
+        main_engine = config.get_main_store().engine
+
+        # reflect database just in case -- can be useful while bootstrapping
+        self.meta_reflect.reflect(bind=main_engine)
+        print("Reflection")
 
         # Run init so that all relevant models get imported
         self.init(config)
+        print("Init")
 
         from neurons.model import TableModel
-        TableModel.Attributes.sqla_metadata.bind = \
-                                                  config.get_main_store().engine
+        TableModel.Attributes.sqla_metadata.bind = main_engine
+
+        self.before_tables(config)
+
         TableModel.Attributes.sqla_metadata.create_all(checkfirst=True)
+        print("All tables created.")
+
+        self.after_tables(config)
+
+        from spyne.util.color import G
+        print(G("Bootstrap complete."))
 
 
 def _set_reactor_thread():
     import neurons
     neurons.REACTOR_THREAD = threading.current_thread()
+    neurons.REACTOR_THREAD_ID = neurons.REACTOR_THREAD.ident
+    neurons.is_reactor_thread = neurons._base._is_reactor_thread
 
 
-def main(daemon_name, argv, init, bootstrap=None,
-                                  bootstrapper=BootStrapper, cls=ServiceDaemon):
+def _compile_mappers():
+    logger.info("Compiling object mappers...")
+    from sqlalchemy.orm import compile_mappers
+    compile_mappers()
+
+
+def main(config_name, argv, init, bootstrap=None,
+                bootstrapper=BootStrapper, cls=ServiceDaemon, daemon_name=None):
     """A typical main function for daemons.
 
-    :param daemon_name: Daemon name.
+    :param config_name: Configuration file name. .yaml suffix is appended.
     :param argv: A sequence of command line arguments.
     :param init: A callable that returns the init dict.
     :param bootstrap: A callable that bootstraps daemon's environment.
         It's deprecated in favor of bootstrapper.
     :param bootstrapper: A factory for a callable that bootstraps daemon's
         environment. This is supposed to be run once for every new deployment.
-    :param cls: Daemon class
+    :param cls: a class:`Daemon` subclass
+    :param daemon_name: Daemon name. If ``None``, ``config_name`` is used.
     :return: Exit code of the daemon as int.
     """
 
-    config = cls.parse_config(daemon_name, argv)
+    config = cls.parse_config(config_name, argv)
+    if config.help:
+        from neurons.daemon.cli import spyne_to_argparse
+        print(spyne_to_argparse(cls, ignore_defaults=False).format_help())
+        return 0
+
     if config.name is None:
+        config.name = config_name
+    if daemon_name is not None:
         config.name = daemon_name
 
     # FIXME: Any better ideas?
@@ -370,19 +443,28 @@ def main(daemon_name, argv, init, bootstrap=None,
             logger.info("Updating configuration file because new secret was "
                                                                     "generated")
 
-    logger.debug("Compiling object mappers...")
-    from sqlalchemy.orm import compile_mappers
-    compile_mappers()
-
     # at this point it's safe to import the reactor (or anything else from
-    # twisted) because the decision to fork or not to fork is already made.
+    # twisted) because the decision on whether to fork has already been made.
     from twisted.internet import reactor
     from twisted.internet.task import deferLater
 
-    gc.collect()
-    logger.info("Starting reactor... RSS: %f",
+    deferLater(reactor, 0, _compile_mappers)
+
+    logger.info("Starting reactor... Max. RSS: %f",
                     resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000.0)
 
     deferLater(reactor, 0, _set_reactor_thread)
+
+    if config.autoreload:
+        from spyne.util.autorel import AutoReloader
+        frequency = 0.5
+        autorel = AutoReloader(frequency=frequency)
+        assert autorel.start() is not None
+        num_files = len(autorel.sysfiles() | autorel.files)
+        logger.info("Auto reloader init success: Watching %d files "
+                    "every %g seconds.", num_files, frequency)
+
+    if config.dry_run:
+        return 0
 
     return reactor.run()

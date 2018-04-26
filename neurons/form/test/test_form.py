@@ -15,8 +15,8 @@
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
 #
-# * Neither the name of the {organization} nor the names of its
-#   contributors may be used to endorse or promote products derived from
+# * Neither the name of the Arskom Ltd., the neurons project nor the names of
+#   its its contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -44,13 +44,14 @@ from datetime import date, time, datetime
 
 from lxml import etree, html
 
-from spyne import Application, NullServer, Unicode, ServiceBase, rpc, Decimal, \
+from spyne import Application, NullServer, Unicode, Service, rpc, Decimal, \
     Boolean, Date, Time, DateTime, Integer, ComplexModel, Array, Double, \
     Mandatory as M, AnyHtml, AnyXml
 from spyne.util.test import show
+from spyne.protocol.html import HtmlMicroFormat
 
 from neurons.form import HtmlForm, PasswordWidget, Tab, HrefWidget, \
-    ComboBoxWidget, ComplexHrefWidget
+    ComboBoxWidget, ComplexHrefWidget, ParentHrefWidget
 from neurons.form.test import strip_ns
 from neurons.form.const import T_TEST
 from neurons.form.form import Fieldset
@@ -60,7 +61,7 @@ def _test_type(cls, inst):
     # silence bogus warnings
     from spyne.util import appreg; appreg.applications.clear()
 
-    class SomeService(ServiceBase):
+    class SomeService(Service):
         @rpc(_returns=cls, _body_style='bare')
         def some_call(ctx):
             return inst
@@ -89,7 +90,7 @@ def _test_type(cls, inst):
 def _test_type_no_root_cloth(cls, inst):
     from spyne.util import appreg; appreg.applications.clear()
 
-    class SomeService(ServiceBase):
+    class SomeService(Service):
         @rpc(_returns=cls, _body_style='bare')
         def some_call(ctx):
             return inst
@@ -162,7 +163,9 @@ class TestFormPrimitive(unittest.TestCase):
 
     # FIXME: enable this after fixing the relevant Spyne bug
     def _test_decimal_step(self):
-        elt = _test_type(Decimal(fraction_digits=4), D('0.1')).xpath('div/input')[0]
+        elt = _test_type(Decimal(fraction_digits=4), D('0.1'))
+        elt = elt.xpath('div/input')[0]
+
         assert elt.attrib['step'] == '0.0001'
 
     def test_boolean_true(self):
@@ -189,6 +192,11 @@ class TestFormPrimitive(unittest.TestCase):
         assert v.isoformat() in script
         # FIXME: Need to find a better way to test the generated js
 
+    def test_array_datetime(self):
+        v = datetime(2013, 12, 11, 10, 9, 8)
+        _ = _test_type(Array(DateTime), [v]).xpath('div/script/text()')[0]
+        # FIXME: test something!
+
     def test_datetime_format_split(self):
         ret = HtmlForm._split_datetime_format('%Y-%m-%d %H:%M:%S')
         assert ret == ('yy-mm-dd', 'HH:mm:ss')
@@ -206,6 +214,20 @@ class TestFormPrimitive(unittest.TestCase):
         v = 42
         elt = _test_type(Integer, v).xpath('div/input')[0]
         assert elt.attrib['value'] == str(v)
+
+    def test_integer_constraints(self):
+        elt = _test_type(Integer(gt=0), None).xpath('div/input')[0]
+        assert elt.attrib['min'] == '1'
+
+        elt = _test_type(Integer(ge=0), None).xpath('div/input')[0]
+        assert elt.attrib['min'] == '0'
+
+    def test_decimal_constraints(self):
+        elt = _test_type(Decimal(ge=0), None).xpath('div/input')[0]
+        assert elt.attrib['min'] == '0'
+
+        elt = _test_type(Decimal(gt=0), None).xpath('div/input')[0]
+        assert elt.attrib['min'] == '1E-308'
 
     def test_integer_none(self):
         v = None
@@ -336,7 +358,8 @@ class TestFormComplex(unittest.TestCase):
         assert elt.xpath('div/input/@name') == ['i0']
 
         assert elt.xpath('div/ul/li/a/text()') == [tab1.legend, tab2.legend]
-        assert elt.xpath('div/ul/li/a/@href') == ["#" + tab1.htmlid, "#" + tab2.htmlid]
+        assert elt.xpath('div/ul/li/a/@href') == \
+                                          ["#" + tab1.htmlid, "#" + tab2.htmlid]
         assert elt.xpath('div/div/@id') == [tab1.htmlid, tab2.htmlid]
         assert elt.xpath('div/div[@id]/div/input/@name') == ['i1', 'i2']
         assert elt.xpath('div/div[@id]/div/input/@value') == ['28', '56']
@@ -352,9 +375,15 @@ class TestFormComplex(unittest.TestCase):
 
         v = SomeObject(ints=range(5))
         elt = _test_type(SomeObject, v)[0]
-        assert elt.xpath('div/div/div/input/@value') == ['0', '1', '2', '3', '4']
+
+        assert elt.xpath('div/div/div/input/@value') == \
+                                                       ['0', '1', '2', '3', '4']
         assert elt.xpath('div/div/button/text()') == ['+', '-'] * 5
-        for i, name in enumerate(elt.xpath('div/div/input/@name')):
+
+        names = elt.xpath('div/div/div/input/@name')
+        assert len(names) > 0
+
+        for i, name in enumerate(names):
             assert re.match(r'ints\[0*%d\]' % i, name)
 
 
@@ -382,6 +411,47 @@ class TestComplexHrefWidget(object):
 
         assert elt.xpath('div/a/text()') == ['Arthur']
         assert elt.xpath('div/a/@href') == ['some_object?i=42']
+
+    def test_granchild(self):
+        class SomeOtherObject(ComplexModel):
+            _type_info = [
+                ('d', Decimal),
+            ]
+
+        class SomeObject(ComplexModel):
+            class Attributes(ComplexModel.Attributes):
+                prot = ComplexHrefWidget('c.d', 'i')
+
+            _type_info = [
+                ('i', Integer),
+                ('c', SomeOtherObject),
+            ]
+
+        v = SomeObject(i=42, c=SomeOtherObject(d=3.14))
+        elt = _test_type(SomeObject, v)
+
+        assert elt.xpath('div/a/text()') == ['3.14']
+        assert elt.xpath('div/a/@href') == ['some_object?i=42']
+
+
+class TestParentHrefWidget(object):
+    def test_simple(self):
+        class SomeObject(ComplexModel):
+            class Attributes(ComplexModel.Attributes):
+                prot = HtmlMicroFormat()
+
+            _type_info = [
+                ('i', Integer),
+                ('s', Unicode(prot=ParentHrefWidget('some_object?i={0.i}',
+                    anchor_class="some_class"))),
+            ]
+
+        v = SomeObject(i=42, s="Arthur")
+        elt = _test_type(SomeObject, v)
+
+        assert elt.xpath('.//a[@class="some_class"]/text()') == ['Arthur']
+        assert elt.xpath('.//a[@class="some_class"]/@href') == \
+                                                            ['some_object?i=42']
 
 
 class TestComboBoxWidget(object):

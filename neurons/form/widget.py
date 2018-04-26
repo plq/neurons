@@ -15,8 +15,8 @@
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
 #
-# * Neither the name of the Arskom Ltd. nor the names of its
-#   contributors may be used to endorse or promote products derived from
+# * Neither the name of the Arskom Ltd., the neurons project nor the names of
+#   its its contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -40,15 +40,16 @@ import re
 import locale
 import collections
 
+from spyne import D
+from random import choice
 from contextlib import closing
 from inspect import isclass, getargspec
-from decimal import Decimal as D
 
 from lxml import html
 from lxml.builder import E
 
-from spyne import Unicode, Decimal, Boolean, ComplexModelBase, Array, ModelBase, \
-    AnyHtml, AnyUri, Integer
+from spyne import Unicode, Decimal, Boolean, ComplexModelBase, Array, File, \
+    ModelBase, AnyHtml, AnyUri, Integer
 from spyne.util import six
 from spyne.util.tdict import tdict
 from spyne.util.oset import oset
@@ -56,6 +57,7 @@ from spyne.util.cdict import cdict
 from spyne.util.six.moves.urllib.parse import urlencode
 
 from spyne.protocol.html import HtmlBase
+from spyne.protocol.html.table.column import HtmlColumnTableRowProtocol
 
 
 def camel_case_to_uscore_gen(string):
@@ -71,30 +73,50 @@ def camel_case_to_uscore_gen(string):
 camel_case_to_uscore = lambda s: ''.join(camel_case_to_uscore_gen(s))
 
 
-class HtmlWidget(HtmlBase):
+def _gen_html5_epsilon():
+    """See paragraph 17 at:
+
+    https://www.w3.org/TR/2012/WD-html5-20121025/common-microsyntaxes.html
+                                 #rules-for-parsing-floating-point-number-values
+    """
+    import math
+    return D('1e%s' % int(math.log(2 ** (-1024)) / math.log(10)))
+
+
+class HtmlFormWidget(HtmlBase):
     DEFAULT_INPUT_WRAPPER_CLASS = 'label-input-wrapper'
     DEFAULT_ANCHOR_WRAPPER_CLASS = 'label-anchor-wrapper'
 
     WRAP_FORWARD = type("WRAP_FORWARD", (object,), {})
     WRAP_REVERSED = type("WRAP_REVERSED", (object,), {})
 
-    def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=False,
-                cloth=None, cloth_parser=None, polymorphic=True, hier_delim='.',
-                     label=True, doctype=None, asset_paths={}, placeholder=None,
-               input_class=None, input_div_class=None, input_wrapper_class=None,
-                                                              label_class=None):
+    HTML5_EPSILON = _gen_html5_epsilon()
+    HTML_FORM = 'form'
+    HTML_INPUT = 'input'
+    HTML_TEXTAREA = 'textarea'
+    HTML_SELECT = 'select'
+    HTML_OPTION = 'option'
+    HTML_CHECKBOX_TAG = 'input'
 
-        super(HtmlWidget, self).__init__(app=app, doctype=doctype,
+    def __init__(self, app=None, encoding='utf8',
+            ignore_uncap=False, ignore_wrappers=False,
+                cloth=None, cloth_parser=None, polymorphic=True, hier_delim='.',
+                     label=True, doctype=None, placeholder=None,
+               input_class=None, input_div_class=None, input_wrapper_class=None,
+                                                   label_class=None, type=None):
+
+        super(HtmlFormWidget, self).__init__(app=app, encoding=encoding,
+            doctype=doctype,
                      ignore_uncap=ignore_uncap, ignore_wrappers=ignore_wrappers,
                 cloth=cloth, cloth_parser=cloth_parser, polymorphic=polymorphic,
                                                           hier_delim=hier_delim)
         self.label = label
         self.placeholder = placeholder
-        self.asset_paths = asset_paths
         self._init_input_vars(input_class, input_div_class,
                                                input_wrapper_class, label_class)
 
         self.use_global_null_handler = False
+        self.type = type
 
     def _init_input_vars(self, input_class, input_div_class,
                                               input_wrapper_class, label_class):
@@ -106,7 +128,7 @@ class HtmlWidget(HtmlBase):
         self.label_class = label_class
 
     def to_subprot(self, ctx, cls, inst, parent, name, subprot, **kwargs):
-        if isinstance(subprot, HtmlWidget):
+        if isinstance(subprot, HtmlFormWidget):
             if subprot.input_class is None:
                 subprot.input_class = self.input_class
 
@@ -116,8 +138,8 @@ class HtmlWidget(HtmlBase):
             if subprot.label_class is None:
                 subprot.label_class = self.label_class
 
-        return super(HtmlWidget, self).to_subprot(ctx, cls, inst, parent, name,
-                                                              subprot, **kwargs)
+        return super(HtmlFormWidget, self).to_subprot(ctx, cls, inst, parent,
+                                                        name, subprot, **kwargs)
 
     @staticmethod
     def _format_js(lines, **kwargs):
@@ -127,10 +149,6 @@ class HtmlWidget(HtmlBase):
 
         return E.script("$(function(){\n\t%s\n});" % '\n\t'.join(js),
                                                         type="text/javascript")
-
-    @staticmethod
-    def selsafe(s):
-        return s.replace('[', '').replace(']', '').replace('.', '__')
 
     def _gen_input_hidden(self, cls, inst, parent, name, **kwargs):
         val = self.to_unicode(cls, inst)
@@ -153,15 +171,21 @@ class HtmlWidget(HtmlBase):
         classes = [self.input_wrapper_class, self.selsafe(name)]
         return {'class': ' '.join(classes)}
 
-    def _wrap_with_label(self, ctx, cls, name, input, no_label=False,
+    def _wrap_with_label(self, ctx, cls, name, input_elt, no_label=False,
                                              wrap_label=WRAP_FORWARD, **kwargs):
-        input_id = input.attrib['id']
+        input_id = input_elt.attrib['id']
         if self.input_div_class is not None:
-            input = E.div(input, **{'class': self.input_div_class})
+            input_elt = E.div(input_elt, **{'class': self.input_div_class})
 
         attrib = self._gen_label_wrapper_class(ctx, cls, name)
-        if (no_label or not self.label) and wrap_label is not None:
-            retval = E.div(input, **attrib)
+
+        cls_attrs = self.get_cls_attrs(cls)
+        wants_no_label = cls_attrs.label is False or no_label or not self.label
+        if wants_no_label:
+            if wrap_label is None:
+                retval = input_elt
+            else:
+                retval = E.div(input_elt, **attrib)
 
         else:
             label_attrib = {'for': input_id}
@@ -169,12 +193,15 @@ class HtmlWidget(HtmlBase):
                 label_attrib['class'] = self.label_class
 
             retval = E.label(self.trc(cls, ctx.locale, name), **label_attrib)
-            if wrap_label is HtmlWidget.WRAP_FORWARD:
-                retval = E.div(retval, input, **attrib)
-            elif wrap_label is HtmlWidget.WRAP_REVERSED:
-                retval = E.div(input, retval, **attrib)
+            if wrap_label is HtmlFormWidget.WRAP_FORWARD:
+                retval = E.div(retval, input_elt, **attrib)
+
+            elif wrap_label is HtmlFormWidget.WRAP_REVERSED:
+                retval = E.div(input_elt, retval, **attrib)
+
             elif wrap_label is None:
                 pass
+
             else:
                 raise ValueError(wrap_label)
 
@@ -248,18 +275,16 @@ class HtmlWidget(HtmlBase):
 
         return elt_attrs
 
-    def _gen_input(self, ctx, cls, inst, name, cls_attrs, **kwargs):
+    def _gen_input(self, ctx, cls, inst, name, cls_attrs, tag=None, **kwargs):
         elt_attrs = self._gen_input_attrs(ctx, cls, inst, name, cls_attrs,
                                                                        **kwargs)
+        if tag is None:
+            tag = self.HTML_INPUT
 
-        tag = 'input'
         values = cls_attrs.values
-        values_dict = cls_attrs.values_dict
-        if values_dict is None:
-            values_dict = {}
 
         if values is not None and len(values) > 0:
-            tag = 'select'
+            tag = self.HTML_SELECT
             if 'value' in elt_attrs:
                 del elt_attrs['value']
             if 'type' in elt_attrs:
@@ -274,46 +299,66 @@ class HtmlWidget(HtmlBase):
         if values is None or len(values) == 0:
             return elt
 
+        return self._gen_options(ctx, cls, inst, name, cls_attrs, elt, **kwargs)
+
+    def _gen_options(self, ctx, cls, inst, name, cls_attrs, elt, **kwargs):
+        field_name = name.split('.')[-1]
+
+        values_dict = cls_attrs.values_dict
+        if values_dict is None:
+            values_dict = {}
+
         inststr = self.to_unicode(cls, inst)
         if cls_attrs.write is False and inststr is not None:
             inst_label = values_dict.get(inst, inststr)
             if isinstance(inst_label, dict):
-                inst_label = self.trd(inst_label, ctx.locale, inststr)
+                inst_label = self.trd(inst_label, ctx.locale, field_name)
+
             logger.debug("\t\tinst %r label %r", inst_label, inst)
-            elt.append(E.option(inst_label, value=inststr))
+            self._append_option(elt, inst_label, inststr)
 
         else:
-            selected = False
+            ever_selected = False
             we_have_empty = False
 
             if cls_attrs.nullable or cls_attrs.min_occurs == 0:
-                elt.append(E.option("", dict(value='')))
+                self._append_option(elt, '', value='')
                 we_have_empty = True
                 # if none are selected, this will be the default anyway, so
                 # no need to add selected attribute to the option tag.
 
             # FIXME: cache this!
-            for v in cls_attrs.values:
+            i = 0
+            for i, v in enumerate(cls_attrs.values):
+                selected = False
                 valstr = self.to_unicode(cls, v)
                 if valstr is None:
                     valstr = ""
 
-                attrib = dict(value=valstr)
                 if inst == v:
-                    attrib['selected'] = ''
+                    ever_selected = True
                     selected = True
 
                 val_label = values_dict.get(v, valstr)
                 logger.debug("\t\tother values inst %r label %r", v, val_label)
                 if isinstance(val_label, dict):
-                    val_label = self.trd(val_label, ctx.locale, inststr)
+                    val_label = self.trd(val_label, ctx.locale, valstr)
 
-                elt.append(E.option(val_label, **attrib))
+                self._append_option(elt, val_label, valstr,
+                                                     selected=selected, index=i)
 
-            if not (selected or we_have_empty):
-                elt.append(E.option("", dict(value='', selected='')))
+            if not (ever_selected or we_have_empty):
+                self._append_option(elt, label='', value='', selected=True,
+                                                                        index=i)
 
-        return elt
+            return elt
+
+    def _append_option(self, parent, label, value, selected=False, index=-1):
+        attrib = dict(value=value)
+        if selected:
+            attrib['selected'] = ''
+
+        parent.append(E(self.HTML_OPTION, label, **attrib))
 
     def _gen_input_textarea(self, ctx, cls, name, **kwargs):
         cls_attrs = self.get_cls_attrs(cls)
@@ -336,7 +381,7 @@ class HtmlWidget(HtmlBase):
         values = attr_override.get('values', cls_attrs.values)
 
         if len(values) == 0 and max_len >= D('inf'):
-            tag = 'textarea'
+            tag = self.HTML_TEXTAREA
 
             elt_attrs = self._gen_input_attrs_novalue(ctx, cls, name, cls_attrs)
             if (cls_attrs.write_once and inst is not None) or \
@@ -358,38 +403,86 @@ class HtmlWidget(HtmlBase):
 
             if max_len < Unicode.Attributes.max_len:
                 elt.attrib['maxlength'] = str(int(max_len))
+
             if min_len > Unicode.Attributes.min_len:
                 elt.attrib['minlength'] = str(int(min_len))
 
         return cls_attrs, elt
 
     @staticmethod
-    def _apply_number_constraints(cls_attrs, elt):
+    def _apply_number_constraints(cls_attrs, elt, epsilon):
         if cls_attrs.max_str_len != Decimal.Attributes.max_str_len:
             elt.attrib['maxlength'] = str(cls_attrs.max_str_len)
 
-        if elt.attrib['type'] == 'range':
-            if cls_attrs.ge != Decimal.Attributes.ge:
-                elt.attrib['min'] = str(cls_attrs.ge)
+        if cls_attrs.ge != Decimal.Attributes.ge:
+            elt.attrib['min'] = str(cls_attrs.ge)
 
-            if cls_attrs.gt != Decimal.Attributes.gt:
-                elt.attrib['min'] = str(cls_attrs.gt)
+        if cls_attrs.gt != Decimal.Attributes.gt:
+            elt.attrib['min'] = str(cls_attrs.gt + epsilon)
 
-            if cls_attrs.le != Decimal.Attributes.le:
-                elt.attrib['max'] = str(cls_attrs.le)
+        if cls_attrs.le != Decimal.Attributes.le:
+            elt.attrib['max'] = str(cls_attrs.le)
 
-            if cls_attrs.lt != Decimal.Attributes.lt:
-                elt.attrib['max'] = str(cls_attrs.lt)
+        if cls_attrs.lt != Decimal.Attributes.lt:
+            elt.attrib['max'] = str(cls_attrs.lt - epsilon)
+
+    def _switch_to_prot_type(self, cls, inst):
+        if self.type is not None and not (cls is self.type):
+            cls = self.type
+            if len(self.type_attrs) > 0:
+                cls = self.type.customize(**self.type_attrs)
+
+        return cls, inst
+
+    def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        newcls, newinst = self._switch_to_prot_type(cls, inst)
+        if newcls is cls:
+            return self.not_supported(ctx, cls)
+        return self.to_parent(ctx, newcls, newinst, parent, name, **kwargs)
+
+
+class ConditionalRendererBase(HtmlFormWidget):
+    def __init__(self):
+        super(ConditionalRendererBase, self).__init__()
+
+        self.serialization_handlers = cdict({
+            ModelBase: self.model_base_to_parent,
+        })
+
+    def switch_to_subprot(self, ctx, cls, inst, parent, name, subprot=None,
+                                                                      **kwargs):
+        if subprot is None:
+            subprot = ctx.protocol.prot_stack[-2]
+
+        logger.debug("Subprot switch from %r back to parent prot %r",
+                                                                  self, subprot)
+
+        return self.to_subprot(ctx, cls, inst, parent, name, subprot, **kwargs)
+
+    def model_base_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        if self.cond(ctx, cls, inst):
+            return self.true(ctx, cls, inst, parent, name, **kwargs)
+        else:
+            return self.false(ctx, cls, inst, parent, name, **kwargs)
+
+    def cond(self, ctx, cls, inst):
+        return choice([True, False])
+
+    def true(self, ctx, cls, inst, parent, name, **kwargs):
+        return self.switch_to_subprot(ctx, cls, inst, parent, name, **kwargs)
+
+    def false(self, ctx, cls, inst, parent, name, **kwargs):
+        return self.switch_to_subprot(ctx, cls, inst, parent, name, **kwargs)
 
 
 # TODO: Make label optional
-class PasswordWidget(HtmlWidget):
+class PasswordWidget(HtmlFormWidget):
     def __init__(self, *args, **kwargs):
         super(PasswordWidget, self).__init__(*args, **kwargs)
 
         self.serialization_handlers = cdict({
             Unicode: self.unicode_to_parent,
-            ComplexModelBase: self.not_supported,
+            ComplexModelBase: self.complex_model_to_parent,
         })
 
     def unicode_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
@@ -398,34 +491,65 @@ class PasswordWidget(HtmlWidget):
         parent.write(self._wrap_with_label(ctx, cls, name, elt, **kwargs))
 
 
-# TODO: Make label optional
-class HrefWidget(HtmlWidget):
+class HrefWidget(HtmlFormWidget):
     supported_types = (Unicode, Decimal)
 
-    def __init__(self, href, hidden_input=False, label=True):
+    def __init__(self, href=None, hidden_input=False, label=True, quote=None,
+                                                             anchor_class=None):
+        """Render current object (inst) as an anchor (the <a> tag)
+
+        :param href: Base HREF for Anchor. Can only be None when
+            inst is an instance of AnyUri.Value
+        :param hidden_input: If True, generate hidden <input> with inst as value
+        :param label: If True, Generate <label> element.
+        :param quote: If not None, should be a callable like ``quote_plus``
+            to make sure arbitrary strings get properly escaped as query string
+            parameters.
+        :param anchor_class: If not None, goes into the "class" attribute of
+            the <a> tag.
+        """
+
         super(HrefWidget, self).__init__(label=label)
 
         self.href = href
         self.hidden_input = hidden_input
+        self.anchor_class = anchor_class
+        self.quote = quote
 
         self.serialization_handlers = cdict({
             ModelBase: self.model_base_to_parent,
+            AnyUri: self.any_uri_to_parent,
             ComplexModelBase: self.not_supported,
         })
 
     def model_base_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        id_str = self.to_unicode(cls, inst)
-        if id_str is None:
-            id_str = ''
+        assert self.href is not None
+
+        anchor_str = self.to_unicode(cls, inst)
+        if anchor_str is None:
+            anchor_str = ''
 
         try:
+            if self.quote is not None:
+                inst = self.quote(inst)
+
             href = self.href.format(inst)
-        except:
+
+        except Exception as e:
+            logger.warning("Error generating href: %r", e)
             href = self.href
 
-        elt = E.a(id_str)
+        self.render_anchor(ctx, cls, inst, parent, name, anchor_str, href,
+                                                                      **kwargs)
+
+    def render_anchor(self, ctx, cls, inst, parent, name, anchor_str, href,
+                                                                      **kwargs):
+        elt = E.a(anchor_str)
         if href is not None:
             elt.attrib['href'] = href
+
+        if self.anchor_class is not None:
+            elt.attrib['class'] = self.anchor_class
 
         if self.label:
             label = self._gen_label_for(ctx, cls, name)
@@ -444,31 +568,62 @@ class HrefWidget(HtmlWidget):
         if self.hidden_input and (inst is not None or cls_attr.min_occurs >= 1):
             self._gen_input_hidden(cls, inst, parent, name, **kwargs)
 
+    def any_uri_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        retval = self.gen_anchor(cls, inst, name, self.anchor_class)
+        parent.write(retval)
 
-class SimpleRenderWidget(HtmlWidget):
-    def __init__(self, label=True, type=None, hidden=False):
+
+class ParentHrefWidget(HrefWidget):
+    """Render current object as a link using information from its parent
+    object.
+
+    An example href value:
+        "/some_slug?id={0.id}&name={0.name}
+
+    **FIXME:** This needs to be made to use urlencode instead of plain string
+    formatting.
+    """
+
+    supported_types = (Unicode, Decimal)
+
+    def model_base_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        anchor_str = self.to_unicode(cls, inst)
+        if anchor_str is None:
+            anchor_str = ''
+
+        inst_stack = ctx.protocol.inst_stack
+        if len(inst_stack) < 2:
+            logger.warning("No parent instance found.")
+            href = self.href
+
+        else:
+            _, parent_inst, _ = inst_stack[-2]
+
+            try:
+                href = self.href.format(parent_inst)
+            except Exception as e:
+                logger.warning("Error generating href: %r", e)
+                href = self.href
+
+        self.render_anchor(ctx, cls, inst, parent, name, anchor_str, href,
+                                                                      **kwargs)
+
+
+class SimpleRenderWidget(HtmlFormWidget):
+    def __init__(self, label=True, type=None, hidden=False, elt=None):
         super(SimpleRenderWidget, self).__init__(label=label)
 
+        self.elt = elt
         self.type = type
         self.hidden = hidden
         self.serialization_handlers = cdict({
             ModelBase: self.model_base_to_parent,
             AnyHtml: self.any_html_to_parent,
             AnyUri: self.any_uri_to_parent,
-            ComplexModelBase: self.not_supported,
+            ComplexModelBase: self.complex_model_to_parent,
         })
 
-    def _get_cls(self, cls):
-        if self.type is not None:
-            cls = self.type
-            if len(self.type_attrs) > 0:
-                cls = self.type.customize(**self.type_attrs)
-
-        return cls
-
     def _gen_text_str(self, cls, inst, **kwargs):
-        cls = self._get_cls(cls)
-
         text_str = self.to_unicode(cls, inst, **kwargs)
 
         if text_str is None:
@@ -491,6 +646,10 @@ class SimpleRenderWidget(HtmlWidget):
             parent.write(E.span(text_str, **span_attrib))
 
     def model_base_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        newcls, newinst = self._switch_to_prot_type(cls, inst)
+        if not (newcls is cls):
+            return self.to_parent(ctx, newcls, newinst, parent, name, **kwargs)
+
         text_str = self._gen_text_str(cls, inst, **kwargs)
         if text_str is None:
             return
@@ -498,12 +657,19 @@ class SimpleRenderWidget(HtmlWidget):
         if self.label:
             self._wrap_with_label_simple(ctx, cls, text_str, parent, name)
         else:
-            parent.write(text_str)
+            if self.elt is not None:
+                parent.write(E(self.elt.tag, text_str, **self.elt.attrib))
+            else:
+                parent.write(text_str)
 
         if self.hidden:
             self._gen_input_hidden(cls, inst, parent, name, **kwargs)
 
     def any_uri_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        newcls, newinst = self._switch_to_prot_type(cls, inst)
+        if not (newcls is cls):
+            return self.to_parent(ctx, newcls, newinst, parent, name, **kwargs)
+
         if isinstance(inst, AnyUri.Value):
             href_str = self._gen_text_str(cls, inst.href)
             link_str = inst.text
@@ -524,7 +690,9 @@ class SimpleRenderWidget(HtmlWidget):
             self._gen_input_hidden(cls, inst, parent, name, **kwargs)
 
     def any_html_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        cls = self._get_cls(cls)
+        newcls, newinst = self._switch_to_prot_type(cls, inst)
+        if not (newcls is cls):
+            return self.to_parent(ctx, newcls, newinst, parent, name, **kwargs)
 
         if isinstance(inst, six.string_types):
             inst = html.fromstring(inst)
@@ -551,12 +719,12 @@ class SimpleRenderWidget(HtmlWidget):
             self._gen_input_hidden(cls, inst, parent, name, **kwargs)
 
 
-class ComplexRenderWidget(HtmlWidget):
+class ComplexRenderWidget(HtmlFormWidget):
     type_attrs = dict(validate_freq=False)
 
     def __init__(self, text_field=None, id_field=None, type=None,
-                             hidden_fields=None, label=True, null_str='[NULL]'):
-        """A widget that renders complex objects as links.
+           hidden_fields=None, label=True, null_str='[NULL]', input_class=None):
+        """A widget base that renders complex objects as simple html elements.
 
         :param text_field: The name of the field containing a human readable
             string that represents the object.
@@ -570,38 +738,67 @@ class ComplexRenderWidget(HtmlWidget):
             relevant widget id.
         """
 
-        super(ComplexRenderWidget, self).__init__(label=label)
+        super(ComplexRenderWidget, self).__init__(label=label,
+                                                        input_class=input_class)
 
-        self.id_field = id_field
+        if not six.PY2:
+            str_types = (str,)
+        else:
+            str_types = (str, unicode)
+
         self.text_field = text_field
-        self.hidden_fields = hidden_fields
+        if isinstance(self.text_field, str_types):
+            self.text_field = tuple([s for s in self.text_field.split('.')
+                                                                 if len(s) > 0])
+
+        self.id_fields = id_field
+        if isinstance(self.id_fields, str_types):
+            self.id_fields = tuple([s for s in self.id_fields.split('.')
+                                                                 if len(s) > 0])
+
         self.type = type
+        self.hidden_fields = hidden_fields
         self.null_str = null_str
 
         self.serialization_handlers = cdict({
             ComplexModelBase: self.complex_model_to_parent,
         })
 
+    def _get_type(self, cls, field_name):
+        assert len(field_name) > 0
+
+        for field_name_fragment in field_name:
+            fti = cls.get_flat_type_info(cls)
+            cls = fti[field_name_fragment]
+
+        return cls
+
+    def _get_value_str(self, inst_type, inst, field_name):
+        assert len(field_name) > 0
+
+        for field_name_fragment in field_name:
+            inst = getattr(inst, field_name_fragment)
+
+        return self.to_unicode(inst_type, inst)
+
     def _prep_inst(self, cls, inst, fti):
         id_name = id_type = id_str = None
-        if self.id_field is not None:
-            id_name = self.id_field
-            id_type = fti[id_name]
+        if self.id_fields is not None:
+            id_name = self.id_fields
+            id_type = self._get_type(cls, id_name)
 
         text_str = text_type = None
         text_name = self.text_field
         if text_name is not None:
             text_str = self.null_str
-            text_type = fti[text_name]
+            text_type = self._get_type(cls, text_name)
 
         if inst is not None:
             if id_name is not None:
-                id_val = getattr(inst, id_name)
-                id_str = self.to_unicode(id_type, id_val)
+                id_str = self._get_value_str(id_type, inst, id_name)
 
             if text_name is not None:
-                text_val = getattr(inst, text_name)
-                text_str = self.to_unicode(text_type, text_val)
+                text_str = self._get_value_str(text_type, inst, text_name)
 
         if id_str is None:
             id_str = ""
@@ -617,13 +814,7 @@ class ComplexRenderWidget(HtmlWidget):
                             parent, self.hier_delim.join((name, key)), **kwargs)
 
     def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
-        if self.type is not None:
-            logger.debug("ComplexRenderWidget.type cls switch: %r => %r",
-                                                                 cls, self.type)
-            cls = self.type
-            if len(self.type_attrs) > 0:
-                cls = self.type.customize(**self.type_attrs)
-
+        cls, inst = self._switch_to_prot_type(cls, inst)
         fti = cls.get_flat_type_info(cls)
         _, text_str = self._prep_inst(cls, inst, fti)
 
@@ -641,9 +832,9 @@ class ComplexRenderWidget(HtmlWidget):
         self._write_hidden_fields(ctx, cls, inst, parent, name, fti, **kwargs)
 
 
-class ComplexHrefWidget(ComplexRenderWidget):
+class ComplexHrefWidget(ComplexRenderWidget, HtmlColumnTableRowProtocol):
     def __init__(self, text_field, id_field, type=None, hidden_fields=None,
-                                       empty_widget=None, label=True, url=None):
+                   empty_widget=None, label=True, url=None, id_field_name=None):
         """Widget that renders complex objects as links. Hidden fields are
         skipped then the given instance has the value of `id_field` is `None`.
 
@@ -655,6 +846,7 @@ class ComplexHrefWidget(ComplexRenderWidget):
         super(ComplexHrefWidget, self).__init__(text_field, id_field,
                             type=type, hidden_fields=hidden_fields, label=label)
 
+        self.id_field_name = id_field_name
         self.empty_widget = empty_widget
         self.url = url
 
@@ -662,8 +854,32 @@ class ComplexHrefWidget(ComplexRenderWidget):
             assert issubclass(empty_widget, ComplexRenderWidget), "I don't know" \
                          "how to instantiate a non-ComplexRenderWidget-subclass"
 
-            self.empty_widget = empty_widget(self.text_field, self.id_field,
+            self.empty_widget = empty_widget(self.text_field, self.id_fields,
                       others=True, others_order_by=self.text_field, label=False)
+
+    def column_table_before_row(self, ctx, cls, inst, parent, name, **kwargs):
+        # the ctxstack here is lxml element context, has nothing to do with
+        # spyne contexts.
+
+        ctxstack = getattr(ctx.protocol[self], 'array_subprot_ctxstack', [])
+
+        tr_ctx = parent.element('tr')
+        tr_ctx.__enter__()
+        ctxstack.append(tr_ctx)
+
+        td_ctx = parent.element('td')
+        td_ctx.__enter__()
+        ctxstack.append(td_ctx)
+
+        ctx.protocol[self].array_subprot_ctxstack = ctxstack
+
+    def column_table_after_row(self, ctx, cls, inst, parent, name, **kwargs):
+        ctxstack = ctx.protocol[self].array_subprot_ctxstack
+
+        for elt_ctx in reversed(ctxstack):
+            elt_ctx.__exit__(None, None, None)
+
+        del ctxstack[:]
 
     def complex_model_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         fti = cls.get_flat_type_info(cls)
@@ -685,7 +901,12 @@ class ComplexHrefWidget(ComplexRenderWidget):
             if tn_url is None:
                 tn = cls.get_type_name()
                 tn_url = camel_case_to_uscore(tn)
-            attrib['href'] = tn_url + "?" + urlencode({self.id_field: id_str})
+
+            id_field_name = self.id_field_name
+            if id_field_name is None:
+                id_field_name = '.'.join(self.id_fields)
+
+            attrib['href'] = tn_url + "?" + urlencode({id_field_name: id_str})
 
             a_tag = E.a(text_str, **attrib)
             if self.label:
@@ -700,10 +921,10 @@ class ComplexHrefWidget(ComplexRenderWidget):
                 with parent.element('div', attrib=label_div_attrib):
                     parent.write(label)
                     self.empty_widget \
-                        .to_parent(ctx, cls, inst, parent, name, **kwargs)
+                              .to_parent(ctx, cls, inst, parent, name, **kwargs)
             else:
                 self.empty_widget \
-                    .to_parent(ctx, cls, inst, parent, name, **kwargs)
+                              .to_parent(ctx, cls, inst, parent, name, **kwargs)
 
 
 # FIXME: We need a better explanation for the very simple thing that
@@ -711,7 +932,8 @@ class ComplexHrefWidget(ComplexRenderWidget):
 class SelectWidgetBase(ComplexRenderWidget):
     def __init__(self, text_field, id_field, hidden_fields=None, label=True,
                    type=None, inst_type=None, others=None, others_order_by=None,
-                    override_parent=False, nonempty_widget=ComplexRenderWidget):
+                     override_parent=False, nonempty_widget=ComplexRenderWidget,
+                                                              input_class=None):
         """Widget that renders complex objects as <select> tags.
 
         Please see :class:`ComplexRenderWidget` docstring for more info.
@@ -735,11 +957,14 @@ class SelectWidgetBase(ComplexRenderWidget):
 
         :param inst_type: Also force instance type to given type. Defaults to
             whatever passed in as ``type``.
+
+        :param html_class: When not none, pass as class attribute to the
+            ``<input>`` or ``<select>`` element.
         """
 
         super(SelectWidgetBase, self).__init__(id_field=id_field,
                              text_field=text_field, hidden_fields=hidden_fields,
-                                                         label=label, type=type)
+                                label=label, type=type, input_class=input_class)
 
         self.others = others
         if callable(others):
@@ -761,13 +986,13 @@ class SelectWidgetBase(ComplexRenderWidget):
                          "how to instantiate a non-ComplexRenderWidget-subclass"
 
             self.nonempty_widget = nonempty_widget(self.text_field,
-                    id_field=self.id_field, label=self.label, type=self.type,
+                    id_field=self.id_fields, label=self.label, type=self.type,
                          hidden_fields=(self.hidden_fields or ()) + (id_field,))
 
         self.serialization_handlers[ModelBase] = self.model_base_to_parent
 
     def _write_empty(self, parent):
-        parent.write(E.option())
+        parent.write(E(self.HTML_OPTION))
 
     def _write_select(self, ctx, cls, inst, parent, name, fti, **kwargs):
         raise NotImplementedError()
@@ -775,10 +1000,11 @@ class SelectWidgetBase(ComplexRenderWidget):
     def _write_select_impl(self, ctx, cls, tag_attrib, data, fti, parent):
         attr = self.get_cls_attrs(cls)
 
-        with parent.element("select", attrib=tag_attrib):
+        with parent.element(self.HTML_SELECT, attrib=tag_attrib):
             if self.others is None:
                 for v_id_str, v_text_str in data:
-                    elt = E.option(v_text_str, value=v_id_str, selected="")
+                    elt = E(self.HTML_OPTION, v_text_str, value=v_id_str,
+                                                                    selected="")
                     parent.write(elt)
                 return
 
@@ -798,28 +1024,42 @@ class SelectWidgetBase(ComplexRenderWidget):
             if is_autogen:
                 logger.debug("Auto-generating combobox contents for %r", cls)
                 db = ctx.app.config.stores['sql_main'].itself
+
                 # FIXME: this blocks the reactor
                 with closing(db.Session()) as session:
-                    q = session.query(cls.__orig__ or cls)
-                    if self.others_order_by is not None:
-                        if isinstance(self.others_order_by, (list, tuple)):
-                            q = q.order_by(*self.others_order_by)
-                        else:
-                            q = q.order_by(self.others_order_by)
+                    # Get class
+                    subval_cls = cls.__orig__
+                    if subval_cls is None:
+                        subval_cls = cls
 
-                    selected = self._write_options(cls, parent, fti, q, data)
+                    q = session.query(cls.__orig__ or cls)
+
+                    # Apply ordering parameters if possible
+                    oob = self.others_order_by
+                    oob_id = id(oob)
+                    if oob is not None:
+                        if not isinstance(oob, (list, tuple)):
+                            oob = (oob,)
+
+                        q = q.order_by(*oob)
+
+                    cache_key = (cls.__orig__ or cls, oob_id)
+                    selected = self._write_options(ctx, cls, parent, fti, q,
+                                                                data, cache_key)
 
             elif is_iterable or is_callable:
                 insts = self.others
                 if is_callable:
-                    insts = self.others(ctx, self)
                     logger.debug("Generating select contents from callable "
                                                                   "for %r", cls)
+                    insts = self.others(ctx, self)
+
                 else:
                     logger.debug("Generating select contents from iterable "
                                                                   "for %r", cls)
 
-                selected = self._write_options(cls, parent, fti, insts, data)
+                selected = self._write_options(ctx, cls, parent, fti, insts,
+                                                           data, cache_key=None)
 
             else:
                 raise Exception("This should not be possible")
@@ -827,18 +1067,46 @@ class SelectWidgetBase(ComplexRenderWidget):
             if not (we_have_empty or selected):
                 self._write_empty(parent)
 
-    def _write_options(self, cls, parent, fti, insts, data):
+    def _write_options(self, ctx, cls, parent, fti, insts, data, cache_key):
         selected = False
         data = set((i for (i,t) in data))
+
+        # Generate cache entry
+        cache_entry = None
+        if cache_key is not None:
+            objcache = ctx.protocol.objcache
+            cache_entry = objcache.get(cache_key, None)
+            if cache_entry is not None:
+                logger.debug("Using cache key %r to fill <select> for %r",
+                                                                 cache_key, cls)
+                for id_str, text_str in cache_entry:
+                    elt = E(self.HTML_OPTION, text_str, value=id_str)
+
+                    if id_str in data:
+                        elt.attrib['selected'] = ""
+                        selected = True
+
+                    parent.write(elt)
+
+                return selected
+
+            logger.debug("Generated cache entry for key %r to fill <select> "
+                                                       "for %r", cache_key, cls)
+
+            cache_entry = objcache[cache_key] = []
+
+        # FIXME: this iteration blocks the reactor
         for o in insts:
             id_str, text_str = self._prep_inst(cls, o, fti)
 
-            elt = E.option(text_str, value=id_str)
+            elt = E(self.HTML_OPTION, text_str, value=id_str)
             if id_str in data:
                 elt.attrib['selected'] = ""
                 selected = True
 
             parent.write(elt)
+            if cache_entry is not None:
+                cache_entry.append( (id_str, text_str) )
 
         return selected
 
@@ -912,7 +1180,7 @@ class ComboBoxWidget(SelectWidgetBase):
 
         v_id_str, v_text_str = self._prep_inst(cls, inst, fti)
 
-        sub_name = self.hier_delim.join((name, self.id_field))
+        sub_name = self.hier_delim.join((name,) + self.id_fields)
         elt_attrs = self._gen_input_attrs_novalue(ctx, cls, sub_name, cls_attrs,
                                                                        **kwargs)
         data = ((v_id_str, v_text_str),)
@@ -927,7 +1195,7 @@ class MultiSelectWidget(SelectWidgetBase):
         if issubclass(cls, Array):
             cls = next(iter(cls._type_info.values()))
 
-        super(MultiSelectWidget, self).to_parent_impl(ctx, cls, inst,
+        super(MultiSelectWidget, self).cm_to_parent_impl(ctx, cls, inst,
                                                          parent, name, **kwargs)
 
     def _write_select(self, ctx, cls, inst, parent, name, fti, **kwargs):
@@ -940,7 +1208,7 @@ class MultiSelectWidget(SelectWidgetBase):
         if self.override_parent:
             name = name.rsplit(self.hier_delim)[0]
 
-        sub_name = self.hier_delim.join((name, self.id_field))
+        sub_name = self.hier_delim.join((name,) + self.id_fields)
         tag_attrib = self._gen_input_attrs_novalue(ctx, cls, sub_name, cls_attr,
                                                                        **kwargs)
 
@@ -952,20 +1220,24 @@ class MultiSelectWidget(SelectWidgetBase):
 
 
 class SimpleReadableNumberWidget(SimpleRenderWidget):
-    def __init__(self, label=True, type=None, hidden=False):
+    def __init__(self, label=True, type=None, hidden=False,
+                                                           locale='en_US.utf8'):
         super(SimpleReadableNumberWidget, self).__init__(
                                           label=label, type=type, hidden=hidden)
+
+        self.locale = locale
 
         self.serialization_handlers = cdict({
             Decimal: self.decimal_to_parent,
             Integer: self.integer_to_parent,
+            ComplexModelBase: self.complex_model_to_parent,
         })
 
-    def number_to_parent(self, ctx, cls, inst, parent, name, fstr, **kwargs):
+    def write_number(self, ctx, cls, inst, parent, name, fstr, **kwargs):
         if inst is None:
             return
 
-        locale.setlocale(locale.LC_ALL, 'en_US')
+        locale.setlocale(locale.LC_ALL, self.locale)
         valstr = locale.format(fstr, inst, grouping=True)
 
         if self.label:
@@ -982,26 +1254,44 @@ class SimpleReadableNumberWidget(SimpleRenderWidget):
             self._gen_input_hidden(cls, inst, parent, name, **kwargs)
 
     def integer_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls, inst = self._switch_to_prot_type(cls, inst)
         cls_attrs = self.get_cls_attrs(cls)
 
         fstring = cls_attrs.format
         if fstring is None:
             fstring = "%d"
 
-        self.number_to_parent(ctx, cls, inst, parent, name, fstring, **kwargs)
+        self.write_number(ctx, cls, inst, parent, name, fstring, **kwargs)
 
     def decimal_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        cls, inst = self._switch_to_prot_type(cls, inst)
         cls_attrs = self.get_cls_attrs(cls)
 
         fstring = cls_attrs.format
         if fstring is None:
             fstring = "%f"
 
-            fd = cls_attrs.fraction_digits
+            if cls_attrs.fraction_digits == D('inf'):
+                fd = 2  # FIXME: chosen by fair dice roll
+            else:
+                fd = int(cls_attrs.fraction_digits)
+
             if fd is not None:
                 fstring = "%%.%df" % fd
 
-        self.number_to_parent(ctx, cls, inst, parent, name, fstring, **kwargs)
+        self.write_number(ctx, cls, inst, parent, name, fstring, **kwargs)
+
+
+class JQFileUploadWidget(SimpleRenderWidget):
+    def __init__(self, label=True):
+        super(JQFileUploadWidget, self).__init__(label=label)
+
+        self.serialization_handlers = cdict({
+            File: self.file_to_parent,
+        })
+
+    def file_to_parent(self, ctx, cls, inst, parent, name, **kwargs):
+        pass
 
 
 class TrueFalseWidget(SimpleRenderWidget):
@@ -1011,8 +1301,10 @@ class TrueFalseWidget(SimpleRenderWidget):
 
     def __init__(self, label=True, type=None, hidden=False, center=False,
                         color=True, color_true='green', color_false='red',
-                         color_none='gray', addtl_css="text-decoration: none;"):
-        super(TrueFalseWidget, self).__init__(label=label, type=type, hidden=hidden)
+                        color_none='gray', display='inline-block', width="100%",
+                                            addtl_css="text-decoration: none;"):
+        super(TrueFalseWidget, self).__init__(label=label, type=type,
+                                                                  hidden=hidden)
 
         self.center = center
         self.color = color
@@ -1021,49 +1313,71 @@ class TrueFalseWidget(SimpleRenderWidget):
         self.color_false = color_false
         self.color_none = color_none
 
+        self.display = display
+        self.width = width
         self.addtl_css = addtl_css
+
+    def get_none(self):
+        if self.color:
+            return E.span(self.SYM_NONE,
+                style="{}color:{}".format(self.addtl_css, self.color_none),
+                **{"class": "widget-none widget-none-color"}
+            )
+
+        else:
+            return E.span(self.SYM_NONE,
+                style=self.addtl_css,
+                **{"class": "widget-none widget-none-dull"}
+            )
+
+    def get_true(self):
+        if self.color:
+            return E.span(self.SYM_TRUE,
+                style="{}color:{}".format(self.addtl_css, self.color_true),
+                **{"class": "widget-true widget-true-color"}
+            )
+
+        else:
+            return E.span(self.SYM_TRUE,
+                style=self.addtl_css,
+                **{"class": "widget-true widget-true-dull"}
+            )
+
+    def get_false(self):
+        if self.color:
+            return E.span(self.SYM_FALSE,
+                style="{}color:{}".format(self.addtl_css, self.color_false),
+                **{"class": "widget-false widget-false-color"}
+            )
+
+        else:
+            elt = E.span(self.SYM_FALSE,
+                style=self.addtl_css,
+                **{"class": "widget-false widget-false-dull"}
+            )
 
     def to_parent(self, ctx, cls, inst, parent, name, **kwargs):
         if self.type is not None:
             cls = self.type
 
-        if self.color:
-            if inst is None:
-                elt = E.span(self.SYM_NONE,
-                    style="{}color:{}".format(self.addtl_css, self.color_none),
-                    **{"class": "widget-none widget-none-color"}
-                )
-            elif inst:
-                elt = E.span(self.SYM_TRUE,
-                    style="{}color:{}".format(self.addtl_css, self.color_true),
-                    **{"class": "widget-true widget-true-color"}
-                )
+        if inst is None:
+            elt = self.get_none()
 
-            else:
-                elt = E.span(self.SYM_FALSE,
-                    style="{}color:{}".format(self.addtl_css, self.color_false),
-                    **{"class": "widget-false widget-false-color"}
-                )
+        elif inst:
+            elt = self.get_true()
+
         else:
-            if inst is None:
-                elt = E.span(self.SYM_NONE,
-                    style=self.addtl_css,
-                    **{"class": "widget-none widget-none-dull"})
+            elt = self.get_false()
 
-            elif inst:
-                elt = E.span(self.SYM_TRUE,
-                    style=self.addtl_css,
-                    **{"class": "widget-true widget-true-dull"})
-            else:
-                elt = E.span(self.SYM_FALSE,
-                    style=self.addtl_css,
-                    **{"class": "widget-false widget-false-dull"})
-
-        style = "display:inline-block; width: 100%; background: transparent"
+        styles = ["background: transparent"]
+        if self.width:
+            styles.append("width: 100%")
+        if self.display:
+            styles.append("display: %s" % (self.display,))
         if self.center:
-            style += "text-align:center"
+            styles.append("text-align:center;")
 
-        elt = E.div(elt, style=style)
+        elt = E.div(elt, style=';'.join(styles))
 
         if self.label:
             label = self._gen_label_for(ctx, cls, name)

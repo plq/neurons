@@ -15,8 +15,8 @@
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
 #
-# * Neither the name of the Arskom Ltd. nor the names of its
-#   contributors may be used to endorse or promote products derived from
+# * Neither the name of the Arskom Ltd., the neurons project nor the names of
+#   its its contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -31,8 +31,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from neurons.form.widget import HtmlWidget
+from neurons.form.widget import HtmlFormWidget
 from neurons.form.widget import HrefWidget
+from neurons.form.widget import ParentHrefWidget
 from neurons.form.widget import PasswordWidget
 from neurons.form.widget import TrueFalseWidget
 
@@ -40,6 +41,7 @@ from neurons.form.widget import ComboBoxWidget
 from neurons.form.widget import MultiSelectWidget
 
 from neurons.form.widget import SimpleRenderWidget
+from neurons.form.widget import ConditionalRendererBase
 from neurons.form.widget import ComplexRenderWidget
 from neurons.form.widget import SimpleReadableNumberWidget
 
@@ -48,10 +50,11 @@ from neurons.form.widget import ComplexHrefWidget
 from neurons.form.form import Tab
 from neurons.form.form import Fieldset
 from neurons.form.form import HtmlFormRoot
+from neurons.form.form import THtmlFormRoot
 from neurons.form.form import HtmlForm
 
 from neurons.form.table import HtmlFormTable
 
 def tou(name):
     if name is not None:
-        return name.encode('utf8')
+        return name

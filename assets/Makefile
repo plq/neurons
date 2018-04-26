@@ -5,7 +5,7 @@ jquery-%:
 	mkdir $@; cd $@; wget https://code.jquery.com/$@.min.js -O jquery-min.js
 
 jquery-ui-%:
-	mkdir $@; cd $@; wget http://jqueryui.com/resources/download/$@.zip; \
+	mkdir $@; cd $@; wget https://jqueryui.com/resources/download/$@.zip; \
 	    unzip $@.zip; mv $@/* .; rm -rf $@ $@.zip external index.html;
 
 jquery-timepicker:
@@ -17,4 +17,4 @@ bootstrap-%:
 	    unzip $@.zip; mv $@*/* .; rm -rf $@*
 
 clean:
-	-rm -rf jquery-*
+	-rm -rf jquery-* bootstrap-*

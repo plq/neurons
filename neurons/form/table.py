@@ -15,8 +15,8 @@
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
 #
-# * Neither the name of the Arskom Ltd. nor the names of its
-#   contributors may be used to endorse or promote products derived from
+# * Neither the name of the Arskom Ltd., the neurons project nor the names of
+#   its its contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -50,7 +50,8 @@ from neurons.form import HtmlFormRoot
 
 SOME_COUNTER = [0]
 
-# FIXME: Could NOTHING be done about the horrendous number of arguments here?
+
+# FIXME: Could NOTHING be done about the horrendous number of arguments here??!
 class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
     def __init__(self, app=None, ignore_uncap=False, ignore_wrappers=True,
                      cloth=None, polymorphic=True, doctype=None, hier_delim='.',
@@ -133,10 +134,23 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
         if name == "":
             name = cls.get_type_name()
 
-        if self.label:
-            parent.write(E.label(self.trc(cls, ctx.locale, name)))
+        cls_attr = self.get_cls_attrs(cls)
+        if cls_attr.write is False:
+            ctx.protocol.can_add = False
+            ctx.protocol.can_remove = False
+        else:
+            ctx.protocol.can_add = self.can_add
+            ctx.protocol.can_remove = self.can_remove
 
-        ret = self._gen_table(ctx, cls, inst, parent, name, gen_rows, **kwargs)
+        if self.label:
+            attrib = self._gen_label_wrapper_class(ctx, cls, name)
+            with parent.element('div', attrib):
+                parent.write(E.label(self.trc(cls, ctx.locale, name)))
+                ret = self._gen_table(ctx, cls, inst, parent, name, gen_rows,
+                                                                       **kwargs)
+        else:
+            ret = self._gen_table(ctx, cls, inst, parent, name, gen_rows,
+                                                                       **kwargs)
 
         if isgenerator(ret):
             try:
@@ -150,7 +164,7 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
                     pass
 
     def extend_header_row(self, ctx, cls, parent, name, **kwargs):
-        if self.can_add or self.can_remove:
+        if ctx.protocol.can_add or self.can_remove:
             parent.write(E.th(**{'class': 'array-button'}))
 
     def extend_data_row(self, ctx, cls, inst, parent, name, array_index=None,
@@ -158,7 +172,7 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
         if array_index is None:
             return
 
-        if not (self.can_remove or self.can_add):
+        if not (ctx.protocol.can_remove or ctx.protocol.can_add):
             return
 
         td = E.td(style='white-space: nowrap;')
@@ -175,6 +189,7 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
                 E.button('+', **{
                     "class": "%s_btn_add" % name,
                     "type": "button",
+                    "style": 'min-width:2em',
                 }),
             )
 
@@ -183,11 +198,12 @@ class HtmlFormTable(HtmlColumnTable, HtmlFormRoot):
                 E.button('-', **{
                     "class": "%s_btn_remove" % name,
                     "type": "button",
+                    "style": 'min-width:2em',
                 }),
             )
 
     def extend_table(self, ctx, cls, parent, name, **kwargs):
-        if not self.can_add:
+        if not ctx.protocol.can_add:
             return
 
         # FIXME: just fix me.
@@ -265,7 +281,8 @@ var remove = function (e) {
 
     if (pa.find("tr:visible").length == 1) {
         var form = pa.closest('form');
-        $('<input>').attr({'type':'hidden', 'name': root_name, 'value': 'empty', 'id': root_name + '-empty'}).appendTo(form);
+        $('<input>').attr({'type':'hidden', 'name': root_name, 'value': 'empty',
+                                    'id': root_name + '-empty'}).appendTo(form);
     }
 
     e.preventDefault();
@@ -312,4 +329,5 @@ for (var children = row.children(), i=0, l=children.length-1; i < l; ++i) {
 }
 
 row.attr('null-widget', true);
-var null_widget = row.clone(true);"""]
+var null_widget = row.clone(true);
+"""]

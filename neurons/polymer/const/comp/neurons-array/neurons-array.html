@@ -1,0 +1,191 @@
+<!--
+This file is part of the Neurons project.
+Copyright (c), Arskom Ltd. (arskom.com.tr),
+               Burak Arslan <burak.arslan@arskom.com.tr>.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+* Neither the name of the Arskom Ltd., the neurons project nor the names of
+  its its contributors may be used to endorse or promote products derived from
+  its contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<link rel="import" href="/static/bower_components/polymer/polymer.html">
+<link rel="import" href="/static/bower_components/paper-button/paper-button.html">
+<link rel="import" href="/static/bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="/static/bower_components/iron-form-element-behavior/iron-form-element-behavior.html">
+
+<link rel="import"
+      href="/static/bower_components/iron-data-table/iron-data-table.html">
+
+<link rel="import" spyne-id="dependencies">
+
+<dom-module id="neurons-array">
+  <template>
+    <iron-ajax id="ajax_getter"
+               url="{{dataSource}}"
+               on-response="_process_getter_response"
+               handle-as="json"> </iron-ajax>
+
+    <fieldset>
+      <legend>{{ label }}</legend>
+      <iron-data-table id="table" items="[[complexValue]]">
+        <content></content>
+      </iron-data-table>
+    </fieldset>
+  </template>
+
+  <script>
+    Polymer({"is": "neurons-array"
+      ,behaviors: [
+        Polymer.IronFormElementBehavior
+      ]
+      ,listeners: {
+        'params-changed': '_new_params'
+      }
+      ,properties: {
+        dataSource: {
+          type: String,
+          notify: true,
+          reflectToAttribute: true
+        }
+        ,params: {
+          type: Object,
+          notify: true
+        }
+        ,paramWhitelist: {
+          type: Object,
+          value: []
+        }
+        ,need_parent_params: {
+          type: Boolean,
+          reflectToAttribute: true
+        }
+        ,show_add: {
+          type: Boolean,
+          reflectToAttribute: true
+        }
+        ,remote_data: {
+          type: Object
+        }
+        ,complexValue: {
+          type: Object,
+          notify: true,
+          observer: "_new_complex_value"
+        }
+        ,value: {
+          type: Object,
+          notify: true,
+          observer: "_new_value",
+          reflectToAttribute: true
+        }
+        ,currentItemIndex: {
+          type: Number,
+          observer: "_new_index"
+        }
+
+        /* to imitate form elements */
+        ,disabled: {
+          type: Boolean,
+          reflectToAttribute: true
+        }
+        ,label: {
+          type: String,
+          notify: true,
+          reflectToAttribute: true
+        }
+        ,placeholder: {
+          type: String,
+          reflectToAttribute: true
+        }
+        ,argMap: {
+          type: Object,
+          reflectToAttribute: true
+        }
+      }
+      ,created: function() {
+        this._elements = {};
+        this._skip_new_index_handler = false;
+      }
+      ,attached: function() {
+
+      }
+      ,_process_getter_response: function(e) {
+        this.remote_data = e.detail.response;
+        this._new_value(this.value);
+      }
+      ,_contains: function(a, obj) {
+        var i = a.length;
+        while (i--) {
+          if (a[i] === obj) {
+            return true;
+          }
+        }
+        return false;
+      }
+      ,_new_params: function(e) {
+        var getter = this.$.ajax_getter;
+        getter.params = this._effectiveParams(e.detail.value);
+      }
+      ,_effectiveParams: function(params) {
+        var retval = neurons.clone(params);
+        if (this.paramWhitelist.length > 0) {
+          for (k in retval) {
+            if (! this._contains(this.paramWhitelist, k)) {
+              delete retval[k];
+            }
+          }
+        }
+        return retval;
+      }
+      ,_urlencodeParams: function() {
+        return "&" + neurons.urlencode(this._effectiveParams(this.params));
+      }
+      ,_new_complex_value: function(val) {
+        if (window.console) console.log(val);
+      }
+      ,_new_value: function(val) {
+        if (! this.remote_data) {
+          return;
+        }
+        for (var i = 0, l = this.remote_data.length; i < l; ++i) {
+          if (this.remote_data[i][this.attr_item_value] == val) {
+            this._skip_new_index_handler = true;
+            this.currentItemIndex = i;
+            this._skip_new_index_handler = false;
+            break;
+          }
+        }
+      }
+      ,_new_index: function(idx) {
+        if (this._skip_new_index_handler) {
+          return;
+        }
+        if (idx in this.remote_data) {
+          this.complexValue = this.remote_data[idx];
+        }
+      }
+    });
+  </script>
+</dom-module>

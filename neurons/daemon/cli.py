@@ -15,8 +15,8 @@
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
 #
-# * Neither the name of the Arskom Ltd. nor the names of its
-#   contributors may be used to endorse or promote products derived from
+# * Neither the name of the Arskom Ltd., the neurons project nor the names of
+#   its its contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -143,9 +143,9 @@ def _is_array_of_complexes(cls):
 
 _some_prot = ProtocolBase()
 
-def spyne_to_argparse(cls):
+def spyne_to_argparse(cls, ignore_defaults):
     fti = cls.get_flat_type_info(cls)
-    parser = ArgumentParser(description=cls.__doc__)
+    parser = ArgumentParser(description=cls.__doc__, add_help=False)
 
     parser.add_argument('-c', '--config-file', type=os.path.abspath,
                                              help="An alternative config file.")
@@ -166,7 +166,13 @@ def spyne_to_argparse(cls):
         if attrs.help is not None:
             kwargs['help'] = attrs.help
 
-        if attrs.default is not None:
+        if attrs.metavar is not None:
+            kwargs['metavar'] = attrs.metavar
+
+        if ignore_defaults:
+            kwargs['default'] = argparse.SUPPRESS
+
+        elif attrs.default is not None:
             kwargs['default'] = attrs.default
 
         # types

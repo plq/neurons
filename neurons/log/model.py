@@ -15,8 +15,8 @@
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
 #
-# * Neither the name of the Arskom Ltd. nor the names of its
-#   contributors may be used to endorse or promote products derived from
+# * Neither the name of the Arskom Ltd., the neurons project nor the names of
+#   its its contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -31,32 +31,70 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+import logging
+logger = logging.getLogger(__name__)
+
+from spyne import M, Integer32, Integer64, Integer, ByteArray, Unicode, DateTime, \
+    Boolean, IpAddress, AnyXml, AnyDict, ComplexModel, Uuid
 
 from neurons import TableModel
+from neurons.version import TVersion
 
-from spyne import Integer64, DateTime, Unicode, AnyXml, AnyDict, Integer
-from spyne.util import memoize
+from sqlalchemy import sql
+
+SCHEMA_VERSION = 1
 
 
-class LogEntryMixin(TableModel):
+class LogEntryMixin(ComplexModel):
     __mixin__ = True
     __table_args__ = {"sqlite_autoincrement": True}
 
-    id = Integer64(primary_key=True)
-    time = DateTime(timezone=False)
-    user = Unicode(256, index='btree')
-    method = Unicode(64, index='btree')
-    req_xml = AnyXml
-    req_json = AnyDict(store_as='json')
-    err_code = Integer
-    resp_err = AnyDict(store_as='json')
-    resp_int = Integer
-    duration = Integer
+    _type_info = [
+        ('id', Integer64(primary_key=True)),
+
+        ('time', M(DateTime(timezone=False, server_default=sql.func.now()))),
+        ('domain', Unicode(255)),
+        ('username', Unicode(255)),
+
+        ('method_name', M(Unicode(255))),
+        ('duration_ms', Integer32),
+        ('read_only', M(Boolean)),
+
+        ('daemon_version', Integer64),
+        ('daemon_name', Unicode(32)),
+
+        ('is_request', M(Boolean(default=True, server_default='true'))),
+        ('err_code_in', Unicode),
+        ('err_code_out', Unicode),
+
+        ('host', IpAddress),
+
+        # TODO: figure out how these will work
+        # ('id_session', Uuid),
+        # ('id_message', Uuid),
+
+        ('data_in_xml', AnyXml),
+        ('data_in_json', AnyDict(store_as='json')),
+        ('data_out_int', Integer64),
+        ('data_out_xml', AnyXml),
+        ('data_out_json', Integer64),
+    ]
 
 
-@memoize
-def TLogEntry():
-    class LogEntry(LogEntryMixin):
-        __namespace__ = 'neurons.base'
+def migrate_2(config, session):
+    session.connection().execute("""
+      alter table neurons_log add column id_session uuid;
+      alter table neurons_log add column id_message uuid;
+    """)
+
+
+def TLogEntry(table_model=TableModel):
+    # Register version table for migration
+    TVersion("neurons_log", {}, SCHEMA_VERSION)
+    # TVersion("neurons_log", {2: migrate_2}, SCHEMA_VERSION)
+
+    class LogEntry(table_model, LogEntryMixin):
+        __namespace__ = 'http://spyne.io/neurons/log'
         __tablename__ = 'neurons_log'
+
     return LogEntry

@@ -15,8 +15,8 @@
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
 #
-# * Neither the name of the Arskom Ltd. nor the names of its
-#   contributors may be used to endorse or promote products derived from
+# * Neither the name of the Arskom Ltd., the neurons project nor the names of
+#   its its contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -33,9 +33,9 @@
 
 from os.path import abspath
 from os.path import isfile
-from pkg_resources import resource_filename
+from spyne.util.resource import get_resource_path
 
 _ROOT = __name__
 
-T_TEST = abspath(resource_filename(_ROOT, 'test.html'))
+T_TEST = (get_resource_path(_ROOT, 'test.html'))
 assert isfile(T_TEST)

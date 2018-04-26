@@ -15,8 +15,8 @@
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
 #
-# * Neither the name of the Arskom Ltd. nor the names of its
-#   contributors may be used to endorse or promote products derived from
+# * Neither the name of the Arskom Ltd., the neurons project nor the names of
+#   its its contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -35,6 +35,27 @@
 import logging
 logger = logging.getLogger(__name__)
 
+import threading
+import traceback
+
+import neurons
+
+from sqlalchemy import MetaData
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.engine import Engine
+
+
+try:
+    import ldap
+except ImportError as e:
+    class _catchall(object):
+        def __getattribute__(self, item):
+            raise e
+
+    ldap = _catchall()
+
+    del _catchall
+
 
 class DataStoreBase(object):
     def __init__(self, type):
@@ -42,46 +63,74 @@ class DataStoreBase(object):
 
 
 class LdapDataStore(DataStoreBase):
-    def __init__(self, host, base_dn, bind_dn, password, port=389):
-        DataStoreBase.__init__(self, type='ldap')
+    SUPPORTED_BACKENDS = ('python-ldap', )  # TODO: add ldaptor for python3
 
-        self.host = host
-        self.port = port
-        self.base_dn = base_dn
-        self.bind_dn = bind_dn
-        self.password = password
+    def __init__(self, parent, type='python-ldap'):
+        assert type in LdapDataStore.SUPPORTED_BACKENDS
+        DataStoreBase.__init__(self, type=type)
+
         self.conn = None
+        self.parent = parent
 
-    def simple_bind(self):
-        import ldap
+    def apply_simple(self, bind_dn=None, password=None):
+        parent = self.parent
 
-        if self.conn is not None:
-            self.close()
+        if bind_dn is None:
+            bind_dn = parent.bind_dn
 
-        self.conn = ldap.open(self.host, port=self.port)
-        self.conn.set_option(ldap.OPT_NETWORK_TIMEOUT, 10.0)
-        self.conn.protocol_version = ldap.VERSION3
-        self.conn.simple_bind_s(self.bind_dn, self.password)
+        if password is None:
+            password = parent.password
 
-        return self.conn
+        if parent.use_tls:
+            uri = "ldaps://%s:%d" % (parent.host, parent.port)
+            retval = ldap.initialize(uri)
 
-    def connect(self):
-        return self.simple_bind()
+            retval.set_option(ldap.OPT_X_TLS, ldap.OPT_X_TLS_DEMAND)
+            retval.set_option(ldap.OPT_X_TLS_DEMAND, True)
 
-    def close(self):
-        retval = self.conn.unbind_s()
-        self.conn = None
+        else:
+            uri = "ldap://%s:%d" % (parent.host, parent.port)
+            retval = ldap.initialize(uri)
+
+        retval.set_option(ldap.OPT_NETWORK_TIMEOUT, parent.timeout)
+
+        if not parent.referrals:
+            retval.set_option(ldap.OPT_REFERRALS, 0)
+
+        if parent.version == 3:
+            retval.protocol_version = ldap.VERSION3
+
+        elif parent.version == 2:
+            retval.protocol_version = ldap.VERSION2
+
+        else:
+            raise ValueError(parent.version)
+
+        retval.simple_bind_s(bind_dn, password)
+
+        logger.info("Ldap connection to %s successful.",
+                                                retval.get_option(ldap.OPT_URI))
+
         return retval
+
+    def apply(self):
+        if self.conn is not None:
+            self.conn.close()
+
+        if self.parent.method == 'simple':
+            self.conn = self.apply_simple()
+
+        elif self.parent.method == 'sasl':
+            raise NotImplementedError(self.parent.method)
+
+        else:
+            raise ValueError(self.parent.method)
 
 
 # FIXME: get rid of the overly complicated property setters.
 class SqlDataStore(DataStoreBase):
     def __init__(self, connection_string=None, engine=None, metadata=None, **kwargs):
         DataStoreBase.__init__(self, type='sqlalchemy')
-
-        from sqlalchemy import MetaData
-        from sqlalchemy.orm import sessionmaker
-        from sqlalchemy.engine import Engine
 
         if engine is not None:
             assert isinstance(engine, Engine)
@@ -104,14 +153,34 @@ class SqlDataStore(DataStoreBase):
         self.txpool_start_deferred = None
         """Deferred from TxPostgres pool start()."""
 
+    @property
+    def txpool(self):
+        if neurons.REACTOR_THREAD_ID is not None and \
+                  neurons.REACTOR_THREAD_ID != threading.current_thread().ident:
+
+            logger.warning("Using txpostgres outside of reactor thread is "
+                           "dangerous.")
+
+            for elt in traceback.format_stack():
+                for line in elt.split("\n"):
+                    if len(line) > 0:
+                        logger.warning(line)
+
+        return self._txpool
+
+    @txpool.setter
+    def txpool(self, what):
+        self._txpool = what
+
     def add_txpool(self):
+        # don't import twisted too soon
         from txpostgres.txpostgres import Connection, ConnectionPool
         from txpostgres.reconnection import DeadConnectionDetector
 
         class LoggingDeadConnectionDetector(DeadConnectionDetector):
-            def startReconnecting(self, f):
-                logger.warning('TxPool database connection down: %r)', f.value)
-                return DeadConnectionDetector.startReconnecting(self, f)
+            def startReconnecting(self, err):
+                logger.warning('TxPool database connection down: %r)', err.value)
+                return DeadConnectionDetector.startReconnecting(self, err)
 
             def reconnect(self):
                 logger.warning('TxPool reconnecting...')
@@ -123,10 +192,21 @@ class SqlDataStore(DataStoreBase):
 
         dsn = self.engine.raw_connection().connection.dsn
 
-        self.txpool = ConnectionPool("heleleley", dsn, min=1)
+        class NeuronsConnectionPool(ConnectionPool):
+            @staticmethod
+            def connectionFactory(reactor=None, cooperator=None):
+                retval = Connection(reactor=reactor, cooperator=cooperator,
+                                       detector=LoggingDeadConnectionDetector())
+
+                logger.debug("Spawning postgresql backend")
+
+                return retval
+
+        self.txpool = NeuronsConnectionPool("heleleley", dsn, min=1)
         self.txpool_start_deferred = self.txpool.start()
-        self.txpool_start_deferred.addCallback(
-                                 lambda p: logger.info("TxPool %r started.", p))
+        self.txpool_start_deferred \
+            .addCallback(lambda p: logger.info("TxPool %r started.", p)) \
+            .addErrback(lambda err: err.printTraceback())
         return self.txpool_start_deferred
 
     def connect(self):

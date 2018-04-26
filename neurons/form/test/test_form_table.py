@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # encoding: utf8
 #
 # This file is part of the Neurons project.
@@ -15,8 +16,8 @@
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
 #
-# * Neither the name of the Arskom Ltd. nor the names of its
-#   contributors may be used to endorse or promote products derived from
+# * Neither the name of the Arskom Ltd., the neurons project nor the names of
+#   its its contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -31,6 +32,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
@@ -43,7 +45,7 @@ from neurons.form.const import T_TEST
 
 from spyne.util.test import show
 from spyne.util.color import R
-from spyne import Application, NullServer, ServiceBase, rpc, ComplexModel, \
+from spyne import Application, NullServer, Service, rpc, ComplexModel, \
     Integer, Array, Unicode
 from lxml import etree, html
 
@@ -51,12 +53,12 @@ from lxml import etree, html
 def _test_type(cls, inst, prot_cls=HtmlFormTable):
     from spyne.util import appreg; appreg.applications.clear()
 
-    class SomeService(ServiceBase):
+    class SomeService(Service):
         @rpc(_returns=cls, _body_style='bare')
         def some_call(ctx):
             return inst
 
-    prot = prot_cls(cloth=T_TEST, doctype='<!DOCTYPE html>')
+    prot = prot_cls(cloth=T_TEST, doctype='<!DOCTYPE html>', label=False)
     app = Application([SomeService], 'some_ns', out_protocol=prot)
 
     null = NullServer(app, ostr=True)
@@ -82,11 +84,11 @@ def _test_type(cls, inst, prot_cls=HtmlFormTable):
 class TestFormTable(unittest.TestCase):
     def test_simple_array(self):
         v = range(5)
-        elt = _test_type(Array(Integer), v)[0]
+        elt = _test_type(Array(Integer), v)
 
-        assert elt.xpath('tbody/tr/td/div/input/@value') == \
+        assert elt.xpath('table/tbody/tr/td/div/input/@value') == \
                                                        ['0', '1', '2', '3', '4']
-        assert elt.xpath('tbody/tr/td/button/text()') == ['-'] * 5 + ['+']
+        assert elt.xpath('table/tbody/tr/td/button/text()') == ['-'] * 5 + ['+']
         for i, name in enumerate(elt.xpath('div/div/input/@name')):
             assert re.match(r'ints\[0*%d\]' % i, name)
 
@@ -101,10 +103,10 @@ class TestFormTable(unittest.TestCase):
         elt = _test_type(Array(SomeObject), v)
 
         assert elt.xpath(
-            'table/tbody/tr/td/div/input[contains(@class, "i ")]/@value') == \
+            'table/tbody/tr/td/div/input[contains(@class, "i")]/@value') == \
                                                            [str(o.i) for o in v]
         assert elt.xpath(
-            'table/tbody/tr/td/div/input[contains(@class, "s ")]/@value') == \
+            'table/tbody/tr/td/div/input[contains(@class, "s")]/@value') == \
                                                            [str(o.s) for o in v]
 
         assert elt.xpath('table/tbody/tr/td/button/text()') == ['-'] * len(v) + ['+']
@@ -116,7 +118,7 @@ class TestFormTable(unittest.TestCase):
 
         class SomeObject(ComplexModel):
             i = Integer
-            s = Array(Unicode(64), prot=HtmlFormTable(), label=True)
+            s = Array(Unicode(64), prot=HtmlFormTable(label=False), label=True)
 
         v = SomeObject(i=42, s=v)
         elt = _test_type(SomeObject, v, HtmlForm)

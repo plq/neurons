@@ -15,8 +15,8 @@
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
 #
-# * Neither the name of the Arskom Ltd. nor the names of its
-#   contributors may be used to endorse or promote products derived from
+# * Neither the name of the Arskom Ltd., the neurons project nor the names of
+#   its its contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -34,12 +34,18 @@
 import logging
 logger = logging.getLogger(__name__)
 
+from spyne.util import DefaultAttrDict
+
 from neurons.base.const import ANON_USERNAME
 
 
 def on_method_call(ctx):
     if ctx.udc is None:
-        ctx.udc = ctx.service_class.get_context(ctx)
+        if ctx.service_class is not None:
+            ctx.udc = ctx.service_class.get_context(ctx)
+        else:
+            #FIXME: this is *wrong*.
+            ctx.udc = DefaultAttrDict(parent=ctx)
 
     ctx.udc.user = ANON_USERNAME
 

@@ -15,8 +15,8 @@
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
 #
-# * Neither the name of the Arskom Ltd. nor the names of its
-#   contributors may be used to endorse or promote products derived from
+# * Neither the name of the Arskom Ltd., the neurons project nor the names of
+#   its its contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -31,51 +31,33 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-import logging
-logger = logging.getLogger(__name__)
 
-from collections import defaultdict
-
-from neurons.base.const import ANON_USERNAME
+FILE_VERSION_KEY = 'file-version'
+STATIC_DESC_ROOT = "Directory that contains static files for the root url."
+STATIC_DESC_URL = "Directory that contains static files for the url '%s'."
 
 
-class ReadContext(object):
-    def __init__(self, parent):
-        self.parent = parent
-
-        self.user = ANON_USERNAME
-        self.logged = True
-        self.log_entry = None
-        self.sqla_sessions = defaultdict(list)
-
-    def is_read_only(self):
-        return True
-
-    def sqla_finalize(self, session):
-        logger.warning("This is a read-only context!")
-
-    def get_session(self, store, **kwargs):
-        if store.backend == 'sqlalchemy':
-            sessions = self.sqla_sessions[id(store)]
-            if len(sessions) == 0:
-                session = store.Session(**kwargs)
-                self.sqla_sessions[id(store)].append(session)
-            else:
-                assert len(kwargs) == 0
-                session = sessions[0]
-
-            return session
-
-        raise NotImplementedError(store)
-
-    def close(self, no_error=True):
-        for sessions in self.sqla_sessions.values():
-            for session in sessions:
-                if no_error:
-                    self.sqla_finalize(session)
-                session.close()
+class ServiceDisabled(Exception):
+    pass
 
 
-class WriteContext(ReadContext):
-    def sqla_finalize(self, session):
-        session.commit()
+from neurons.daemon.config._base import LOGLEVEL_MAP
+from neurons.daemon.config._base import LOGLEVEL_MAP_ABB
+from neurons.daemon.config._base import LOGLEVEL_STR_MAP
+
+from neurons.daemon.config.listener import Service
+from neurons.daemon.config.listener import Listener
+from neurons.daemon.config.listener import SslListener
+from neurons.daemon.config.listener import HttpListener
+from neurons.daemon.config.listener import WsgiListener
+from neurons.daemon.config.listener import HttpApplication
+from neurons.daemon.config.listener import StaticFileServer
+
+from neurons.daemon.config.store import FileStore
+from neurons.daemon.config.store import LdapStore
+from neurons.daemon.config.store import RelationalStore
+
+from neurons.daemon.config.daemon import Daemon
+from neurons.daemon.config.daemon import ServiceDaemon
+from neurons.daemon.config.daemon import EmailAlert
+from neurons.daemon.config.daemon import AlertDestination
