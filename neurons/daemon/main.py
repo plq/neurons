@@ -86,7 +86,7 @@ def _print_version(config):
     print(" * SQLAlchemy-%s" % get_package_version('SQLAlchemy'))
     print()
 
-    return True  # to force exit
+    return 0  # to force exit
 
 
 def _write_wsdl(config):
@@ -120,7 +120,7 @@ def _write_wsdl(config):
 
         print(file_name, "written.")
 
-    return True  # to force exit
+    return 0  # to force exit
 
 
 def _write_xsd(config):
@@ -154,7 +154,7 @@ def _write_xsd(config):
 
             print("written",file_name, "for ns", appdata.app.interface.nsmap[k])
 
-    return True  # to force exit
+    return 0  # to force exit
 
 
 def _do_bootstrap(config, init, bootstrap, bootstrapper):
@@ -168,7 +168,7 @@ def _do_bootstrap(config, init, bootstrap, bootstrapper):
 
     retval = bootstrap(config)
     if retval is None:
-        return True  # we must return *something* to force exit
+        return 0  # to force exit
     return retval
 
 
@@ -182,7 +182,7 @@ def _do_drop_all_tables(config, init):
 
     meta.drop_all()
 
-    return True
+    return 0
 
 
 def _do_start_shell(config):
@@ -274,7 +274,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
 
     if config.write_config:
         config.do_write_config()
-        return True
+        return 0
 
     # Perform migrations
     import neurons.version
@@ -285,7 +285,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
     if config.shell or config.ikernel:
         retval = _do_start_shell(config)
         if retval is None:
-            return True
+            return 0
 
 
 class BootStrapper(object):
