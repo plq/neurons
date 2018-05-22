@@ -146,9 +146,11 @@ class Daemon(ComplexModel):
     setuid/setgid operations.
     """
 
-    LOGGING_DEBUG_FORMAT = u"%(l)s %(r)s | %(module)-15s | %(message)s"
-    LOGGING_DEVEL_FORMAT = u"%(l)s | %(module)-15s | %(message)s"
-    LOGGING_PROD_FORMAT = u"%(l)s %(asctime)s | %(module)-8s | %(message)s"
+    LOGGING_DEBUG_FORMAT = \
+                     u"%(l)s %(r)s | %(module)12s:%(lineno)-4d | %(message)s"
+    LOGGING_DEVEL_FORMAT = u"%(l)s | %(module)12s:%(lineno)-4d | %(message)s"
+    LOGGING_PROD_FORMAT = \
+               u"%(l)s %(asctime)s | %(module)12s:%(lineno)-4d | %(message)s"
 
     _type_info = [
         ('name', Unicode(no_cli=True, help="Daemon Name")),
