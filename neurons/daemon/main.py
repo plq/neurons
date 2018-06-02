@@ -239,7 +239,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
 
         from neurons import TableModel
         TableModel.Attributes.sqla_metadata.bind = \
-                                  config.get_main_store().engine
+                                                  config.get_main_store().engine
 
     # initialize applications
     items = init(config)

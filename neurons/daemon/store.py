@@ -207,6 +207,7 @@ class SqlDataStore(DataStoreBase):
         self.txpool_start_deferred \
             .addCallback(lambda p: logger.info("TxPool %r started.", p)) \
             .addErrback(lambda err: err.printTraceback())
+
         return self.txpool_start_deferred
 
     def connect(self):
