@@ -639,6 +639,7 @@ class ServiceDaemon(Daemon):
             help="Write Xml Schema document(s) to given directory and exit. "
                  "It is created if missing", no_file=True, metavar='XSD_DIR')),
 
+        ('log_orm', Boolean(help="Log SQLAlchemy operations.", default=False)),
         ('log_queries', Boolean(help="Log SQL queries.")),
         ('log_results', Boolean(help="Log SQL query results in addition to "
                                      "queries.")),
@@ -794,12 +795,16 @@ class ServiceDaemon(Daemon):
             self._set_log_level('spyne.protocol.cloth.to_cloth.cloth',
                                                                    logging.INFO)
 
-        if self.log_queries or self.log_results:
-            if self.log_results:
-                self._set_log_level('sqlalchemy', logging.DEBUG)
+        if self.log_orm:
+            self._set_log_level('sqlalchemy', logging.DEBUG)
 
-            elif self.log_queries:
-                self._set_log_level('sqlalchemy', logging.INFO)
+        else:
+            if self.log_queries or self.log_results:
+                if self.log_results:
+                    self._set_log_level('sqlalchemy', logging.DEBUG)
+
+                elif self.log_queries:
+                    self._set_log_level('sqlalchemy', logging.INFO)
 
             self._set_log_level('sqlalchemy.orm.mapper', logging.WARNING)
             self._set_log_level('sqlalchemy.orm.relationships', logging.WARNING)
