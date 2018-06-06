@@ -4,7 +4,7 @@ import unittest
 import yaml
 
 from neurons.daemon import ServiceDaemon
-from neurons.daemon.config import NEURONS_VERSION
+from neurons import __version__ as NEURONS_VERSION
 
 TEST_CONFIG = """
 SomeClass:
