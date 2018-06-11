@@ -41,8 +41,6 @@ from spyne import Integer32, M, Unicode
 from neurons import TableModel
 
 
-
-
 MigrationOperation = namedtuple("MigrationOperation",
                         "submodule migration_dict current_version migrate_init")
 
