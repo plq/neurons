@@ -32,7 +32,7 @@
 #
 
 
-FILE_VERSION_KEY = 'file-version'
+FILE_VERSION_KEY = 'file_version'
 STATIC_DESC_ROOT = "Directory that contains static files for the root url."
 STATIC_DESC_URL = "Directory that contains static files for the url '%s'."
 
