@@ -55,12 +55,12 @@ class Version(TableModel):
         ('version', M(Integer32)),
     ]
 
-    @staticmethod
-    def register_submodule(submodule, migration_dict, current_version,
-                           migrate_init=None):
-        Version.migopts.append(
+    @classmethod
+    def register_submodule(cls, submodule, migration_dict, current_version,
+                                                             migrate_init=None):
+        cls.migopts.append(
             MigrationOperation(submodule, migration_dict, current_version,
-                               migrate_init)
+                                                                   migrate_init)
         )
 
     @staticmethod
