@@ -71,8 +71,8 @@ class Version(TableModel):
     @staticmethod
     def migrate(config, submodule, migration_dict, current_version,
                                                                   migrate_init):
-        table_name = Version.Attributes.table_name
         num_migops = 0
+        table_name = Version.Attributes.table_name
         Version.Attributes.sqla_table.create(checkfirst=True)
 
         db = config.get_main_store()
@@ -84,48 +84,45 @@ class Version(TableModel):
 
             # Create missing tables
             TableModel.Attributes.sqla_metadata.create_all(checkfirst=True)
-            versions = session.query(Version).all()
 
-            if len(versions) == 0:
+            db_version = session.query(Version) \
+                                         .filter_by(submodule=submodule).first()
+
+            if db_version is None:
                 version_entry = \
                            Version(submodule=submodule, version=current_version)
 
                 session.add(version_entry)
 
                 if migrate_init is not None:
-                    num_migops += 1
                     migrate_init(config, session)
-                    logger.info("Performed before-init operations")
+                    logger.info("Submodule '%s' schema version management "
+                                "pre-init was executed successfully.", submodule)
 
-                num_migops = -1
-                logger.info("%s schema version management initialized. "
-                              "Current version: %d", submodule, current_version)
+                logger.info("Submodule '%s' schema version management "
+                                        "was initialized as %d successfully.",
+                                                     submodule, current_version)
 
-            elif len(versions) > 1:
-                session.query(Version).delete()
+                return
 
-                session.add(Version(version=current_version))
+            keys = [vernum for vernum in migration_dict.keys()
+                              if db_version.version < vernum <= current_version]
+            keys.sort()
 
-                logger.warning("Multiple rows %r found in schema version "
-                               "for %s. Resetting schema version to %d",
-                                           versions, submodule, current_version)
+            logger.info("Migration operations %r will be performed", keys)
 
-            else:
-                db_version = versions[0]
+            for vernum in keys:
+                migrate = migration_dict[vernum]
 
-                for vernum, migrate in migration_dict.items():
-                    if db_version.version < vernum <= current_version:
-                        db_version.version = vernum
+                db_version.version = vernum
 
-                        migrate(config, session)
+                migrate(config, session)
 
-                        session.commit()
+                session.commit()
 
-                        num_migops += 1
-                        logger.info("%s schema migration to version %d was "
+                num_migops += 1
+                logger.info("%s schema migration to version %d was "
                                    "performed successfully.", submodule, vernum)
-
-            session.commit()
 
         if num_migops == 0:
             logger.info("%s schema version detected as %s. Table unlocked.",
