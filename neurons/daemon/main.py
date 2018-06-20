@@ -166,7 +166,9 @@ def _do_bootstrap(config, init, bootstrap, bootstrapper):
     assert callable(bootstrap), \
                       "'bootstrap' must be a callable. It's %r." % bootstrap
 
+    # perform bootstrap
     retval = bootstrap(config)
+
     if retval is None:
         return 0  # to force exit
     return retval
@@ -276,7 +278,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
         config.do_write_config()
         return 0
 
-    # Perform migrations
+    # Perform schema migrations
     from neurons.version import Version
     Version.migrate_all(config)
 
@@ -288,7 +290,8 @@ def _inner_main(config, init, bootstrap, bootstrapper):
 
 
 class BootStrapper(object):
-    """Creates all databases """
+    """Creates all databases"""
+
     def __init__(self, init):
         self.init = init
         self.meta_reflect = MetaData()
@@ -343,6 +346,10 @@ class BootStrapper(object):
 
         from neurons.model import TableModel
         TableModel.Attributes.sqla_metadata.bind = main_engine
+
+        # Init schema versions
+        from neurons.version import Version
+        Version.migrate_all(config)
 
         self.before_tables(config)
 
