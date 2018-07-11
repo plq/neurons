@@ -103,6 +103,8 @@ class Version(TableModel):
                                         "was initialized as %d successfully.",
                                                      submodule, current_version)
 
+                session.commit()
+
                 return
 
             keys = [vernum for vernum in migration_dict.keys()
