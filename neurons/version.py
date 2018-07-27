@@ -31,6 +31,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -97,7 +98,7 @@ class Version(TableModel):
                 if migrate_init is not None:
                     migrate_init(config, session)
                     logger.info("Submodule '%s' schema version management "
-                                "pre-init was executed successfully.", submodule)
+                               "pre-init was executed successfully.", submodule)
 
                 logger.info("Submodule '%s' schema version management "
                                         "was initialized as %d successfully.",
