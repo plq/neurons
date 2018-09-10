@@ -81,7 +81,7 @@ class Version(TableModel):
             logger.info("Locking table '%s' for schema version checks",
                                                                      table_name)
             session.connection().execute(
-                            "lock %s in access exclusive mode;" % (table_name,))
+                                   "lock %s in exclusive mode;" % (table_name,))
 
             # Create missing tables
             TableModel.Attributes.sqla_metadata.create_all(checkfirst=True)
