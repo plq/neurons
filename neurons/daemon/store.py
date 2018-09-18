@@ -257,6 +257,7 @@ class SqlDataStore(DataStoreBase):
             self.engine = None
 
         else:
+            # FIXME: parse the url properly! it's not that difficult!
             if what.startswith('sqlite://') or what.endswith(":memory:"):
                 from sqlalchemy.pool import StaticPool
 

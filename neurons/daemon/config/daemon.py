@@ -642,7 +642,7 @@ class ServiceDaemon(Daemon):
         ('log_orm', Boolean(help="Log SQLAlchemy operations.", default=False)),
         ('log_queries', Boolean(help="Log SQL queries.")),
         ('log_results', Boolean(help="Log SQL query results in addition to "
-                                     "queries.")),
+                                                                   "queries.")),
 
         ('drop_all_tables', Boolean(help="Drops all tables in the database.",
                                     no_file=True)),
