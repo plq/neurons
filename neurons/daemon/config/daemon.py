@@ -643,6 +643,9 @@ class ServiceDaemon(Daemon):
         ('log_queries', Boolean(help="Log SQL queries.")),
         ('log_results', Boolean(help="Log SQL query results in addition to "
                                                                    "queries.")),
+        ('log_dbconn', Boolean(default=False,
+            help=u"Prepend number of open database connections to all "
+                                                         u"logging messages.")),
 
         ('drop_all_tables', Boolean(help="Drops all tables in the database.",
                                     no_file=True)),
@@ -730,6 +733,15 @@ class ServiceDaemon(Daemon):
 
                 import neurons
                 neurons.TableModel.Attributes.sqla_metadata.bind = engine
+
+        if self.log_dbconn:
+            handler = logging.getLogger().handlers[0]
+            _mr = handler._modify_record
+            pool = self.get_main_store().engine.pool
+            def _modify_record(record):
+                _mr(record)
+                record.msg = "[%d]%s" % (pool.checkedout(), record.msg)
+            handler._modify_record = _modify_record
 
         return self
 
