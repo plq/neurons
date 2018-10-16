@@ -426,6 +426,14 @@ class HtmlFormWidget(HtmlBase):
         if cls_attrs.lt != Decimal.Attributes.lt:
             elt.attrib['max'] = str(cls_attrs.lt - epsilon)
 
+        if elt.attrib.get('min', None) is None \
+                                            and cls_attrs.min_bound is not None:
+            elt.attrib['min'] = str(cls_attrs.min_bound)
+
+        if elt.attrib.get('max', None) is None \
+                                            and cls_attrs.max_bound is not None:
+            elt.attrib['max'] = str(cls_attrs.max_bound)
+
     def _switch_to_prot_type(self, cls, inst):
         if self.type is not None and not (cls is self.type):
             cls = self.type
