@@ -57,7 +57,7 @@ test_reqs = common_reqs + ('pytest', 'pytest-cov', 'pytest-twisted',
 )
 
 install_reqs = common_reqs + (
-    'werkzeug',  'psycopg2>=2.5', 'txpostgres',
+    'werkzeug', 'psycopg2>=2.5', 'txpostgres',
 )
 
 ##################
