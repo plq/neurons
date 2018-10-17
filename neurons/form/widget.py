@@ -207,6 +207,13 @@ class HtmlFormWidget(HtmlBase):
 
         return retval
 
+    def _write_elt_with_label(self, ctx, cls, parent, name, elt):
+        label = self._gen_label_for(ctx, cls, name)
+        attrib = self._gen_label_wrapper_class(ctx, cls, name)
+        with parent.element('div', attrib=attrib):
+            parent.write(label)
+            parent.write(elt)
+
     def _gen_input_elt_id(self, name, array_index=None, **kwargs):
         if array_index is None:
             return "%s_input" % (self.selsafe(name),)
