@@ -31,7 +31,7 @@ SomeClass:
     -   Relational:
             async_pool: true
             backend: sqlalchemy
-            conn_str: postgres://postgres:@localhost:5432/somedaemon_plq
+            conn_str: postgresql://postgres:@localhost:5432/somedaemon_plq
             echo_pool: false
             max_overflow: 3
             name: sql_main
