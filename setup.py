@@ -46,7 +46,7 @@ except OSError:
     pass
 
 
-common_reqs = ('spyne>=2.12', 'SQLAlchemy<1.0.99', 'Twisted>=15.2',
+common_reqs = ('spyne>=2.12', 'SQLAlchemy', 'Twisted>=15.2',
     'lxml>=3.8.0', 'pyyaml', 'msgpack-python', 'pycrypto', 'slimit',
     'txpostgres',
 )
