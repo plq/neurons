@@ -209,7 +209,7 @@ class Daemon(ComplexModel):
             help=u"Prepend resident set size to all logging messages. "
                  u"Requires psutil")),
 
-        ('log_rpc', Boolean(default=False, help=u"Log protocol operations.")),
+        ('log_protocol', Boolean(default=False, help=u"Log protocol operations.")),
         ('log_model', Boolean(default=False, help=u"Log model operations.")),
         ('log_cloth', Boolean(default=False, help=u"Log cloth generation.")),
         ('log_interface', Boolean(default=False,
@@ -632,28 +632,31 @@ class ServiceDaemon(Daemon):
 
     _type_info = [
         ('write_wsdl', Unicode(
-            help="Write Wsdl document(s) to the given directory and exit. "
-                 "It is created if missing", no_file=True, metavar='WSDL_DIR')),
+            help=u"Write Wsdl document(s) to the given directory and exit. "
+                 u"It is created if missing", no_file=True, metavar='WSDL_DIR')),
 
         ('write_xsd', Unicode(
-            help="Write Xml Schema document(s) to given directory and exit. "
-                 "It is created if missing", no_file=True, metavar='XSD_DIR')),
+            help=u"Write Xml Schema document(s) to given directory and exit. "
+                 u"It is created if missing", no_file=True, metavar='XSD_DIR')),
 
-        ('log_orm', Boolean(help="Log SQLAlchemy operations.", default=False)),
-        ('log_queries', Boolean(help="Log SQL queries.")),
-        ('log_results', Boolean(help="Log SQL query results in addition to "
-                                                                   "queries.")),
+        ('log_orm', Boolean(default=False,
+                                       help=u"Log SQLAlchemy ORM operations.")),
+        ('log_queries', Boolean(default=False, help=u"Log SQL queries.")),
+        ('log_results', Boolean(default=False,
+                        help=u"Log SQL query results in addition to queries.")),
         ('log_dbconn', Boolean(default=False,
             help=u"Prepend number of open database connections to all "
                                                          u"logging messages.")),
+        ('log_sqlalchemy', Boolean(default=False,
+                               help=u"Log SQLAlchemy messages in debug level")),
 
         ('drop_all_tables', Boolean(help="Drops all tables in the database.",
-                                    no_file=True)),
+                                                                 no_file=True)),
 
-        ('main_store', Unicode(help="The name of the store for binding "
-                                    "neurons.TableModel's metadata to.")),
+        ('main_store', Unicode(help=u"The name of the store for binding "
+                                         u"neurons.TableModel's metadata to.")),
 
-        ('gen_data', Boolean(help="Generates random data", no_file=True)),
+        ('gen_data', Boolean(help=u"Generates random data", no_file=True)),
         ('_stores', Array(StorageInfo, sub_name='stores')),
     ]
 
@@ -765,8 +768,8 @@ class ServiceDaemon(Daemon):
                                                         LOGLEVEL_STR_MAP[level])
 
     def pre_logging_apply(self):
-        if self.log_rpc or self.log_queries or self.log_results or \
-                    self.log_model or self.log_interface or self.log_rpc or \
+        if self.log_protocol or self.log_queries or self.log_results or \
+                    self.log_model or self.log_interface or self.log_protocol or \
                                                                 self.log_cloth:
             logging.getLogger().setLevel(logging.DEBUG)
 
@@ -781,24 +784,23 @@ class ServiceDaemon(Daemon):
         else:
             self._set_log_level('spyne.interface', logging.INFO)
 
-        if self.log_rpc:
-            self._set_log_level('spyne.protocol', logging.DEBUG)
-            self._set_log_level('spyne.protocol.xml', logging.DEBUG)
-            self._set_log_level('spyne.protocol.dictdoc', logging.DEBUG)
-            self._set_log_level('spyne.protocol.cloth.to_parent', logging.DEBUG)
-            self._set_log_level('spyne.protocol.cloth.to_cloth.serializer',
-                                                                  logging.DEBUG)
-            self._set_log_level('neurons.form', logging.DEBUG)
-            self._set_log_level('neurons.polymer.protocol', logging.DEBUG)
+        rpc_loggers = (
+            'spyne.protocol',
+            'spyne.protocol.xml',
+            'spyne.protocol.dictdoc',
+            'spyne.protocol.cloth.to_parent',
+            'spyne.protocol.cloth.to_cloth.serializer',
+            'neurons.form',
+            'neurons.polymer.protocol',
+        )
+
+        if self.log_protocol:
+            for ns in rpc_loggers:
+                self._set_log_level(ns, logging.DEBUG)
+
         else:
-            self._set_log_level('spyne.protocol', logging.INFO)
-            self._set_log_level('spyne.protocol.xml', logging.INFO)
-            self._set_log_level('spyne.protocol.dictoc', logging.INFO)
-            self._set_log_level('spyne.protocol.cloth.to_parent', logging.INFO)
-            self._set_log_level('spyne.protocol.cloth.to_cloth.serializer',
-                                                                   logging.INFO)
-            self._set_log_level('neurons.form', logging.INFO)
-            self._set_log_level('neurons.polymer.protocol', logging.INFO)
+            for ns in rpc_loggers:
+                self._set_log_level(ns, logging.INFO)
 
         if self.log_cloth:
             self._set_log_level('spyne.protocol.cloth.to_cloth.cloth',
@@ -807,20 +809,19 @@ class ServiceDaemon(Daemon):
             self._set_log_level('spyne.protocol.cloth.to_cloth.cloth',
                                                                    logging.INFO)
 
-        if self.log_orm:
+        if self.log_sqlalchemy:
             self._set_log_level('sqlalchemy', logging.DEBUG)
 
         else:
+            if self.log_orm:
+                self._set_log_level('sqlalchemy.orm', logging.DEBUG)
+
             if self.log_queries or self.log_results:
+                if self.log_queries:
+                    self._set_log_level('sqlalchemy.engine', logging.INFO)
+
                 if self.log_results:
-                    self._set_log_level('sqlalchemy', logging.DEBUG)
-
-                elif self.log_queries:
-                    self._set_log_level('sqlalchemy', logging.INFO)
-
-            self._set_log_level('sqlalchemy.orm.mapper', logging.WARNING)
-            self._set_log_level('sqlalchemy.orm.relationships', logging.WARNING)
-            self._set_log_level('sqlalchemy.orm.strategies', logging.WARNING)
+                    self._set_log_level('sqlalchemy.engine', logging.DEBUG)
 
     def get_main_store(self):
         return self.stores[self.main_store].itself
