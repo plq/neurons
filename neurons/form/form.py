@@ -677,8 +677,8 @@ class HtmlForm(HtmlFormRoot):
             value = self.to_unicode(cls, inst)
             code.append(
                      "$('#%(field_name)s').timepicker('setDate', '%(value)s');")
-            script = self._format_js(code, field_name=elt.attrib['id'], value=value,
-                                                             format=data_format)
+            script = self._format_js(code, field_name=elt.attrib['id'],
+                                                value=value, format=data_format)
 
         div = self._wrap_with_label(ctx, cls, name, elt, **kwargs)
         div.append(script)
