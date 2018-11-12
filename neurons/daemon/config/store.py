@@ -110,6 +110,7 @@ class LdapStore(StorageInfo):
         else:
             raise ValueError(self.backend)
 
+
 class FileStore(StorageInfo):
     path = M(Unicode)
 

@@ -520,8 +520,7 @@ class Daemon(ComplexModel):
 
         for store in self._stores:
             engine = store.itself.engine
-            event.listen(engine,
-                                 "before_cursor_execute", before_cursor_execute)
+            event.listen(engine, "before_cursor_execute", before_cursor_execute)
 
             logger.info("Installed reactor warning hook for engine %s.", engine)
 
