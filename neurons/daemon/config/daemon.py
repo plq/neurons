@@ -519,6 +519,9 @@ class Daemon(ComplexModel):
                                    statement, ''.join(traceback.format_stack()))
 
         for store in self._stores:
+            if not isinstance(store, RelationalStore):
+                continue
+
             engine = store.itself.engine
             event.listen(engine, "before_cursor_execute", before_cursor_execute)
 
