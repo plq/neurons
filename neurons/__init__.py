@@ -36,7 +36,7 @@ __version__ = '0.7.1'
 REACTOR_THREAD = None
 REACTOR_THREAD_ID = None
 
-from neurons._base import _is_reactor_thread_raise as is_reactor_thread
+from neurons._base import _is_reactor_thread_none as is_reactor_thread
 
 from neurons.application import Application
 from neurons.model import TableModel
