@@ -60,9 +60,8 @@ from neurons.daemon.config import LOGLEVEL_STR_MAP
 from neurons.daemon.config._wdict import wdict, Twrdict
 from neurons.daemon.cli import spyne_to_argparse
 
-
 from neurons.daemon.config import FILE_VERSION_KEY
-from neurons.daemon.config.listener import Service
+from neurons.daemon.config.listener import Service, Listener
 from neurons.daemon.config.logutils import Logger, Trecord_as_string, \
     TDynamicallyRotatedLog, TTwistedHandler
 from neurons.daemon.config.store import RelationalStore, StorageInfo
@@ -142,8 +141,8 @@ class EmailAlert(AlertDestination):
 
 
 class Daemon(ComplexModel):
-    """This is a custom daemon with only pid files, forking, logging and initial
-    setuid/setgid operations.
+    """This is a custom daemon with only pid files, forking, logging.
+    No setuid/setgid support is implemented.
     """
 
     LOGGING_DEBUG_FORMAT = \
@@ -160,26 +159,31 @@ class Daemon(ComplexModel):
                                                       default=NEURONS_VERSION)),
         ('uuid', Uuid(
             no_cli=True,
-            help="Daemon uuid. Regenerated every time a new config file is "
-                 "written. It could come in handy.")),
+            help=u"Daemon uuid. Regenerated every time a new config file is "
+                 u"written. It could come in handy.")),
 
         ('secret', ByteArray(
             no_cli=True,
-            help="Secret key for signing cookies and other stuff.")),
+            help=u"Secret key for signing cookies and other stuff.")),
 
         ('daemonize', Boolean(
             default=False,
-            help="Daemonizes before everything else.")),
+            help=u"Daemonizes before everything else.")),
 
         ('workdir', Unicode(
             help=u"The daemon workdir. The daemon won't boot if this doesn't "
-                   "exist and can't be " u"created.")),
+                 u"exist and can't be " u"created.")),
         ('uid', Unicode(
             help=u"The daemon user. You need to start the server as a "
-                   "privileged user for this to work.")),
+                 u"privileged user for this to work.")),
         ('gid', Unicode(
             help=u"The daemon group. You need to start the server as a "
-                   "privileged user for this to work.")),
+                 u"privileged user for this to work.")),
+
+        ('gids', Array(Unicode,
+            help=u"Additional groups for the daemon. Use an empty to drop"
+                 u"all additional groups.")),
+
         ('limits', LimitsChoice.customize(help=u"Process limits.")),
 
         ('pid_file', String(
@@ -464,6 +468,26 @@ class Daemon(ComplexModel):
         self.apply_limits_impl(SOFT, self.limits.soft)
         self.apply_limits_impl(HARD, self.limits.hard)
 
+    def apply_listeners(self):
+        dl = []
+
+        for s in self._services:
+            if isinstance(s, Listener):
+                if not s.disabled:
+                    dl.append(s.listen())
+
+        return dl
+
+    def apply_uidgid(self):
+        if self.uid is not None:
+            os.setuid(self.uid)
+
+        if self.gid is not None:
+            os.setgid(self.gid)
+
+        if self.gids is not None:
+            os.setgroups(self.gids)
+
     def apply(self, daemonize=True):
         """Daemonizes the process if requested, then sets up logging and pid
         files.
@@ -472,7 +496,8 @@ class Daemon(ComplexModel):
         # Daemonization won't work if twisted is imported before fork().
         # It's best to know this in advance or you'll have to deal with daemons
         # that work perfectly well in development environments but won't boot
-        # in production ones, solely because of fork()ingw.
+        # in production ones, solely because daemonization involves closing of
+        # every previously open file descriptors.
         if daemonize and ('twisted' in sys.modules):
             import twisted
             raise Exception(
@@ -496,6 +521,8 @@ class Daemon(ComplexModel):
 
         self.apply_limits()
         self.apply_logging()
+        self.apply_listeners()
+        self.apply_uidgid()
 
         if daemonize and self.pid_file is not None:
             pid = os.getpid()
@@ -630,7 +657,7 @@ class Daemon(ComplexModel):
 
 
 class ServiceDaemon(Daemon):
-    """This daemon needs access to one or more data stores to work."""
+    """This is a daemon with data stores."""
 
     _type_info = [
         ('write_wsdl', Unicode(

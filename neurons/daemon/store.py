@@ -58,16 +58,17 @@ except ImportError as e:
 
 
 class DataStoreBase(object):
-    def __init__(self, type):
+    def __init__(self, name, type):
+        self.name = name
         self.type = type
 
 
 class LdapDataStore(DataStoreBase):
     SUPPORTED_BACKENDS = ('python-ldap', )  # TODO: add ldaptor for python3
 
-    def __init__(self, parent, type='python-ldap'):
+    def __init__(self, name, parent, type='python-ldap'):
         assert type in LdapDataStore.SUPPORTED_BACKENDS
-        DataStoreBase.__init__(self, type=type)
+        DataStoreBase.__init__(self, name, type)
 
         self.conn = None
         self.parent = parent
@@ -129,8 +130,9 @@ class LdapDataStore(DataStoreBase):
 
 # FIXME: get rid of the overly complicated property setters.
 class SqlDataStore(DataStoreBase):
-    def __init__(self, connection_string=None, engine=None, metadata=None, **kwargs):
-        DataStoreBase.__init__(self, type='sqlalchemy')
+    def __init__(self, name=None, connection_string=None,
+                                          engine=None, metadata=None, **kwargs):
+        DataStoreBase.__init__(self, name=name, type='sqlalchemy')
 
         if engine is not None:
             assert isinstance(engine, Engine)
@@ -269,7 +271,8 @@ class SqlDataStore(DataStoreBase):
                     del self.__kwargs['pool_size']
 
             self.engine = create_engine(what, **self.__kwargs)
-            logger.info("%r started with: %r", self.engine, self.kwargs)
+            logger.info("[%s] %r started with: %r", self.name,
+                                                       self.engine, self.kwargs)
 
 
 def get_data_store(type, *args, **kwargs):

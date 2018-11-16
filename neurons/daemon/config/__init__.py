@@ -44,6 +44,7 @@ class ServiceDisabled(Exception):
 from neurons.daemon.config._base import LOGLEVEL_MAP
 from neurons.daemon.config._base import LOGLEVEL_MAP_ABB
 from neurons.daemon.config._base import LOGLEVEL_STR_MAP
+from neurons.daemon.config._base import ServiceDefinition
 
 from neurons.daemon.config.listener import Service
 from neurons.daemon.config.listener import Listener

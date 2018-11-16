@@ -50,7 +50,7 @@ from spyne.store.relational.util import database_exists, create_database
 from sqlalchemy import MetaData
 
 from neurons.daemon.config import FileStore, ServiceDisabled, ServiceDaemon, \
-    RelationalStore, LdapStore
+    RelationalStore, LdapStore, Listener
 
 
 def get_package_version(pkg_name):
@@ -214,6 +214,23 @@ def _do_start_shell(config):
         return IPython.embed_kernel()
 
 
+def _cb_listen_ok(lp, subconfig, factory):
+    # lp = listening port -- what endpoint.listen()'s return value ends up as
+
+    if hasattr(lp.factory, 'wrappedFactory'):
+        import twisted.protocols.tls
+        assert isinstance(lp.factory, twisted.protocols.tls.TLSMemoryBIOFactory)
+        target_factory = lp.factory.wrappedFactory
+
+    else:
+        target_factory = lp.factory
+
+    assert isinstance(target_factory, Listener.FactoryProxy)
+    target_factory.real_factory = factory
+
+    logger.info("[%s] set factory ok", subconfig.name)
+
+
 def _inner_main(config, init, bootstrap, bootstrapper):
     # if requested, print version and exit
     if config.version:
@@ -249,7 +266,6 @@ def _inner_main(config, init, bootstrap, bootstrapper):
         items = items.items()
 
     # apply app-specific config
-    handles = config._handles = {}
     for k, v in items:
         disabled = False
         if k in config.services:
@@ -262,7 +278,27 @@ def _inner_main(config, init, bootstrap, bootstrapper):
         try:
             logger.info("Initializing service %s...", k)
 
-            handles[k] = v(config)
+            if v.force is not None:
+                oldconfig = config.services[k]
+                subconfig = config.services[k] = v.force
+                if oldconfig.d is not None:
+                    subconfig.d = oldconfig.d
+                if oldconfig.listener is not None:
+                    subconfig.listener = oldconfig.listener
+
+            else:
+                subconfig = config.services.getwrite(k, v.default)
+
+            factory = v.init(config)
+            if subconfig.d is not None:
+                if subconfig.listener is None:
+                    subconfig.d.addCallback(_cb_listen_ok, subconfig, factory)
+                else:
+                    _cb_listen_ok(subconfig.listener, subconfig, factory)
+            else:
+                subconfig.listen() \
+                    .addCallback(_cb_listen_ok, subconfig, factory)
+
         except ServiceDisabled:
             logger.info("Service '%s' is disabled.", k)
 
