@@ -47,13 +47,30 @@ from spyne.protocol.http import HttpRpc
 class DowserListener(HttpListener):
     tick_period_sec = Double(default=60)
 
+    @property
+    def host(self):
+        from neurons.daemon.ipc import get_own_dowser_address
+        host, port = get_own_dowser_address()
+        return host
+
+    @host.setter
+    def host(self, _):
+        pass
+
+    @property
+    def port(self):
+        from neurons.daemon.ipc import get_own_dowser_address
+        host, port = get_own_dowser_address()
+        return port
+
+    @port.setter
+    def port(self, _):
+        pass
+
 
 def start_dowser(config):
     from twisted.internet.task import LoopingCall
     from twisted.internet.threads import deferToThread
-    from neurons.daemon.ipc import get_own_dowser_address
-
-    host, port = get_own_dowser_address()
 
     subconfig = config.services['dowser']
 
