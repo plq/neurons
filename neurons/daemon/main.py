@@ -228,7 +228,7 @@ def _cb_listen_ok(lp, subconfig, factory):
     assert isinstance(target_factory, Listener.FactoryProxy)
     target_factory.real_factory = factory
 
-    logger.info("[%s] set factory ok", subconfig.name)
+    logger.info("[%s] Set factory ok", subconfig.name)
 
 
 def _inner_main(config, init, bootstrap, bootstrapper):
@@ -276,8 +276,6 @@ def _inner_main(config, init, bootstrap, bootstrapper):
             continue
 
         try:
-            logger.info("Initializing service %s...", k)
-
             if v.force is not None:
                 oldconfig = config.services[k]
                 subconfig = config.services[k] = v.force
@@ -285,8 +283,16 @@ def _inner_main(config, init, bootstrap, bootstrapper):
                     subconfig.d = oldconfig.d
                 if oldconfig.listener is not None:
                     subconfig.listener = oldconfig.listener
+                logger.info("[%s] Configuration initialized from "
+                                                        "hard-coded object.", k)
 
             else:
+                if k in config.services:
+                    logger.info("[%s] Configuration initialized from file.", k)
+                else:
+                    logger.info("[%s] Configuration initialized from "
+                                                                  "default.", k)
+
                 subconfig = config.services.getwrite(k, v.default)
 
             factory = v.init(config)
