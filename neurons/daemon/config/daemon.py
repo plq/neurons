@@ -45,6 +45,8 @@ from os import access
 from uuid import uuid1
 from os.path import isfile, abspath, dirname, getsize
 from argparse import Action
+from pwd import getpwnam, getpwuid
+from grp import getgrnam
 
 from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
     Array, String, Double, UnsignedInteger16, M, Integer32
@@ -478,14 +480,34 @@ class Daemon(ComplexModel):
         return dl
 
     def apply_uidgid(self):
-        if self.uid is not None:
-            os.setuid(self.uid)
-
         if self.gid is not None:
-            os.setgid(self.gid)
+            gid = self.gid
+            if not isinstance(gid, int):
+                gid = getgrnam(self.gid).gr_gid
+
+            os.setgid(gid)
+            os.setegid(gid)
+            os.setgroups([])
 
         if self.gids is not None:
-            os.setgroups(self.gids)
+            os.setgroups([])
+            os.setgroups([gid if isinstance(gid, int)
+                                else getgrnam(gid).gr_gid for gid in self.gids])
+
+        if self.uid is not None:
+            uid = self.uid
+            if isinstance(uid, int):
+                pw = getpwuid(uid)
+            else:
+                pw = getpwnam(uid)
+
+            if self.gid is None:
+                os.setgid(pw.pw_gid)
+                if self.gids is None:
+                    os.setgroups([])
+
+            os.setuid(pw.pw_uid)
+            os.seteuid(pw.pw_uid)
 
     def apply(self, daemonize=True):
         """Daemonizes the process if requested, then sets up logging and pid
