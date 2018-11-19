@@ -47,7 +47,7 @@ from os.path import isfile, abspath, dirname, getsize
 from argparse import Action
 
 from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
-    Array, String, Double, UnsignedInteger16, M
+    Array, String, Double, UnsignedInteger16, M, Integer32
 from spyne.protocol import ProtocolBase
 from spyne.protocol.yaml import YamlDocument
 from spyne.util.color import B
@@ -154,7 +154,7 @@ class Daemon(ComplexModel):
         ('name', Unicode(no_cli=True, help="Daemon Name")),
         ('help', Boolean(no_config=True, short='h',
                                        help="Show this help message and exit")),
-        ('file_version', Unicode(no_cli=True, sub_name=FILE_VERSION_KEY,
+        ('file_version', Integer32(no_cli=True, sub_name=FILE_VERSION_KEY,
                                                   default=CONFIG_FILE_VERSION)),
         ('uuid', Uuid(
             no_cli=True,
