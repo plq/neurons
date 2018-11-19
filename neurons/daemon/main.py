@@ -277,12 +277,18 @@ def _inner_main(config, init, bootstrap, bootstrapper):
 
         try:
             if v.force is not None:
-                oldconfig = config.services[k]
-                subconfig = config.services[k] = v.force
-                if oldconfig.d is not None:
-                    subconfig.d = oldconfig.d
-                if oldconfig.listener is not None:
-                    subconfig.listener = oldconfig.listener
+                if k in config.services:
+                    oldconfig = config.services[k]
+                    subconfig = config.services[k] = v.force
+                    if oldconfig.d is not None:
+                        subconfig.d = oldconfig.d
+
+                    if oldconfig.listener is not None:
+                        subconfig.listener = oldconfig.listener
+
+                else:
+                    subconfig = config.services[k] = v.force
+
                 logger.info("[%s] Configuration initialized from "
                                                         "hard-coded object.", k)
 
