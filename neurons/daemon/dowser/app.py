@@ -73,6 +73,8 @@ def start_dowser(config):
     from twisted.internet.threads import deferToThread
 
     subconfig = config.services['dowser']
+    if subconfig.subapps is None:
+        subconfig.subapps = {}
 
     subconfig.subapps[''] = \
         Application(
