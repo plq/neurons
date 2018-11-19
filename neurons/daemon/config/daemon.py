@@ -631,12 +631,6 @@ class Daemon(ComplexModel):
                 config_root['stores'][0]['RelationalStore'] = z
 
         else:
-            config_version = [int(ver_tuple)
-                                     for ver_tuple in config_version.split(".")]
-            while len(config_version) < 3:
-                config_version.append(0)
-            config_version = tuple(config_version)
-
             self.migrate(config_dict, config_version)
 
         config_root[FILE_VERSION_KEY] = CONFIG_FILE_VERSION
