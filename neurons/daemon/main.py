@@ -305,8 +305,10 @@ def _inner_main(config, init, bootstrap, bootstrapper):
             if subconfig.d is not None:
                 if subconfig.listener is None:
                     subconfig.d.addCallback(_cb_listen_ok, subconfig, factory)
+
                 else:
                     _cb_listen_ok(subconfig.listener, subconfig, factory)
+
             else:
                 subconfig.listen() \
                     .addCallback(_cb_listen_ok, subconfig, factory)
