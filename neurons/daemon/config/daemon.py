@@ -53,8 +53,7 @@ from spyne.protocol.yaml import YamlDocument
 from spyne.util.color import B
 from spyne.util.dictdoc import yaml_loads, get_object_as_yaml
 
-from neurons import __version__ as NEURONS_VERSION
-from neurons import is_reactor_thread
+from neurons import is_reactor_thread, CONFIG_FILE_VERSION
 from neurons.daemon.daemonize import daemonize_do
 from neurons.daemon.config import LOGLEVEL_STR_MAP
 from neurons.daemon.config._wdict import wdict, Twrdict
@@ -156,7 +155,7 @@ class Daemon(ComplexModel):
         ('help', Boolean(no_config=True, short='h',
                                        help="Show this help message and exit")),
         ('file_version', Unicode(no_cli=True, sub_name=FILE_VERSION_KEY,
-                                                      default=NEURONS_VERSION)),
+                                                  default=CONFIG_FILE_VERSION)),
         ('uuid', Uuid(
             no_cli=True,
             help=u"Daemon uuid. Regenerated every time a new config file is "
@@ -640,7 +639,7 @@ class Daemon(ComplexModel):
 
             self.migrate(config_dict, config_version)
 
-        config_root[FILE_VERSION_KEY] = NEURONS_VERSION
+        config_root[FILE_VERSION_KEY] = CONFIG_FILE_VERSION
         return yaml.dump(config_dict, indent=4, default_flow_style=False)
 
     def migrate(self, config_dict, config_version):

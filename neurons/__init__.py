@@ -33,6 +33,8 @@
 
 __version__ = '0.7.1'
 
+CONFIG_FILE_VERSION = 1
+
 REACTOR_THREAD = None
 REACTOR_THREAD_ID = None
 
