@@ -553,10 +553,12 @@ class Daemon(ComplexModel):
                 os.chdir(self.workdir)
                 logger.debug("Change working directory to: %s", self.workdir)
 
-        self.apply_limits()
         self.apply_logging()
-        self.apply_listeners()
-        self.apply_uidgid()
+        self.apply_limits()
+
+        if not daemonize:
+            self.apply_listeners()
+            self.apply_uidgid()
 
         if daemonize and self.pid_file is not None:
             pid = os.getpid()
