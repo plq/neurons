@@ -596,7 +596,6 @@ class Daemon(ComplexModel):
 
     @classmethod
     def parse_config(cls, daemon_name, argv=None):
-        retval = cls.get_default(daemon_name)
         cls._apply_custom_attributes()
         file_name = abspath('%s.yaml' % daemon_name)
 
@@ -611,19 +610,30 @@ class Daemon(ComplexModel):
         exists = isfile(file_name) and os.access(file_name, os.R_OK)
         if exists and getsize(file_name) > 0:
             s = open(file_name, 'rb').read()
-            s = retval._migrate_impl(s)
-            retval = yaml_loads(s, cls, validator='soft', polymorphic=True)
 
         else:
             if not access(dirname(file_name), os.R_OK | os.W_OK):
                 raise Exception("File %r can't be created in %r" %
                                                 (file_name, dirname(file_name)))
+            s = b""
+
+        retval = cls.parse_config_string(s, daemon_name, cli)
+        retval.config_file = file_name
+        return retval
+
+    @classmethod
+    def parse_config_string(cls, s, daemon_name, cli=None):
+        if cli is None:
+            cli = {}
+
+        retval = cls.get_default(daemon_name)
+        if len(s) > 0:
+            s = retval._migrate_impl(s)
+            retval = yaml_loads(s, cls, validator='soft', polymorphic=True)
 
         for k, v in cli.items():
             if not v in (None, False):
                 setattr(retval, k, v)
-
-        retval.config_file = file_name
 
         import neurons.daemon
         neurons.daemon.config_data = retval
