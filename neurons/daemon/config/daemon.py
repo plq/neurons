@@ -45,6 +45,7 @@ from os import access
 from uuid import uuid1
 from os.path import isfile, abspath, dirname, getsize
 from argparse import Action
+from collections import namedtuple
 from pwd import getpwnam, getpwuid
 from grp import getgrnam
 
@@ -56,10 +57,12 @@ from spyne.util.color import B
 from spyne.util.dictdoc import yaml_loads, get_object_as_yaml
 
 from neurons import is_reactor_thread, CONFIG_FILE_VERSION
+from neurons.daemon.cli import spyne_to_argparse
 from neurons.daemon.daemonize import daemonize_do
+
 from neurons.daemon.config import LOGLEVEL_STR_MAP
 from neurons.daemon.config._wdict import wdict, Twrdict
-from neurons.daemon.cli import spyne_to_argparse
+from neurons.daemon.config.limits import LimitsChoice
 
 from neurons.daemon.config import FILE_VERSION_KEY
 from neurons.daemon.config.listener import Service, Listener
@@ -102,18 +105,6 @@ class _SetStaticPathAction(Action):
     def __call__(self, parser, namespace, values, option_string=None):
         self.const.path = abspath(values[0])
 
-
-class Limits(ComplexModel):
-    _type_info = [
-        ('max_mem_mb', Double(rlimit=resource.RLIMIT_AS)),
-    ]
-
-
-class LimitsChoice(ComplexModel):
-    _type_info = [
-        ('soft', Limits),
-        ('hard', Limits),
-    ]
 
 class AlertDestination(ComplexModel):
     type = Unicode(default='email', values=['email'])
@@ -176,7 +167,8 @@ class Daemon(ComplexModel):
             help=u"Additional groups for the daemon. Use an empty to drop"
                  u"all additional groups.")),
 
-        ('limits', LimitsChoice.customize(help=u"Process limits.")),
+        ('limits', LimitsChoice.customize(not_wrapped=True,
+            help=u"Process limits.")),
 
         ('pid_file', String(
             help=u"The path to a text file that contains the pid of the "
@@ -425,43 +417,14 @@ class Daemon(ComplexModel):
         self.boot_message()
 
     def pre_limits_apply(self):
-        pass
-
-    @classmethod
-    def apply_limits_impl(cls, limtype, limits):
-        if limits is None:
-            return
-
-        if limits.max_mem_mb is not None:
-            curr_rlimit = Limits._type_info['max_mem_mb'].Attributes.rlimit
-
-            oldlim = resource.getrlimit(curr_rlimit)
-
-            newlim = list(oldlim)
-            newlim[limtype] = int(limits.max_mem_mb * 1024 ** 2)
-            newlim = tuple(newlim)
-
-            resource.setrlimit(curr_rlimit, newlim)
-            logger.debug("RLIMIT_AS: was: %r now: %r", oldlim, newlim)
+        """Override this function in case a resource-intensive task needs to be
+        done prior to daemon boot. This is generally a bad idea but hey, who are
+        we to tell you what to do?.. :)"""
 
     def apply_limits(self):
-        # In case a resource-intensive task needs to be done prior to daemon
-        # boot. It's a bad idea but hey, who are we to tell you what to do?..
-        self.pre_limits_apply()
-
-        if self.limits is None:
-            return
-
-        if self.limits.soft is None and self.limits.hard is None:
-            return
-
-        # Remember:
-        #     soft, hard = resource.getrlimit(whatever)
-        SOFT = 0
-        HARD = 1
-
-        self.apply_limits_impl(SOFT, self.limits.soft)
-        self.apply_limits_impl(HARD, self.limits.hard)
+        if self.limits is not None:
+            self.pre_limits_apply()
+            self.limits.apply()
 
     def apply_listeners(self):
         dl = []
@@ -523,23 +486,19 @@ class Daemon(ComplexModel):
             os.setuid(pw.pw_uid)
             os.seteuid(pw.pw_uid)
 
-    def apply(self, daemonize=True):
-        """Daemonizes the process if requested, then sets up logging and pid
-        files.
-        """
-
+    def apply_daemonize(self):
         # Daemonization won't work if twisted is imported before fork().
         # It's best to know this in advance or you'll have to deal with daemons
         # that work perfectly well in development environments but won't boot
         # in production ones, solely because daemonization involves closing of
         # previously open file descriptors.
-        if daemonize and ('twisted' in sys.modules):
+        if ('twisted' in sys.modules):
             import twisted
             raise Exception(
                  "Twisted is already imported from {}".format(twisted.__file__))
 
         self.sanitize()
-        if daemonize and self.daemonize:
+        if self.daemonize:
             assert self.logger_dest, "Refusing to start without any log " \
                             "output. Please set logger_dest in the config file."
 
@@ -555,18 +514,28 @@ class Daemon(ComplexModel):
                 os.chdir(self.workdir)
                 logger.debug("Change working directory to: %s", self.workdir)
 
-        self.apply_logging()
-        self.apply_limits()
 
-        if daemonize:
-            self.apply_listeners()
-            self.apply_uidgid()
-
-        if daemonize and self.pid_file is not None:
+    def apply_pid_file(self):
+        if self.pid_file is not None:
             pid = os.getpid()
             with open(self.pid_file, 'w') as f:
                 f.write(str(pid))
                 logger.debug("Pid file is at: %r", self.pid_file)
+
+    def apply(self, daemonize=True):
+        """Daemonizes the process if requested, then sets up logging and pid
+        files.
+        """
+        if daemonize:
+            self.apply_daemonize()
+            self.apply_pid_file()
+
+        self.apply_logging()
+
+        if daemonize:
+            self.apply_limits()
+            self.apply_listeners()
+            self.apply_uidgid()
 
         return self
 

@@ -43,6 +43,7 @@ from os.path import abspath
 
 from spyne import ComplexModel, Boolean, Unicode, \
     UnsignedInteger16, M, Decimal, UnsignedInteger
+from spyne.util import get_version
 
 from neurons.daemon.store import SqlDataStore, LdapDataStore
 
@@ -127,6 +128,7 @@ class RelationalStore(StorageInfo):
     pool_size = UnsignedInteger(default=10)
     pool_recycle = UnsignedInteger(default=3600)
     pool_timeout = UnsignedInteger(default=30)
+    pool_use_lifo = Boolean(default=False)
     max_overflow = UnsignedInteger(default=3)
     echo_pool = Boolean(default=False)
 
@@ -146,8 +148,18 @@ class RelationalStore(StorageInfo):
         self.itself = None
 
     def apply(self):
-        self.itself = SqlDataStore(self.name, self.conn_str,
-                             pool_size=self.pool_size, echo_pool=self.echo_pool)
+        kwargs = dict(
+            pool_size=self.pool_size,
+            echo_pool=self.echo_pool,
+            pool_timeout=self.pool_timeout,
+            pool_recycle=self.pool_recycle,
+            max_overflow=self.max_overflow,
+        )
+
+        if get_version('sqlalchemy')[0:2] > (1, 2):
+            kwargs['pool_use_lifo'] = self.pool_use_lifo
+
+        self.itself = SqlDataStore(self.name, self.conn_str, **kwargs)
 
         if not (self.async_pool or self.sync_pool):
             logger.debug("Store '%s' is disabled.", self.name)
