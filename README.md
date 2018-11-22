@@ -18,12 +18,12 @@ First, create a virtualenv:
 If you want to work on Spyne's development version, clone and install spyne
 before neurons' setup script:
 
-    git clone git://github.com/plq/spyne
+    git clone git://github.com/arskom/spyne
     (cd spyne; python setup.py develop)
 
 Now clone and install neurons:
 
-    git clone git://github.com/plq/neurons
+    git clone git://github.com/arskom/neurons
     (cd neurons; python setup.py develop)
 
 Install additional useful packages:
