@@ -50,7 +50,7 @@ from spyne.store.relational.util import database_exists, create_database
 from sqlalchemy import MetaData
 
 from neurons.daemon.config import FileStore, ServiceDisabled, ServiceDaemon, \
-    RelationalStore, LdapStore
+    RelationalStore, LdapStore, Listener
 
 
 def get_package_version(pkg_name):
@@ -86,7 +86,7 @@ def _print_version(config):
     print(" * SQLAlchemy-%s" % get_package_version('SQLAlchemy'))
     print()
 
-    return True  # to force exit
+    return 0  # to force exit
 
 
 def _write_wsdl(config):
@@ -120,7 +120,7 @@ def _write_wsdl(config):
 
         print(file_name, "written.")
 
-    return True  # to force exit
+    return 0  # to force exit
 
 
 def _write_xsd(config):
@@ -154,7 +154,7 @@ def _write_xsd(config):
 
             print("written",file_name, "for ns", appdata.app.interface.nsmap[k])
 
-    return True  # to force exit
+    return 0  # to force exit
 
 
 def _do_bootstrap(config, init, bootstrap, bootstrapper):
@@ -166,9 +166,11 @@ def _do_bootstrap(config, init, bootstrap, bootstrapper):
     assert callable(bootstrap), \
                       "'bootstrap' must be a callable. It's %r." % bootstrap
 
+    # perform bootstrap
     retval = bootstrap(config)
+
     if retval is None:
-        return True  # we must return *something* to force exit
+        return 0  # to force exit
     return retval
 
 
@@ -182,7 +184,7 @@ def _do_drop_all_tables(config, init):
 
     meta.drop_all()
 
-    return True
+    return 0
 
 
 def _do_start_shell(config):
@@ -212,6 +214,23 @@ def _do_start_shell(config):
         return IPython.embed_kernel()
 
 
+def _cb_listen_ok(lp, subconfig, factory):
+    # lp = listening port -- what endpoint.listen()'s return value ends up as
+
+    if hasattr(lp.factory, 'wrappedFactory'):
+        import twisted.protocols.tls
+        assert isinstance(lp.factory, twisted.protocols.tls.TLSMemoryBIOFactory)
+        target_factory = lp.factory.wrappedFactory
+
+    else:
+        target_factory = lp.factory
+
+    assert isinstance(target_factory, Listener.FactoryProxy)
+    target_factory.real_factory = factory
+
+    logger.info("[%s] Set factory ok", subconfig.name)
+
+
 def _inner_main(config, init, bootstrap, bootstrapper):
     # if requested, print version and exit
     if config.version:
@@ -239,7 +258,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
 
         from neurons import TableModel
         TableModel.Attributes.sqla_metadata.bind = \
-                                  config.get_main_store().engine
+                                                  config.get_main_store().engine
 
     # initialize applications
     items = init(config)
@@ -247,7 +266,6 @@ def _inner_main(config, init, bootstrap, bootstrapper):
         items = items.items()
 
     # apply app-specific config
-    handles = config._handles = {}
     for k, v in items:
         disabled = False
         if k in config.services:
@@ -258,9 +276,43 @@ def _inner_main(config, init, bootstrap, bootstrapper):
             continue
 
         try:
-            logger.info("Initializing service %s...", k)
+            if v.force is not None:
+                if k in config.services:
+                    oldconfig = config.services[k]
+                    subconfig = config.services[k] = v.force
+                    if oldconfig.d is not None:
+                        subconfig.d = oldconfig.d
 
-            handles[k] = v(config)
+                    if oldconfig.listener is not None:
+                        subconfig.listener = oldconfig.listener
+
+                else:
+                    subconfig = config.services[k] = v.force
+
+                logger.info("[%s] Configuration initialized from "
+                                                        "hard-coded object.", k)
+
+            else:
+                if k in config.services:
+                    logger.info("[%s] Configuration initialized from file.", k)
+                else:
+                    logger.info("[%s] Configuration initialized from "
+                                                                  "default.", k)
+
+                subconfig = config.services.getwrite(k, v.default)
+
+            factory = v.init(config)
+            if subconfig.d is not None:
+                if subconfig.listener is None:
+                    subconfig.d.addCallback(_cb_listen_ok, subconfig, factory)
+
+                else:
+                    _cb_listen_ok(subconfig.listener, subconfig, factory)
+
+            else:
+                subconfig.listen() \
+                    .addCallback(_cb_listen_ok, subconfig, factory)
+
         except ServiceDisabled:
             logger.info("Service '%s' is disabled.", k)
 
@@ -274,22 +326,22 @@ def _inner_main(config, init, bootstrap, bootstrapper):
 
     if config.write_config:
         config.do_write_config()
-        return True
+        return 0
 
-    # Perform migrations
-    import neurons.version
-    for version in neurons.version.entries:
-        version.migrate(config)
+    # Perform schema migrations
+    from neurons.version import Version
+    Version.migrate_all(config)
 
     # if requested, drop to shell
     if config.shell or config.ikernel:
-        retval = _do_start_shell(config)
-        if retval is None:
-            return True
+        ret = _do_start_shell(config)
+        if ret is None:
+            return 0
 
 
 class BootStrapper(object):
-    """Creates all databases """
+    """Creates all databases"""
+
     def __init__(self, init):
         self.init = init
         self.meta_reflect = MetaData()
@@ -344,6 +396,10 @@ class BootStrapper(object):
 
         from neurons.model import TableModel
         TableModel.Attributes.sqla_metadata.bind = main_engine
+
+        # Init schema versions
+        from neurons.version import Version
+        Version.migrate_all(config)
 
         self.before_tables(config)
 

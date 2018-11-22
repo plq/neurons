@@ -88,6 +88,12 @@ class PolymerWidgetBase(HtmlCloth):
         if cls_attrs.lt != Decimal.Attributes.lt:
             elt_inst.max = cls_attrs.lt - epsilon
 
+        if elt_inst.min is None and cls_attrs.min_bound is not None:
+            elt_inst.min = str(cls_attrs.min_bound)
+
+        if elt_inst.max is None and cls_attrs.max_bound is not None:
+            elt_inst.max = str(cls_attrs.max_bound)
+
     def _write_elt_inst(self, ctx, elt_inst, parent):
         elt_cls = elt_inst.__class__
         XmlCloth().to_parent(ctx, elt_cls, elt_inst, parent,

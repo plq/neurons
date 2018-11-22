@@ -4,7 +4,7 @@ import unittest
 import yaml
 
 from neurons.daemon import ServiceDaemon
-from neurons.daemon.config import NEURONS_VERSION
+from neurons import __version__ as NEURONS_VERSION
 
 TEST_CONFIG = """
 SomeClass:
@@ -18,6 +18,7 @@ SomeClass:
     secret: c29tZSBzZWNyZXQ=
     services:
     -   HttpListener:
+            type: tcp4
             host: 0.0.0.0
             name: someservice
             port: 7001
@@ -31,7 +32,7 @@ SomeClass:
     -   Relational:
             async_pool: true
             backend: sqlalchemy
-            conn_str: postgres://postgres:@localhost:5432/somedaemon_plq
+            conn_str: postgresql://postgres:@localhost:5432/somedaemon_plq
             echo_pool: false
             max_overflow: 3
             name: sql_main
@@ -55,6 +56,17 @@ class TestConfig(unittest.TestCase):
         assert 'RelationalStore' in store
         assert len(retd) == 1
         assert retd[key]['file-version'] == NEURONS_VERSION
+
+    def test_uidgid(self):
+        config = ServiceDaemon.parse_config_string(TEST_CONFIG, "test")
+        assert config.get_gid() == -1
+        assert config.get_uid() == -1
+
+        config.gid = "root"
+        assert config.get_gid() == 0
+
+        config.uid = "root"
+        assert config.get_uid() == 0
 
 
 if __name__ == '__main__':

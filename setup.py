@@ -35,7 +35,8 @@ EXAMPLES_DIR = join(dirname(OWN_PATH), 'examples')
 v = open(os.path.join(os.path.dirname(__file__), 'neurons', '__init__.py'), 'r')
 VERSION = re.match(r".*__version__ = '(.*?)'", v.read(), re.S).group(1)
 
-SHORT_DESC = """Neurons is a web framework tying together Spyne, Twisted and SQLAlchemy."""
+SHORT_DESC = \
+    "Neurons is a web framework tying together Spyne, Twisted and SQLAlchemy."
 LONG_DESC = SHORT_DESC
 
 try:
@@ -45,7 +46,7 @@ except OSError:
     pass
 
 
-common_reqs = ('spyne>=2.12', 'SQLAlchemy<1.0.99', 'Twisted>=15.2',
+common_reqs = ('spyne>=2.12', 'SQLAlchemy', 'Twisted>=15.2',
     'lxml>=3.8.0', 'pyyaml', 'msgpack-python', 'pycrypto', 'slimit',
     'txpostgres',
 )
@@ -56,7 +57,7 @@ test_reqs = common_reqs + ('pytest', 'pytest-cov', 'pytest-twisted',
 )
 
 install_reqs = common_reqs + (
-    'werkzeug',  'psycopg2>=2.5', 'txpostgres',
+    'werkzeug', 'psycopg2>=2.5', 'txpostgres',
 )
 
 ##################

@@ -34,15 +34,13 @@
 import logging
 logger = logging.getLogger(__name__)
 
-from spyne import M, Integer32, Integer64, Integer, ByteArray, Unicode, DateTime, \
-    Boolean, IpAddress, AnyXml, AnyDict, ComplexModel, Uuid
+from spyne import M, Integer32, Integer64, Integer, ByteArray, Unicode, \
+    DateTime, Boolean, IpAddress, AnyXml, AnyDict, ComplexModel, Uuid
 
 from neurons import TableModel
-from neurons.version import TVersion
+from neurons.version import Version
 
 from sqlalchemy import sql
-
-SCHEMA_VERSION = 1
 
 
 class LogEntryMixin(ComplexModel):
@@ -51,6 +49,8 @@ class LogEntryMixin(ComplexModel):
 
     _type_info = [
         ('id', Integer64(primary_key=True)),
+        ('id_session', Uuid),
+        ('id_message', Uuid),
 
         ('time', M(DateTime(timezone=False, server_default=sql.func.now()))),
         ('domain', Unicode(255)),
@@ -88,10 +88,17 @@ def migrate_2(config, session):
     """)
 
 
+migdict = {
+    2: migrate_2,
+}
+
+
+DB_SCHEMA_VERSION = max(migdict.keys())
+
+
 def TLogEntry(table_model=TableModel):
     # Register version table for migration
-    TVersion("neurons_log", {}, SCHEMA_VERSION)
-    # TVersion("neurons_log", {2: migrate_2}, SCHEMA_VERSION)
+    Version.register_submodule("neurons_log", migdict, DB_SCHEMA_VERSION)
 
     class LogEntry(table_model, LogEntryMixin):
         __namespace__ = 'http://spyne.io/neurons/log'

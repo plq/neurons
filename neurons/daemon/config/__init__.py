@@ -32,7 +32,7 @@
 #
 
 
-FILE_VERSION_KEY = 'file-version'
+FILE_VERSION_KEY = 'file_version'
 STATIC_DESC_ROOT = "Directory that contains static files for the root url."
 STATIC_DESC_URL = "Directory that contains static files for the url '%s'."
 
@@ -44,6 +44,7 @@ class ServiceDisabled(Exception):
 from neurons.daemon.config._base import LOGLEVEL_MAP
 from neurons.daemon.config._base import LOGLEVEL_MAP_ABB
 from neurons.daemon.config._base import LOGLEVEL_STR_MAP
+from neurons.daemon.config._base import ServiceDefinition
 
 from neurons.daemon.config.listener import Service
 from neurons.daemon.config.listener import Listener

@@ -31,100 +31,107 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+
 import logging
-
-from sqlalchemy import DDL
-from sqlalchemy import event
-
 logger = logging.getLogger(__name__)
 
 from contextlib import closing
+from collections import namedtuple
 
-from spyne import Integer32, M
+from spyne import Integer32, M, Unicode
 from neurons import TableModel
 
-entries = []
+
+MigrationOperation = namedtuple("MigrationOperation",
+                        "submodule migration_dict current_version migrate_init")
 
 
-def TVersion(prefix, migration_dict, current_version, migrate_init=None):
-    table_name = '%s_version' % prefix
+class Version(TableModel):
+    migopts = []
 
-    class Version(TableModel):
-        __tablename__ = table_name
-        _type_info = [
-            ('id', Integer32(pk=True)),
-            ('version', M(Integer32)),
-        ]
+    __tablename__ = "neurons_version"
+    _type_info = [
+        ('id', Integer32(pk=True)),
+        ('submodule', M(Unicode, unique=True)),
+        ('version', M(Integer32)),
+    ]
 
-        @staticmethod
-        def migrate(config):
-            num_migops = 0
-            Version.Attributes.sqla_table.create(checkfirst=True)
+    @classmethod
+    def register_submodule(cls, submodule, migration_dict, current_version,
+                                                             migrate_init=None):
+        cls.migopts.append(
+            MigrationOperation(submodule, migration_dict, current_version,
+                                                                   migrate_init)
+        )
 
-            db = config.get_main_store()
-            with closing(db.Session()) as session:
-                logger.info("Locking table '%s' for schema version checks",
+    @staticmethod
+    def migrate_all(config):
+        for migopt in Version.migopts:
+            Version.migrate(config, *migopt)
+
+    @staticmethod
+    def migrate(config, submodule, migration_dict, current_version,
+                                                                  migrate_init):
+        num_migops = 0
+        table_name = Version.Attributes.table_name
+        Version.Attributes.sqla_table.create(checkfirst=True)
+
+        db = config.get_main_store()
+        with closing(db.Session()) as session:
+            logger.info("Locking table '%s' for schema version checks",
                                                                      table_name)
-                session.connection().execute(
-                            "lock %s in access exclusive mode;" % (table_name,))
+            session.connection().execute(
+                                   "lock %s in exclusive mode;" % (table_name,))
 
-                # Create missing tables
-                TableModel.Attributes.sqla_metadata.create_all(checkfirst=True)
-                versions = session.query(Version).all()
+            # Create missing tables
+            TableModel.Attributes.sqla_metadata.create_all(checkfirst=True)
 
-                if len(versions) == 0:
-                    session.add(Version(version=current_version))
+            db_version = session.query(Version) \
+                                         .filter_by(submodule=submodule).first()
 
-                    if migrate_init is not None:
-                        num_migops += 1
-                        migrate_init(config, session)
-                        logger.info("Performed before-init operations")
+            if db_version is None:
+                version_entry = \
+                           Version(submodule=submodule, version=current_version)
 
-                    num_migops = -1
-                    logger.info("%s schema version management initialized. "
-                                 "Current version: %d", prefix, current_version)
+                session.add(version_entry)
 
-                elif len(versions) > 1:
-                    session.query(Version).delete()
+                if migrate_init is not None:
+                    migrate_init(config, session)
+                    logger.info("Submodule '%s' schema version management "
+                               "pre-init was executed successfully.", submodule)
 
-                    session.add(Version(version=current_version))
-
-                    logger.warning("Multiple rows %r found in schema version "
-                                   "for %s. Resetting schema version to %d",
-                                              versions, prefix, current_version)
-
-                else:
-                    db_version = versions[0]
-
-                    for vernum, migrate in migration_dict.items():
-                        if db_version.version < vernum <= current_version:
-                            db_version.version = vernum
-
-                            migrate(config, session)
-
-                            session.commit()
-
-                            num_migops += 1
-                            logger.info("%s schema migration to version %d was "
-                                    "performed successfully.", prefix, vernum)
+                logger.info("Submodule '%s' schema version management "
+                                        "was initialized as %d successfully.",
+                                                     submodule, current_version)
 
                 session.commit()
 
-            if num_migops == 0:
-                logger.info("%s schema version detected as %s. Table unlocked.",
-                                                        prefix, current_version)
+                return
 
-            elif num_migops > 0:
-                logger.info("%s schema version upgraded to %s "
-                               "after %d migration operations. Table unlocked.",
-                                            prefix, current_version, num_migops)
+            keys = [vernum for vernum in migration_dict.keys()
+                              if db_version.version < vernum <= current_version]
+            keys.sort()
 
-    event.listen(
-        Version.Attributes.sqla_table, "after_create",
-        DDL("CREATE UNIQUE INDEX {0}_one_row "
-                            "ON {0}((version IS NOT NULL));".format(table_name))
-    )
+            logger.info("Migration operations %r will be performed", keys)
 
-    entries.append(Version)
+            for vernum in keys:
+                migrate = migration_dict[vernum]
 
-    return Version
+                db_version.version = vernum
+
+                migrate(config, session)
+
+                session.commit()
+
+                num_migops += 1
+                logger.info("%s schema migration to version %d was "
+                                   "performed successfully.", submodule, vernum)
+
+        if num_migops == 0:
+            logger.info("%s schema version detected as %s. Table unlocked.",
+                                                     submodule, current_version)
+
+        elif num_migops > 0:
+            logger.info("%s schema version upgraded to %s "
+                           "after %d migration operations. Table unlocked.",
+                                         submodule, current_version, num_migops)

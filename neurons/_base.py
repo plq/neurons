@@ -33,10 +33,7 @@
 
 
 import neurons
-
 import threading
-
-from spyne import LogicError
 
 # don't import these directly, import the correct one directly from root
 # neurons package.
@@ -45,6 +42,5 @@ def _is_reactor_thread():
     return threading.current_thread().ident == neurons.REACTOR_THREAD_ID
 
 
-def _is_reactor_thread_raise():
-    assert neurons.REACTOR_THREAD_ID is None
-    raise LogicError('"neurons.REACTOR_THREAD" is not set yet')
+def _is_reactor_thread_none():
+    return None

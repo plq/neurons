@@ -129,13 +129,16 @@ def TTwistedHandler(config, loggers, _meminfo):
     class TwistedHandler(logging.Handler):
         if config.log_rss:
             if _meminfo is None:
-                def _modify_record(self, record):
+                @staticmethod
+                def _modify_record(record):
                     record.msg = '[psutil?] %s' % record.msg
             else:
-                def _modify_record(self, record):
+                @staticmethod
+                def _modify_record(record):
                     meminfo = _meminfo()
-                    record.msg = '[%.2f] %s' % (meminfo.rss / 1024.0 ** 2,
-                    record.msg)
+                    record.msg = '[%.2f] %s' % \
+                                         (meminfo.rss / 1024.0 ** 2, record.msg)
+
         else:
             def _modify_record(self, record):
                 pass

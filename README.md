@@ -3,6 +3,8 @@ Neurons
 
 Neurons is an opinionated web framework built on Spyne, Twisted and SqlAlchemy.
 
+Official repo: https://github.com/arskom/neurons
+
 Running tests
 =============
 

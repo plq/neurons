@@ -47,21 +47,34 @@ from spyne.protocol.http import HttpRpc
 class DowserListener(HttpListener):
     tick_period_sec = Double(default=60)
 
+    @property
+    def host(self):
+        from neurons.daemon.ipc import get_own_dowser_address
+        host, port = get_own_dowser_address()
+        return host
+
+    @host.setter
+    def host(self, _):
+        pass
+
+    @property
+    def port(self):
+        from neurons.daemon.ipc import get_own_dowser_address
+        host, port = get_own_dowser_address()
+        return port
+
+    @port.setter
+    def port(self, _):
+        pass
+
 
 def start_dowser(config):
-    from twisted.internet import reactor
     from twisted.internet.task import LoopingCall
     from twisted.internet.threads import deferToThread
-    from neurons.daemon.ipc import get_own_dowser_address
 
-    host, port = get_own_dowser_address()
-
-    subconfig = config.services.getwrite('dowser', DowserListener(
-        host=None, port=None,
-        disabled=False,
-        _subapps=[StaticFileServer(url='assets', path=ASSETS_DIR,
-                               list_contents=False, disallowed_exts=["py"])],
-    ))
+    subconfig = config.services['dowser']
+    if subconfig.subapps is None:
+        subconfig.subapps = {}
 
     subconfig.subapps[''] = \
         Application(
@@ -74,10 +87,15 @@ def start_dowser(config):
             config=config,
         )
 
-    site = subconfig.gen_site()
+    subconfig.subapps['assets'] = \
+        StaticFileServer(
+            url='assets',
+            path=ASSETS_DIR,
+            list_contents=False,
+            disallowed_exts=["py"]
+        )
 
     task = LoopingCall(deferToThread, DowserServices.tick)
     task.start(subconfig.tick_period_sec)
 
-    logger.info("listening for dowser on %s:%d", host, port)
-    return reactor.listenTCP(port, site, interface=host), None
+    return subconfig.gen_site()

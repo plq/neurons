@@ -45,24 +45,24 @@ from os import access
 from uuid import uuid1
 from os.path import isfile, abspath, dirname, getsize
 from argparse import Action
+from pwd import getpwnam, getpwuid
+from grp import getgrnam
 
 from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
-    Array, String, Double, UnsignedInteger16, M
+    Array, String, Double, UnsignedInteger16, M, Integer32
 from spyne.protocol import ProtocolBase
 from spyne.protocol.yaml import YamlDocument
 from spyne.util.color import B
 from spyne.util.dictdoc import yaml_loads, get_object_as_yaml
 
-from neurons import __version__ as NEURONS_VERSION
-from neurons import is_reactor_thread
+from neurons import is_reactor_thread, CONFIG_FILE_VERSION
 from neurons.daemon.daemonize import daemonize_do
 from neurons.daemon.config import LOGLEVEL_STR_MAP
 from neurons.daemon.config._wdict import wdict, Twrdict
 from neurons.daemon.cli import spyne_to_argparse
 
-
 from neurons.daemon.config import FILE_VERSION_KEY
-from neurons.daemon.config.listener import Service
+from neurons.daemon.config.listener import Service, Listener
 from neurons.daemon.config.logutils import Logger, Trecord_as_string, \
     TDynamicallyRotatedLog, TTwistedHandler
 from neurons.daemon.config.store import RelationalStore, StorageInfo
@@ -70,20 +70,20 @@ from neurons.daemon.config.store import RelationalStore, StorageInfo
 
 _some_prot = ProtocolBase()
 
-_meminfo = None
+meminfo = None
 
 def update_meminfo():
     """Call this when the process pid changes."""
 
-    global _meminfo
+    global meminfo
 
     try:
         import psutil
         process = psutil.Process(os.getpid())
         try:  # psutil 2
-            _meminfo = process.get_memory_info
+            meminfo = process.get_memory_info
         except AttributeError:  # psutil 3
-            _meminfo = process.memory_info
+            meminfo = process.memory_info
 
         del process
 
@@ -101,15 +101,6 @@ class _SetStaticPathAction(Action):
 
     def __call__(self, parser, namespace, values, option_string=None):
         self.const.path = abspath(values[0])
-
-
-def _apply_custom_attributes(cls):
-    fti = cls.get_flat_type_info(cls)
-    for k, v in sorted(fti.items(), key=lambda i: i[0]):
-        attrs = _some_prot.get_cls_attrs(v)
-        if attrs.no_file == True:
-            v.Attributes.prot_attrs = {YamlDocument: dict(exc=True)}
-
 
 
 class Limits(ComplexModel):
@@ -142,42 +133,49 @@ class EmailAlert(AlertDestination):
 
 
 class Daemon(ComplexModel):
-    """This is a custom daemon with only pid files, forking, logging and initial
-    setuid/setgid operations.
+    """This is a custom daemon with only pid files, forking, logging.
+    No setuid/setgid support is implemented.
     """
 
-    LOGGING_DEBUG_FORMAT = u"%(l)s %(r)s | %(module)-15s | %(message)s"
-    LOGGING_DEVEL_FORMAT = u"%(l)s | %(module)-15s | %(message)s"
-    LOGGING_PROD_FORMAT = u"%(l)s %(asctime)s | %(module)-8s | %(message)s"
+    LOGGING_DEBUG_FORMAT = \
+                     u"%(l)s %(r)s | %(module)12s:%(lineno)-4d | %(message)s"
+    LOGGING_DEVEL_FORMAT = u"%(l)s | %(module)12s:%(lineno)-4d | %(message)s"
+    LOGGING_PROD_FORMAT = \
+               u"%(l)s %(asctime)s | %(module)12s:%(lineno)-4d | %(message)s"
 
     _type_info = [
         ('name', Unicode(no_cli=True, help="Daemon Name")),
         ('help', Boolean(no_config=True, short='h',
                                        help="Show this help message and exit")),
-        ('file_version', Unicode(no_cli=True, sub_name=FILE_VERSION_KEY,
-                                                      default=NEURONS_VERSION)),
+        ('file_version', Integer32(no_cli=True, sub_name=FILE_VERSION_KEY,
+                                                  default=CONFIG_FILE_VERSION)),
         ('uuid', Uuid(
             no_cli=True,
-            help="Daemon uuid. Regenerated every time a new config file is "
-                 "written. It could come in handy.")),
+            help=u"Daemon uuid. Regenerated every time a new config file is "
+                 u"written. It could come in handy.")),
 
         ('secret', ByteArray(
             no_cli=True,
-            help="Secret key for signing cookies and other stuff.")),
+            help=u"Secret key for signing cookies and other stuff.")),
 
         ('daemonize', Boolean(
             default=False,
-            help="Daemonizes before everything else.")),
+            help=u"Daemonizes before everything else.")),
 
         ('workdir', Unicode(
             help=u"The daemon workdir. The daemon won't boot if this doesn't "
-                   "exist and can't be " u"created.")),
+                 u"exist and can't be " u"created.")),
         ('uid', Unicode(
             help=u"The daemon user. You need to start the server as a "
-                   "privileged user for this to work.")),
+                 u"privileged user for this to work.")),
         ('gid', Unicode(
             help=u"The daemon group. You need to start the server as a "
-                   "privileged user for this to work.")),
+                 u"privileged user for this to work.")),
+
+        ('gids', Array(Unicode,
+            help=u"Additional groups for the daemon. Use an empty to drop"
+                 u"all additional groups.")),
+
         ('limits', LimitsChoice.customize(help=u"Process limits.")),
 
         ('pid_file', String(
@@ -207,7 +205,7 @@ class Daemon(ComplexModel):
             help=u"Prepend resident set size to all logging messages. "
                  u"Requires psutil")),
 
-        ('log_rpc', Boolean(default=False, help=u"Log protocol operations.")),
+        ('log_protocol', Boolean(default=False, help=u"Log protocol operations.")),
         ('log_model', Boolean(default=False, help=u"Log model operations.")),
         ('log_cloth', Boolean(default=False, help=u"Log cloth generation.")),
         ('log_interface', Boolean(default=False,
@@ -355,18 +353,21 @@ class Daemon(ComplexModel):
                                           self.logger_dest_rotation_compression)
 
             self.logger_dest = abspath(self.logger_dest)
-            if access(dirname(self.logger_dest), os.R_OK | os.W_OK):
+            if access(dirname(self.logger_dest), os.R_OK | os.W_OK | os.X_OK):
                 log_dest = DynamicallyRotatedLog.fromFullPath(self.logger_dest)
 
             else:
-                Logger().warn("%r is not accessible. We need rwx on it to "
-                               "rotate logs." % dirname(self.logger_dest))
+                Logger().warn("%r is not accessible. We need at least rw- on "
+                               "it to rotate logs." % dirname(self.logger_dest))
+
                 log_dest = open(self.logger_dest, 'w+')
 
             if self.debug:
                 formatter = logging.Formatter(self.LOGGING_DEBUG_FORMAT)
             else:
                 formatter = logging.Formatter(self.LOGGING_PROD_FORMAT)
+
+            os.chown(self.logger_dest, self.get_uid(), self.get_gid())
 
         else:
             if self.debug:
@@ -388,7 +389,7 @@ class Daemon(ComplexModel):
         globalLogPublisher.addObserver(observer)
         self._clear_other_observers(globalLogPublisher, observer)
 
-        TwistedHandler = TTwistedHandler(self, loggers, _meminfo)
+        TwistedHandler = TTwistedHandler(self, loggers, meminfo)
 
         handler = TwistedHandler()
         handler.setFormatter(formatter)
@@ -462,6 +463,66 @@ class Daemon(ComplexModel):
         self.apply_limits_impl(SOFT, self.limits.soft)
         self.apply_limits_impl(HARD, self.limits.hard)
 
+    def apply_listeners(self):
+        dl = []
+
+        for s in self._services:
+            if isinstance(s, Listener):
+                if not s.disabled:
+                    dl.append(s.listen())
+
+        return dl
+
+    def get_gid(self):
+        if self.gid is None:
+            return -1
+
+        gid = self.gid
+        if not isinstance(gid, int):
+            return getgrnam(self.gid).gr_gid
+
+        return gid
+
+    def get_uid(self):
+        if self.uid is None:
+            return -1
+
+        uid = self.uid
+        if not isinstance(uid, int):
+            return getpwnam(self.uid).pw_uid
+
+        return uid
+
+    def apply_uidgid(self):
+        if self.gid is not None:
+            gid = self.gid
+            if not isinstance(gid, int):
+                gid = getgrnam(self.gid).gr_gid
+
+            os.setgid(gid)
+            os.setegid(gid)
+            os.setgroups([])
+
+        if self.gids is not None:
+            os.setgroups([])
+            os.setgroups([gid if isinstance(gid, int)
+                                else getgrnam(gid).gr_gid for gid in self.gids])
+
+        if self.uid is not None:
+            uid = self.uid
+            if isinstance(uid, int):
+                pw = getpwuid(uid)
+            else:
+                pw = getpwnam(uid)
+
+            if self.gid is None:
+                os.setgid(pw.pw_gid)
+                if self.gids is None:
+                    os.setgroups([])
+
+            os.setuid(pw.pw_uid)
+            os.seteuid(pw.pw_uid)
+
     def apply(self, daemonize=True):
         """Daemonizes the process if requested, then sets up logging and pid
         files.
@@ -470,7 +531,8 @@ class Daemon(ComplexModel):
         # Daemonization won't work if twisted is imported before fork().
         # It's best to know this in advance or you'll have to deal with daemons
         # that work perfectly well in development environments but won't boot
-        # in production ones, solely because of fork()ingw.
+        # in production ones, solely because daemonization involves closing of
+        # previously open file descriptors.
         if daemonize and ('twisted' in sys.modules):
             import twisted
             raise Exception(
@@ -478,7 +540,8 @@ class Daemon(ComplexModel):
 
         self.sanitize()
         if daemonize and self.daemonize:
-            assert self.logger_dest, "Refusing to start without any log output."
+            assert self.logger_dest, "Refusing to start without any log " \
+                            "output. Please set logger_dest in the config file."
 
             workdir = self.workdir
             if workdir is None:
@@ -492,8 +555,12 @@ class Daemon(ComplexModel):
                 os.chdir(self.workdir)
                 logger.debug("Change working directory to: %s", self.workdir)
 
-        self.apply_limits()
         self.apply_logging()
+        self.apply_limits()
+
+        if not daemonize:
+            self.apply_listeners()
+            self.apply_uidgid()
 
         if daemonize and self.pid_file is not None:
             pid = os.getpid()
@@ -517,16 +584,25 @@ class Daemon(ComplexModel):
                                    statement, ''.join(traceback.format_stack()))
 
         for store in self._stores:
+            if not isinstance(store, RelationalStore):
+                continue
+
             engine = store.itself.engine
-            event.listen(engine,
-                                 "before_cursor_execute", before_cursor_execute)
+            event.listen(engine, "before_cursor_execute", before_cursor_execute)
 
             logger.info("Installed reactor warning hook for engine %s.", engine)
 
     @classmethod
+    def _apply_custom_attributes(cls):
+        fti = cls.get_flat_type_info(cls)
+        for k, v in sorted(fti.items(), key=lambda i: i[0]):
+            attrs = _some_prot.get_cls_attrs(v)
+            if attrs.no_file == True:
+                v.Attributes.prot_attrs = {YamlDocument: dict(exc=True)}
+
+    @classmethod
     def parse_config(cls, daemon_name, argv=None):
-        _apply_custom_attributes(cls)
-        retval = cls.get_default(daemon_name)
+        cls._apply_custom_attributes()
         file_name = abspath('%s.yaml' % daemon_name)
 
         argv_parser = spyne_to_argparse(cls, ignore_defaults=True)
@@ -540,19 +616,30 @@ class Daemon(ComplexModel):
         exists = isfile(file_name) and os.access(file_name, os.R_OK)
         if exists and getsize(file_name) > 0:
             s = open(file_name, 'rb').read()
-            s = retval._migrate_impl(s)
-            retval = yaml_loads(s, cls, validator='soft', polymorphic=True)
 
         else:
             if not access(dirname(file_name), os.R_OK | os.W_OK):
                 raise Exception("File %r can't be created in %r" %
                                                 (file_name, dirname(file_name)))
+            s = b""
+
+        retval = cls.parse_config_string(s, daemon_name, cli)
+        retval.config_file = file_name
+        return retval
+
+    @classmethod
+    def parse_config_string(cls, s, daemon_name, cli=None):
+        if cli is None:
+            cli = {}
+
+        retval = cls.get_default(daemon_name)
+        if len(s) > 0:
+            s = retval._migrate_impl(s)
+            retval = yaml_loads(s, cls, validator='soft', polymorphic=True)
 
         for k, v in cli.items():
             if not v in (None, False):
                 setattr(retval, k, v)
-
-        retval.config_file = file_name
 
         import neurons.daemon
         neurons.daemon.config_data = retval
@@ -601,15 +688,9 @@ class Daemon(ComplexModel):
                 config_root['stores'][0]['RelationalStore'] = z
 
         else:
-            config_version = [int(ver_tuple)
-                                     for ver_tuple in config_version.split(".")]
-            while len(config_version) < 3:
-                config_version.append(0)
-            config_version = tuple(config_version)
-
             self.migrate(config_dict, config_version)
 
-        config_root[FILE_VERSION_KEY] = NEURONS_VERSION
+        config_root[FILE_VERSION_KEY] = CONFIG_FILE_VERSION
         return yaml.dump(config_dict, indent=4, default_flow_style=False)
 
     def migrate(self, config_dict, config_version):
@@ -626,28 +707,35 @@ class Daemon(ComplexModel):
 
 
 class ServiceDaemon(Daemon):
-    """This daemon needs access to one or more data stores to work."""
+    """This is a daemon with data stores."""
 
     _type_info = [
         ('write_wsdl', Unicode(
-            help="Write Wsdl document(s) to the given directory and exit. "
-                 "It is created if missing", no_file=True, metavar='WSDL_DIR')),
+            help=u"Write Wsdl document(s) to the given directory and exit. "
+                 u"It is created if missing", no_file=True, metavar='WSDL_DIR')),
 
         ('write_xsd', Unicode(
-            help="Write Xml Schema document(s) to given directory and exit. "
-                 "It is created if missing", no_file=True, metavar='XSD_DIR')),
+            help=u"Write Xml Schema document(s) to given directory and exit. "
+                 u"It is created if missing", no_file=True, metavar='XSD_DIR')),
 
-        ('log_queries', Boolean(help="Log SQL queries.")),
-        ('log_results', Boolean(help="Log SQL query results in addition to "
-                                     "queries.")),
+        ('log_orm', Boolean(default=False,
+                                       help=u"Log SQLAlchemy ORM operations.")),
+        ('log_queries', Boolean(default=False, help=u"Log SQL queries.")),
+        ('log_results', Boolean(default=False,
+                        help=u"Log SQL query results in addition to queries.")),
+        ('log_dbconn', Boolean(default=False,
+            help=u"Prepend number of open database connections to all "
+                                                         u"logging messages.")),
+        ('log_sqlalchemy', Boolean(default=False,
+                               help=u"Log SQLAlchemy messages in debug level")),
 
         ('drop_all_tables', Boolean(help="Drops all tables in the database.",
-                                    no_file=True)),
+                                                                 no_file=True)),
 
-        ('main_store', Unicode(help="The name of the store for binding "
-                                    "neurons.TableModel's metadata to.")),
+        ('main_store', Unicode(help=u"The name of the store for binding "
+                                         u"neurons.TableModel's metadata to.")),
 
-        ('gen_data', Boolean(help="Generates random data", no_file=True)),
+        ('gen_data', Boolean(help=u"Generates random data", no_file=True)),
         ('_stores', Array(StorageInfo, sub_name='stores')),
     ]
 
@@ -695,8 +783,8 @@ class ServiceDaemon(Daemon):
                     pool_recycle=3600,
                     pool_timeout=30,
                     max_overflow=3,
-                    conn_str=u'postgres://postgres:@/%s_%s' %
-                                               (daemon_name, getpass.getuser()),
+                    conn_str=u'postgresql://{user}:@/{daemon}_{user}'.format(
+                                    daemon=daemon_name, user=getpass.getuser()),
                     sync_pool=True,
                     async_pool=True,
                 ),
@@ -728,6 +816,15 @@ class ServiceDaemon(Daemon):
                 import neurons
                 neurons.TableModel.Attributes.sqla_metadata.bind = engine
 
+        if self.log_dbconn:
+            handler = logging.getLogger().handlers[0]
+            _mr = handler._modify_record
+            pool = self.get_main_store().engine.pool
+            def _modify_record(record):
+                _mr(record)
+                record.msg = "[%d]%s" % (pool.checkedout(), record.msg)
+            handler._modify_record = _modify_record
+
         return self
 
     def apply(self, daemonize=True):
@@ -750,8 +847,8 @@ class ServiceDaemon(Daemon):
                                                         LOGLEVEL_STR_MAP[level])
 
     def pre_logging_apply(self):
-        if self.log_rpc or self.log_queries or self.log_results or \
-                    self.log_model or self.log_interface or self.log_rpc or \
+        if self.log_protocol or self.log_queries or self.log_results or \
+                    self.log_model or self.log_interface or self.log_protocol or \
                                                                 self.log_cloth:
             logging.getLogger().setLevel(logging.DEBUG)
 
@@ -766,24 +863,23 @@ class ServiceDaemon(Daemon):
         else:
             self._set_log_level('spyne.interface', logging.INFO)
 
-        if self.log_rpc:
-            self._set_log_level('spyne.protocol', logging.DEBUG)
-            self._set_log_level('spyne.protocol.xml', logging.DEBUG)
-            self._set_log_level('spyne.protocol.dictdoc', logging.DEBUG)
-            self._set_log_level('spyne.protocol.cloth.to_parent', logging.DEBUG)
-            self._set_log_level('spyne.protocol.cloth.to_cloth.serializer',
-                                                                  logging.DEBUG)
-            self._set_log_level('neurons.form', logging.DEBUG)
-            self._set_log_level('neurons.polymer.protocol', logging.DEBUG)
+        rpc_loggers = (
+            'spyne.protocol',
+            'spyne.protocol.xml',
+            'spyne.protocol.dictdoc',
+            'spyne.protocol.cloth.to_parent',
+            'spyne.protocol.cloth.to_cloth.serializer',
+            'neurons.form',
+            'neurons.polymer.protocol',
+        )
+
+        if self.log_protocol:
+            for ns in rpc_loggers:
+                self._set_log_level(ns, logging.DEBUG)
+
         else:
-            self._set_log_level('spyne.protocol', logging.INFO)
-            self._set_log_level('spyne.protocol.xml', logging.INFO)
-            self._set_log_level('spyne.protocol.dictoc', logging.INFO)
-            self._set_log_level('spyne.protocol.cloth.to_parent', logging.INFO)
-            self._set_log_level('spyne.protocol.cloth.to_cloth.serializer',
-                                                                   logging.INFO)
-            self._set_log_level('neurons.form', logging.INFO)
-            self._set_log_level('neurons.polymer.protocol', logging.INFO)
+            for ns in rpc_loggers:
+                self._set_log_level(ns, logging.INFO)
 
         if self.log_cloth:
             self._set_log_level('spyne.protocol.cloth.to_cloth.cloth',
@@ -792,16 +888,19 @@ class ServiceDaemon(Daemon):
             self._set_log_level('spyne.protocol.cloth.to_cloth.cloth',
                                                                    logging.INFO)
 
-        if self.log_queries or self.log_results:
-            if self.log_results:
-                self._set_log_level('sqlalchemy', logging.DEBUG)
+        if self.log_sqlalchemy:
+            self._set_log_level('sqlalchemy', logging.DEBUG)
 
-            elif self.log_queries:
-                self._set_log_level('sqlalchemy', logging.INFO)
+        else:
+            if self.log_orm:
+                self._set_log_level('sqlalchemy.orm', logging.DEBUG)
 
-            self._set_log_level('sqlalchemy.orm.mapper', logging.WARNING)
-            self._set_log_level('sqlalchemy.orm.relationships', logging.WARNING)
-            self._set_log_level('sqlalchemy.orm.strategies', logging.WARNING)
+            if self.log_queries or self.log_results:
+                if self.log_queries:
+                    self._set_log_level('sqlalchemy.engine', logging.INFO)
+
+                if self.log_results:
+                    self._set_log_level('sqlalchemy.engine', logging.DEBUG)
 
     def get_main_store(self):
         return self.stores[self.main_store].itself

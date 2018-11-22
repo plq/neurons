@@ -37,6 +37,11 @@ import logging
 
 from spyne.util.color import R, B, YEL, DARK_R
 
+from collections import namedtuple
+
+
+ServiceDefinition = namedtuple("ServiceDefinition", "init default force")
+ServiceDefinition.__new__.__defaults__ = (None,) * 3
 
 LOGLEVEL_MAP = dict(zip(
     ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],

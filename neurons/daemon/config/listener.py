@@ -37,19 +37,24 @@ from __future__ import print_function, absolute_import
 import logging
 logger = logging.getLogger(__name__)
 
+import os
 import re
 
-from os.path import abspath
+from threading import Lock
+from os.path import abspath, join, isfile
 
 from spyne import Application, UnsignedInteger, ComplexModel, Unicode, \
-    UnsignedInteger16, Boolean, String, Array, ComplexModelBase
+    UnsignedInteger16, Boolean, String, Array, ComplexModelBase, M, \
+    ValidationError, Integer32
+from spyne.util.resource import get_resource_path
 
 from neurons.daemon.cli import config_overrides
 from neurons.daemon.config._wdict import wdict, wrdict, Twrdict
 
 
 class Service(ComplexModel):
-    name = Unicode
+    name = M(Unicode)
+    disabled = Boolean(default=False)
 
     def __init__(self, *args, **kwargs):
         self._parent = None
@@ -63,20 +68,142 @@ class Service(ComplexModel):
         self._parent = parent
 
 
+# noinspection PyPep8Naming
+def _TFactoryProxy():
+    from twisted.internet.protocol import ServerFactory
+
+    class FactoryProxy(ServerFactory):
+        def __init__(self):
+            # real_factory is set by neurons.daemon.main
+            self.real_factory = None
+            self.run_start_factory = False
+            self.noisy = False
+
+        @classmethod
+        def forProtocol(cls, *args, **kwargs):
+            raise NotImplementedError()
+
+        @property
+        def real_factory(self):
+            return self.__rf
+
+        @real_factory.setter
+        def real_factory(self, what):
+            self.__rf = what
+            if self.run_start_factory:
+                what.startFactory()
+
+        def logPrefix(self):
+            if self.real_factory is not None:
+                return self.real_factory.logPrefix()
+            return "EmptyFactoryProxy"
+
+        def startFactory(self):
+            if self.real_factory is not None:
+                return self.real_factory.startFactory()
+            self.run_start_factory = True
+
+        def stopFactory(self):
+            if self.real_factory is not None:
+                return self.real_factory.stopFactory()
+
+        def buildProtocol(self, addr):
+            return self.real_factory.buildProtocol(addr)
+
+    return FactoryProxy
+
+
+_lock_factory_proxy = Lock()
+
+
 class Listener(Service):
-    host = Unicode
-    port = UnsignedInteger16
-    disabled = Boolean
-    unix_socket = Unicode
+    type = M(Unicode(values=('tcp4', 'tcp6', 'udp4', 'udp6', 'unix'),
+                                                                default='tcp4'))
+    host = Unicode(nullable=False, default='0.0.0.0')
+    backlog = Integer32(default=50)
+    port = UnsignedInteger16(nullable=False, default=0)
+
+    FactoryProxy = None
+
+    def __init__(self, *args, **kwargs):
+        super(Listener, self).__init__(*args, **kwargs)
+
+        self.d = None
+        self.listener = None
+        self.failed = False
+
+    def gen_endpoint(self, reactor):
+        # FIXME: We might not need endpoints after all..
+        if self.type == 'tcp4':
+            from twisted.internet.endpoints import TCP4ServerEndpoint
+            return TCP4ServerEndpoint(reactor, port=self.port,
+                                      backlog=self.backlog, interface=self.host)
+
+        elif self.type == 'tcp6':
+            from twisted.internet.endpoints import TCP6ServerEndpoint
+            return TCP6ServerEndpoint(reactor, port=self.port,
+                                      backlog=self.backlog, interface=self.host)
+        elif self.type == 'udp4':
+            # TODO
+            raise NotImplementedError(self.type)
+            #return UDP4ServerEndpoint(reactor, port=self.port,
+            #                         backlog=self.backlog, interface=self.host)
+        elif self.type == 'udp6':
+            # TODO
+            raise NotImplementedError(self.type)
+            #return UDP6ServerEndpoint(reactor, port=self.port,
+            #                         backlog=self.backlog, interface=self.host)
+
+        raise ValidationError(self.type)
+
+    def get_factory_proxy(self):
+        # Why thread-safe application of daemon configuration? I say why not :)
+        with _lock_factory_proxy:
+            if Listener.FactoryProxy is None:
+                Listener.FactoryProxy = _TFactoryProxy()
+
+        return Listener.FactoryProxy
+
+    @property
+    def lstr(self):
+        return "{}:{}:{}".format(self.type.upper(), self.host, self.port)
+
+    def listen(self):
+        from twisted.internet import reactor
+
+        FactoryProxy = self.get_factory_proxy()
+
+        retval = self.d = self.gen_endpoint(reactor) \
+            .listen(FactoryProxy()) \
+                .addCallback(self.set_listening_port) \
+                .addCallback(lambda _: logger.info("[%s] listening on %s",
+                                                        self.name, self.lstr)) \
+                .addErrback(self._eb_listen)
+
+        return retval
+
+    def _eb_listen(self, err):
+        self.failed = True
+
+        from twisted.internet import reactor
+        logging.error("[%s] Error listening to %s, stopping reactor\n%s",
+                                       self.name, self.lstr, err.getTraceback())
+
+        from twisted.internet.task import deferLater
+        deferLater(reactor, 0, reactor.stop)
+
+    def set_listening_port(self, listening_port):
+        assert not (listening_port is None)
+        self.listener = listening_port
 
     def check_overrides(self):
+        # FIXME: integrate this with argparse
         for a in config_overrides:
             if a.startswith('--host-%s' % self.name):
                 _, host = a.split('=', 1)
                 self.host = host
                 logger.debug("Overriding host for service '%s' to '%s'",
                                                            self.name, self.host)
-
                 continue
 
             if a.startswith('--port-%s' % self.name):
@@ -84,23 +211,94 @@ class Listener(Service):
                 self.port = int(port)
                 logger.debug("Overriding port for service '%s' to '%s'",
                                                            self.name, self.port)
-
                 continue
 
 
+def _listfiles(dirpath):
+    for f in os.listdir(dirpath):
+        fp = join(dirpath, f)
+        if isfile(fp):
+            yield fp
+
+
 class SslListener(Listener):
-    cacert = Unicode
-    cacert_path = Unicode
-    cacert_dir = Unicode
+    _type_info = [
+        ('cacert_path', Unicode),
+        ('cacert', Unicode),
+        ('cert', Unicode),
+        ('key', Unicode),
+        ('verify', Boolean(default=False)),
+        ('verdepth', Integer32(default=9)),  # taken from twisted default
+    ]
 
-    cert = Unicode
-    cert_path = Unicode
+    @staticmethod
+    def get_path(s):
+        if s.startswith("rsc:"):
+            package, file_name = s[4:].split("/", 1)
+            return get_resource_path(package, file_name)
+        return s
 
-    privcert = Unicode
-    privcert_path = Unicode
+    def gen_endpoint(self, reactor):
+        from OpenSSL import crypto
 
-    key = Unicode
-    key_path = Unicode
+        cert = None
+        if self.cert is not None:
+            fn = self.get_path(self.cert)
+            logger.debug("[%s] Loading cert from: %s", self.name, fn)
+            fdata = open(fn, 'rb').read()
+            cert = crypto.load_certificate(crypto.FILETYPE_PEM, fdata)
+        else:
+            logger.warning("[%s] No cert loaded", self.name)
+
+
+        key = None
+        if self.key is not None:
+            fn = self.get_path(self.key)
+            logger.debug("[%s] Loading key from: %s", self.name, fn)
+            fdata = open(fn, 'rb').read()
+            key = crypto.load_privatekey(crypto.FILETYPE_PEM, fdata)
+        else:
+            logger.warning("[%s] No key loaded", self.name)
+
+        cacerts = []
+        if self.cacert is not None:
+            fn = self.get_path(self.key)
+            logger.debug("[%s] Loading cacert from: %s", self.name, fn)
+            fdata = open(fn, 'rb').read()
+            cacert = crypto.load_certificate(crypto.FILETYPE_PEM, fdata)
+            cacerts.append(cacert)
+
+        if self.cacert_path is not None:
+            cacert_path = self.get_path(self.key)
+            # TODO: ignore errors
+            for fn in _listfiles(cacert_path):
+                fdata = open(fn, 'rb').read()
+                logger.debug("[%s] Loading cacert from: %s", self.name, fn)
+                cacert = crypto.load_certificate(crypto.FILETYPE_PEM, fdata)
+                cacerts.append(cacert)
+
+        from twisted.internet.ssl import CertificateOptions
+        options = CertificateOptions(
+            privateKey=key,
+            certificate=cert,
+            caCerts=cacerts,
+            verify=self.verify,
+            verifyDepth=self.verdepth,
+        )
+
+        assert options.getContext()
+
+        if self.type == 'tcp4':
+            from twisted.internet.endpoints import SSL4ServerEndpoint
+            return SSL4ServerEndpoint(reactor, self.port, options,
+                                      backlog=self.backlog, interface=self.host)
+
+        elif self.type == 'tcp6':
+            from twisted.internet.endpoints import SSL6ServerEndpoint
+            return SSL6ServerEndpoint(reactor, self.port, options,
+                                      backlog=self.backlog, interface=self.host)
+
+        raise ValidationError(self.type)
 
 
 class HttpApplication(ComplexModel):
