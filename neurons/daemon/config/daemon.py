@@ -558,7 +558,7 @@ class Daemon(ComplexModel):
         self.apply_logging()
         self.apply_limits()
 
-        if not daemonize:
+        if daemonize:
             self.apply_listeners()
             self.apply_uidgid()
 
