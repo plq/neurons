@@ -103,15 +103,6 @@ class _SetStaticPathAction(Action):
         self.const.path = abspath(values[0])
 
 
-def _apply_custom_attributes(cls):
-    fti = cls.get_flat_type_info(cls)
-    for k, v in sorted(fti.items(), key=lambda i: i[0]):
-        attrs = _some_prot.get_cls_attrs(v)
-        if attrs.no_file == True:
-            v.Attributes.prot_attrs = {YamlDocument: dict(exc=True)}
-
-
-
 class Limits(ComplexModel):
     _type_info = [
         ('max_mem_mb', Double(rlimit=resource.RLIMIT_AS)),
@@ -576,9 +567,17 @@ class Daemon(ComplexModel):
             logger.info("Installed reactor warning hook for engine %s.", engine)
 
     @classmethod
+    def _apply_custom_attributes(cls):
+        fti = cls.get_flat_type_info(cls)
+        for k, v in sorted(fti.items(), key=lambda i: i[0]):
+            attrs = _some_prot.get_cls_attrs(v)
+            if attrs.no_file == True:
+                v.Attributes.prot_attrs = {YamlDocument: dict(exc=True)}
+
+    @classmethod
     def parse_config(cls, daemon_name, argv=None):
-        _apply_custom_attributes(cls)
         retval = cls.get_default(daemon_name)
+        cls._apply_custom_attributes()
         file_name = abspath('%s.yaml' % daemon_name)
 
         argv_parser = spyne_to_argparse(cls, ignore_defaults=True)
