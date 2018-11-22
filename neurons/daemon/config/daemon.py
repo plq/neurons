@@ -70,20 +70,20 @@ from neurons.daemon.config.store import RelationalStore, StorageInfo
 
 _some_prot = ProtocolBase()
 
-_meminfo = None
+meminfo = None
 
 def update_meminfo():
     """Call this when the process pid changes."""
 
-    global _meminfo
+    global meminfo
 
     try:
         import psutil
         process = psutil.Process(os.getpid())
         try:  # psutil 2
-            _meminfo = process.get_memory_info
+            meminfo = process.get_memory_info
         except AttributeError:  # psutil 3
-            _meminfo = process.memory_info
+            meminfo = process.memory_info
 
         del process
 
@@ -395,7 +395,7 @@ class Daemon(ComplexModel):
         globalLogPublisher.addObserver(observer)
         self._clear_other_observers(globalLogPublisher, observer)
 
-        TwistedHandler = TTwistedHandler(self, loggers, _meminfo)
+        TwistedHandler = TTwistedHandler(self, loggers, meminfo)
 
         handler = TwistedHandler()
         handler.setFormatter(formatter)
