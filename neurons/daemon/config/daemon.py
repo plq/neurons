@@ -353,7 +353,7 @@ class Daemon(ComplexModel):
                                           self.logger_dest_rotation_compression)
 
             self.logger_dest = abspath(self.logger_dest)
-            if access(dirname(self.logger_dest), os.R_OK | os.W_OK):
+            if access(dirname(self.logger_dest), os.R_OK | os.W_OK | os.X_OK):
                 log_dest = DynamicallyRotatedLog.fromFullPath(self.logger_dest)
 
             else:
@@ -469,6 +469,26 @@ class Daemon(ComplexModel):
                     dl.append(s.listen())
 
         return dl
+
+    def get_gid(self):
+        if self.gid is None:
+            return -1
+
+        gid = self.gid
+        if not isinstance(gid, int):
+            return getgrnam(self.gid).gr_gid
+
+        return gid
+
+    def get_uid(self):
+        if self.uid is None:
+            return -1
+
+        uid = self.uid
+        if not isinstance(uid, int):
+            return getpwnam(self.uid).pw_uid
+
+        return uid
 
     def apply_uidgid(self):
         if self.gid is not None:

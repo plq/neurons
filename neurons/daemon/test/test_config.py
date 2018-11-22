@@ -18,6 +18,7 @@ SomeClass:
     secret: c29tZSBzZWNyZXQ=
     services:
     -   HttpListener:
+            type: tcp4
             host: 0.0.0.0
             name: someservice
             port: 7001
@@ -55,6 +56,17 @@ class TestConfig(unittest.TestCase):
         assert 'RelationalStore' in store
         assert len(retd) == 1
         assert retd[key]['file-version'] == NEURONS_VERSION
+
+    def test_uidgid(self):
+        config = ServiceDaemon.parse_config_string(TEST_CONFIG, "test")
+        assert config.get_gid() == -1
+        assert config.get_uid() == -1
+
+        config.gid = "root"
+        assert config.get_gid() == 0
+
+        config.uid = "root"
+        assert config.get_uid() == 0
 
 
 if __name__ == '__main__':
