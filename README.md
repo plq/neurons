@@ -28,7 +28,7 @@ Now clone and install neurons:
 
 Install additional useful packages:
 
-    pip install ipython\<5 pytest ipdb pytest-twisted
+    pip install ipython pytest ipdb pytest-twisted
 
 And now try:
 
