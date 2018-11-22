@@ -366,6 +366,8 @@ class Daemon(ComplexModel):
             else:
                 formatter = logging.Formatter(self.LOGGING_PROD_FORMAT)
 
+            os.chown(self.logger_dest, self.get_uid(), self.get_gid())
+
         else:
             if self.debug:
                 formatter = logging.Formatter(self.LOGGING_DEBUG_FORMAT)
