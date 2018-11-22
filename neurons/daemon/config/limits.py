@@ -33,13 +33,6 @@
 
 from __future__ import print_function, absolute_import
 
-import sys
-def my_except_hook(exctype, value, traceback):
-    print(exctype, value, traceback)
-    sys.__excepthook__(exctype, value, traceback)
-sys.excepthook = my_except_hook
-
-
 import logging
 logger = logging.getLogger(__name__)
 
