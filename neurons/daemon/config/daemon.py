@@ -357,8 +357,9 @@ class Daemon(ComplexModel):
                 log_dest = DynamicallyRotatedLog.fromFullPath(self.logger_dest)
 
             else:
-                Logger().warn("%r is not accessible. We need rwx on it to "
-                               "rotate logs." % dirname(self.logger_dest))
+                Logger().warn("%r is not accessible. We need at least rw- on "
+                               "it to rotate logs." % dirname(self.logger_dest))
+
                 log_dest = open(self.logger_dest, 'w+')
 
             if self.debug:
@@ -531,7 +532,7 @@ class Daemon(ComplexModel):
         # It's best to know this in advance or you'll have to deal with daemons
         # that work perfectly well in development environments but won't boot
         # in production ones, solely because daemonization involves closing of
-        # every previously open file descriptors.
+        # previously open file descriptors.
         if daemonize and ('twisted' in sys.modules):
             import twisted
             raise Exception(
@@ -539,7 +540,8 @@ class Daemon(ComplexModel):
 
         self.sanitize()
         if daemonize and self.daemonize:
-            assert self.logger_dest, "Refusing to start without any log output."
+            assert self.logger_dest, "Refusing to start without any log " \
+                            "output. Please set logger_dest in the config file."
 
             workdir = self.workdir
             if workdir is None:
