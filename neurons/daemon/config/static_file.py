@@ -59,6 +59,7 @@ def TCheckedFile(disallowed_exts, url):
 
     return CheckedFile
 
+
 def TStaticFile(disallowed_exts, url):
     class StaticFile(TCheckedFile(disallowed_exts, url)):
         def directoryListing(self):

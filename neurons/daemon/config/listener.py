@@ -375,9 +375,8 @@ class HttpListener(Listener):
                 _, dest = a.split('=', 1)
                 obj.path = abspath(dest)
 
-                logger.debug(
-                    "Overriding asset path for app '%s', url '%s' to '%s'" % (
-                                                  self.name, obj.url, obj.path))
+                logger.debug("Overriding asset path for app "
+                         "'%s', url '%s' to '%s'", self.name, obj.url, obj.path)
 
     def __init__(self, *args, **kwargs):
         super(HttpListener, self).__init__(*args, **kwargs)
