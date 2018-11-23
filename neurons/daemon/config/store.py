@@ -129,6 +129,7 @@ class RelationalStore(StorageInfo):
     pool_recycle = UnsignedInteger(default=3600)
     pool_timeout = UnsignedInteger(default=30)
     pool_use_lifo = Boolean(default=False)
+    pool_pre_ping = Boolean(default=False)
     max_overflow = UnsignedInteger(default=3)
     echo_pool = Boolean(default=False)
 
@@ -154,9 +155,13 @@ class RelationalStore(StorageInfo):
             pool_timeout=self.pool_timeout,
             pool_recycle=self.pool_recycle,
             max_overflow=self.max_overflow,
+            logging_name=self.name,
         )
 
-        if get_version('sqlalchemy')[0:2] > (1, 2):
+        if get_version('sqlalchemy')[0:2] >= (1, 2):
+            kwargs['pool_pre_ping'] = self.pool_pre_ping
+
+        if get_version('sqlalchemy')[0:2] >= (1, 3):
             kwargs['pool_use_lifo'] = self.pool_use_lifo
 
         self.itself = SqlDataStore(self.name, self.conn_str, **kwargs)
