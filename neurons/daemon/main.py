@@ -214,7 +214,7 @@ def _do_start_shell(config):
         return IPython.embed_kernel()
 
 
-def _cb_listen_ok(lp, subconfig, factory):
+def _set_real_factory(lp, subconfig, factory):
     # lp = listening port -- what endpoint.listen()'s return value ends up as
 
     if hasattr(lp.factory, 'wrappedFactory'):
@@ -228,7 +228,7 @@ def _cb_listen_ok(lp, subconfig, factory):
     assert isinstance(target_factory, Listener.FactoryProxy)
     target_factory.real_factory = factory
 
-    logger.info("[%s] Set factory ok", subconfig.name)
+    logger.info("[%s] Set factory %r", subconfig.name, factory)
 
 
 def _inner_main(config, init, bootstrap, bootstrapper):
@@ -275,46 +275,51 @@ def _inner_main(config, init, bootstrap, bootstrapper):
             logger.info("Service '%s' is disabled in the config.", k)
             continue
 
-        try:
-            if v.force is not None:
-                if k in config.services:
-                    oldconfig = config.services[k]
-                    subconfig = config.services[k] = v.force
-                    if oldconfig.d is not None:
-                        subconfig.d = oldconfig.d
+        if v.force is not None:
+            if k in config.services:
+                oldconfig = config.services[k]
+                subconfig = config.services[k] = v.force
+                if oldconfig.d is not None:
+                    subconfig.d = oldconfig.d
 
-                    if oldconfig.listener is not None:
-                        subconfig.listener = oldconfig.listener
+                if oldconfig.listener is not None:
+                    subconfig.listener = oldconfig.listener
 
-                else:
-                    subconfig = config.services[k] = v.force
+            else:
+                subconfig = config.services[k] = v.force
 
-                logger.info("[%s] Configuration initialized from "
+            logger.info("[%s] Configuration initialized from "
                                                         "hard-coded object.", k)
 
+        else:
+            if k in config.services:
+                logger.info("[%s] Configuration initialized from file.", k)
             else:
-                if k in config.services:
-                    logger.info("[%s] Configuration initialized from file.", k)
-                else:
-                    logger.info("[%s] Configuration initialized from "
-                                                                  "default.", k)
+                logger.info("[%s] Configuration initialized from default.", k)
 
-                subconfig = config.services.getwrite(k, v.default)
+            subconfig = config.services.getwrite(k, v.default)
 
+        try:
             factory = v.init(config)
-            if subconfig.d is not None:
-                if subconfig.listener is None:
-                    subconfig.d.addCallback(_cb_listen_ok, subconfig, factory)
-
-                else:
-                    _cb_listen_ok(subconfig.listener, subconfig, factory)
-
-            else:
-                subconfig.listen() \
-                    .addCallback(_cb_listen_ok, subconfig, factory)
 
         except ServiceDisabled:
-            logger.info("Service '%s' is disabled.", k)
+            logger.info("[%s] Service disabled.", k)
+            continue
+
+        if not isinstance(factory, Listener):
+            continue
+
+        if subconfig.d is not None:
+            if subconfig.listener is None:
+                subconfig.d.addCallback(_set_real_factory, subconfig,
+                                                                    factory)
+
+            else:
+                _set_real_factory(subconfig.listener, subconfig, factory)
+
+        else:
+            subconfig.listen() \
+                .addCallback(_set_real_factory, subconfig, factory)
 
     # if requested, write interface documents and exit
     if isinstance(config, ServiceDaemon):
