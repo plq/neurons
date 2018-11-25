@@ -43,6 +43,8 @@ import re
 from threading import Lock
 from os.path import abspath, join, isfile
 
+from colorama import Fore, Style
+
 from spyne import Application, UnsignedInteger, ComplexModel, Unicode, \
     UnsignedInteger16, Boolean, String, Array, ComplexModelBase, M, \
     ValidationError, Integer32
@@ -58,6 +60,7 @@ class Service(ComplexModel):
 
     def __init__(self, *args, **kwargs):
         self._parent = None
+        self.color = None
 
         super(Service, self).__init__(*args, **kwargs)
 
@@ -66,6 +69,14 @@ class Service(ComplexModel):
         assert parent is not None
 
         self._parent = parent
+
+    @property
+    def colored_name(self):
+        if self.color is None:
+            return self.name
+
+        return '%s%s[%s]%s' % (self.color, Style.BRIGHT, self.name,
+                                                                Style.RESET_ALL)
 
 
 # noinspection PyPep8Naming
@@ -131,6 +142,7 @@ class Listener(Service):
         self.d = None
         self.listener = None
         self.failed = False
+        self.color = Fore.YELLOW  # set to G by daemon.main._set_real_factory
 
     def gen_endpoint(self, reactor):
         # FIXME: We might not need endpoints after all..
@@ -176,8 +188,8 @@ class Listener(Service):
         retval = self.d = self.gen_endpoint(reactor) \
             .listen(FactoryProxy()) \
                 .addCallback(self.set_listening_port) \
-                .addCallback(lambda _: logger.info("[%s] listening on %s",
-                                                        self.name, self.lstr)) \
+                .addCallback(lambda _: logger.info("%s listening on %s",
+                                                self.colored_name, self.lstr)) \
                 .addErrback(self._eb_listen)
 
         return retval
@@ -244,26 +256,26 @@ class SslListener(Listener):
         cert = None
         if self.cert is not None:
             fn = self.get_path(self.cert)
-            logger.debug("[%s] Loading cert from: %s", self.name, fn)
+            logger.debug("%s Loading cert from: %s", self.colored_name, fn)
             fdata = open(fn, 'rb').read()
             cert = crypto.load_certificate(crypto.FILETYPE_PEM, fdata)
         else:
-            logger.warning("[%s] No cert loaded", self.name)
+            logger.warning("%s No cert loaded", self.colored_name)
 
 
         key = None
         if self.key is not None:
             fn = self.get_path(self.key)
-            logger.debug("[%s] Loading key from: %s", self.name, fn)
+            logger.debug("%s Loading key from: %s", self.colored_name, fn)
             fdata = open(fn, 'rb').read()
             key = crypto.load_privatekey(crypto.FILETYPE_PEM, fdata)
         else:
-            logger.warning("[%s] No key loaded", self.name)
+            logger.warning("%s No key loaded", self.colored_name)
 
         cacerts = []
         if self.cacert is not None:
             fn = self.get_path(self.key)
-            logger.debug("[%s] Loading cacert from: %s", self.name, fn)
+            logger.debug("%s Loading cacert from: %s", self.colored_name, fn)
             fdata = open(fn, 'rb').read()
             cacert = crypto.load_certificate(crypto.FILETYPE_PEM, fdata)
             cacerts.append(cacert)
@@ -273,7 +285,8 @@ class SslListener(Listener):
             # TODO: ignore errors
             for fn in _listfiles(cacert_path):
                 fdata = open(fn, 'rb').read()
-                logger.debug("[%s] Loading cacert from: %s", self.name, fn)
+                logger.debug("%s Loading cacert from: %s",
+                                                          self.colored_name, fn)
                 cacert = crypto.load_certificate(crypto.FILETYPE_PEM, fdata)
                 cacerts.append(cacert)
 

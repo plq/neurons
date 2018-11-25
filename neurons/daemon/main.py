@@ -44,7 +44,10 @@ import warnings
 
 from os.path import isfile, join, dirname
 
+from colorama import Fore
+
 from spyne.util.six import StringIO
+from spyne.util.color import YEL
 from spyne.store.relational.util import database_exists, create_database
 
 from sqlalchemy import MetaData
@@ -225,10 +228,12 @@ def _set_real_factory(lp, subconfig, factory):
     else:
         target_factory = lp.factory
 
+    subconfig.color = Fore.GREEN
+
     assert isinstance(target_factory, Listener.FactoryProxy)
     target_factory.real_factory = factory
 
-    logger.info("[%s] Set factory %r", subconfig.name, factory)
+    logger.info("%s Set factory %r", subconfig.colored_name, factory)
 
 
 def _inner_main(config, init, bootstrap, bootstrapper):
@@ -275,44 +280,46 @@ def _inner_main(config, init, bootstrap, bootstrapper):
             logger.info("Service '%s' is disabled in the config.", k)
             continue
 
-        if v.force is not None:
-            if k in config.services:
-                oldconfig = config.services[k]
-                subconfig = config.services[k] = v.force
-                if oldconfig.d is not None:
-                    subconfig.d = oldconfig.d
-
-                if oldconfig.listener is not None:
-                    subconfig.listener = oldconfig.listener
-
-            else:
-                subconfig = config.services[k] = v.force
-
-            logger.info("[%s] Configuration initialized from "
-                                                        "hard-coded object.", k)
-
-        else:
-            if k in config.services:
-                logger.info("[%s] Configuration initialized from file.", k)
-            else:
-                logger.info("[%s] Configuration initialized from default.", k)
-
-            subconfig = config.services.getwrite(k, v.default)
-
         try:
+            if v.force is not None:
+                if k in config.services:
+                    oldconfig = config.services[k]
+                    subconfig = config.services[k] = v.force
+                    if oldconfig.d is not None:
+                        subconfig.d = oldconfig.d
+
+                    if oldconfig.listener is not None:
+                        subconfig.listener = oldconfig.listener
+
+                else:
+                    subconfig = config.services[k] = v.force
+
+                logger.info("%s Configuration initialized from "
+                                   "hard-coded object.", subconfig.colored_name)
+
+            else:
+                k_was_there = k in config.services
+                subconfig = config.services.getwrite(k, v.default)
+
+                if k_was_there:
+                    logger.info("%s Configuration initialized from file.",
+                                                         subconfig.colored_name)
+                else:
+                    logger.info("%s Configuration initialized from default.",
+                                                         subconfig.colored_name)
+
             factory = v.init(config)
 
         except ServiceDisabled:
-            logger.info("[%s] Service disabled.", k)
+            logger.info("[%s] Service disabled.", YEL(k))
             continue
 
-        if not isinstance(factory, Listener):
+        if not isinstance(subconfig, Listener):
             continue
 
         if subconfig.d is not None:
             if subconfig.listener is None:
-                subconfig.d.addCallback(_set_real_factory, subconfig,
-                                                                    factory)
+                subconfig.d.addCallback(_set_real_factory, subconfig, factory)
 
             else:
                 _set_real_factory(subconfig.listener, subconfig, factory)
