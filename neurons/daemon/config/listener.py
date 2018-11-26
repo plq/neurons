@@ -394,18 +394,6 @@ class HttpListener(Listener):
     def __init__(self, *args, **kwargs):
         super(HttpListener, self).__init__(*args, **kwargs)
 
-        subapps = kwargs.get('subapps', None)
-        if isinstance(subapps, dict):
-            self.subapps = Twrdict(self, 'url')()
-            for k, v in subapps.items():
-                self.subapps[k] = v
-
-        elif isinstance(subapps, (tuple, list)):
-            self.subapps = Twrdict(self, 'url')()
-            for v in subapps:
-                assert v.url is not None, "%r.url is None" % v
-                self.subapps[v.url] = v
-
     def gen_site(self):
         from twisted.web.server import Site
 
@@ -466,10 +454,21 @@ class HttpListener(Listener):
         return []
 
     @_subapps.setter
-    def _subapps(self, what):
-        self.subapps = what
-        if what is not None:
-            self.subapps = wdict([(s.url, s) for s in what])
+    def _subapps(self, subapps):
+        if isinstance(subapps, dict):
+            self.subapps = Twrdict(self, 'url')()
+            for k, v in subapps.items():
+                self.subapps[k] = v
+
+        elif isinstance(subapps, (tuple, list)):
+            self.subapps = Twrdict(self, 'url')()
+            for v in subapps:
+                assert v.url is not None, "%r.url is None" % v
+                self.subapps[v.url] = v
+
+        self.subapps = subapps
+        if subapps is not None:
+            self.subapps = wdict([(s.url, s) for s in subapps])
 
 
 class WsgiListener(HttpListener):
