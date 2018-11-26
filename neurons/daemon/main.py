@@ -233,7 +233,8 @@ def _set_real_factory(lp, subconfig, factory):
     assert isinstance(target_factory, Listener.FactoryProxy)
     target_factory.real_factory = factory
 
-    logger.info("%s Set factory %r", subconfig.colored_name, factory)
+    logger.info("%s Service ready with factory %r",
+                                                subconfig.colored_name, factory)
 
 
 def _inner_main(config, init, bootstrap, bootstrapper):
