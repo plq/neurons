@@ -38,21 +38,20 @@ logger = logging.getLogger(__name__)
 
 import os, sys
 import getpass
-import resource
 import traceback
 
 from os import access
 from uuid import uuid1
 from os.path import isfile, abspath, dirname, getsize
 from argparse import Action
-from collections import namedtuple
 from pwd import getpwnam, getpwuid
 from grp import getgrnam
 
 from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
-    Array, String, Double, UnsignedInteger16, M, Integer32
+    Array, String, UnsignedInteger16, M, Integer32, ComplexModelMeta, ComplexModelBase
 from spyne.protocol import ProtocolBase
 from spyne.protocol.yaml import YamlDocument
+from spyne.util import six
 from spyne.util.color import B
 from spyne.util.dictdoc import yaml_loads, get_object_as_yaml
 
@@ -123,7 +122,21 @@ class EmailAlert(AlertDestination):
     recipients = M(Array(M(EmailAddress)))
 
 
-class Daemon(ComplexModel):
+class ConfigBaseMeta(ComplexModelMeta):
+    def __init__(self, *args, **kwargs):
+        super(ConfigBaseMeta, self).__init__(*args, **kwargs)
+
+        for k, v in list(self._type_info.items()):
+            if getattr(v.Attributes, 'no_config', None):
+                self._type_info[k] = v.customize(pa={YamlDocument: dict(exc=True)})
+
+
+@six.add_metaclass(ConfigBaseMeta)
+class ConfigBase(ComplexModelBase):
+    pass
+
+
+class Daemon(ConfigBase):
     """This is a custom daemon with only pid files, forking, logging.
     No setuid/setgid support is implemented.
     """
