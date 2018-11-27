@@ -198,8 +198,9 @@ class Listener(Service):
         self.failed = True
 
         from twisted.internet import reactor
-        logging.error("[%s] Error listening to %s, stopping reactor\n%s",
-                                       self.name, self.lstr, err.getTraceback())
+        self.color = Fore.RED
+        logging.error("%s Error listening to %s, stopping reactor\n%s",
+                               self.colored_name, self.lstr, err.getTraceback())
 
         from twisted.internet.task import deferLater
         deferLater(reactor, 0, reactor.stop)
