@@ -221,9 +221,8 @@ def enforce_timed_limit(name, limconf, rlimit):
 
             if val < (limconf.value * rlimit.mult):
                 if status[0] > 0:
-                    logger.warning("%s limit went below treshold "
-                                   "s: %d l: %.1f c: %.1f",
-                                   name, limconf.value, val / rlimit.mult)
+                    logger.warning("%s limit went below treshold l: %.1f "
+                              "c: %.1f", name, limconf.value, val / rlimit.mult)
 
                 status[0] = 0
                 return
