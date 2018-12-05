@@ -112,7 +112,8 @@ class Version(TableModel):
                               if db_version.version < vernum <= current_version]
             keys.sort()
 
-            logger.info("Migration operations %r will be performed", keys)
+            if len(keys) > 0:
+                logger.info("Migration operations %r will be performed", keys)
 
             for vernum in keys:
                 migrate = migration_dict[vernum]
