@@ -312,7 +312,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
             factory = v.init(config)
 
         except ServiceDisabled:
-            logger.info("[%s] Service disabled.", YEL(k))
+            logger.info("%s Service disabled.", YEL('[%s]' % (k,)))
             continue
 
         if not isinstance(subconfig, Listener):
