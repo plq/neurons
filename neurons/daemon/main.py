@@ -47,7 +47,7 @@ from os.path import isfile, join, dirname
 from colorama import Fore
 
 from spyne.util.six import StringIO
-from spyne.util.color import YEL
+from spyne.util.color import YEL, R
 from spyne.store.relational.util import database_exists, create_database
 
 from sqlalchemy import MetaData
@@ -278,7 +278,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
             disabled = config.services[k].disabled
 
         if disabled:
-            logger.info("Service '%s' is disabled in the config.", k)
+            logger.info("%s Service disabled.", R('[%s]' % (k,)))
             continue
 
         try:
@@ -312,7 +312,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
             factory = v.init(config)
 
         except ServiceDisabled:
-            logger.info("%s Service disabled.", YEL('[%s]' % (k,)))
+            logger.info("%s Service disabled.", R('[%s]' % (k,)))
             continue
 
         if not isinstance(subconfig, Listener):
