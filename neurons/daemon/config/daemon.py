@@ -691,6 +691,7 @@ class Daemon(ConfigBase):
 
 class ServiceDaemon(Daemon):
     """This is a daemon with data stores."""
+    DEFAULT_DB_NAME = None
 
     _type_info = [
         ('write_wsdl', Unicode(
@@ -753,6 +754,10 @@ class ServiceDaemon(Daemon):
 
     @classmethod
     def get_default(cls, daemon_name):
+        db_name = cls.DEFAULT_DB_NAME
+        if db_name is None:
+            db_name = daemon_name
+
         return cls(
             debug=True,
             uuid=cls.gen_uuid(),
@@ -767,7 +772,7 @@ class ServiceDaemon(Daemon):
                     pool_timeout=30,
                     max_overflow=3,
                     conn_str=u'postgresql://{user}:@/{daemon}_{user}'.format(
-                                    daemon=daemon_name, user=getpass.getuser()),
+                                    daemon=db_name, user=getpass.getuser()),
                     sync_pool=True,
                     async_pool=True,
                 ),
