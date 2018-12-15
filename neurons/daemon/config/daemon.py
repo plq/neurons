@@ -53,7 +53,7 @@ from spyne.protocol import ProtocolBase
 from spyne.protocol.yaml import YamlDocument
 from spyne.util import six
 from spyne.util.color import B
-from spyne.util.dictdoc import yaml_loads, get_object_as_yaml
+from spyne.util.dictdoc import get_object_as_yaml, get_yaml_as_object
 
 from neurons import is_reactor_thread, CONFIG_FILE_VERSION
 from neurons.daemon.cli import spyne_to_argparse
@@ -617,7 +617,8 @@ class Daemon(ConfigBase):
         retval = cls.get_default(daemon_name)
         if len(s) > 0:
             s = retval._migrate_impl(s)
-            retval = yaml_loads(s, cls, validator='soft', polymorphic=True)
+            retval = get_yaml_as_object(s, cls,
+                                             validator='soft', polymorphic=True)
 
         for k, v in cli.items():
             if not v in (None, False):
@@ -711,7 +712,7 @@ class ServiceDaemon(Daemon):
         ('log_sqlalchemy', Boolean(default=False,
                                help=u"Log SQLAlchemy messages in debug level")),
 
-        ('drop_all_tables', Boolean(help="Drops all tables in the database.",
+        ('drop_all_tables', Boolean(help=u"Drops all tables in the database.",
                                                                  no_file=True)),
 
         ('main_store', Unicode(help=u"The name of the store for binding "
