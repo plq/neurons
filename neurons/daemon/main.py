@@ -37,9 +37,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 import os
-import sys
+import inspect
 import threading
-import resource
 import warnings
 
 from os.path import isfile, join, dirname
@@ -60,8 +59,7 @@ def get_package_version(pkg_name):
     try:
         import pkg_resources
         return pkg_resources.get_distribution(pkg_name).version
-    except Exception as e:
-        sys.stderr.write(repr(e))
+    except Exception:
         return 'unknown'
 
 
@@ -251,8 +249,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
             return _do_drop_all_tables(config, init)
 
     config.apply()
-    logger.info("Initialized '%s' version %s.", config.name,
-                                               get_package_version(config.name))
+    logger.info("%s configuration applied, initializing services.", config.name)
 
     # initialize main table model
     if isinstance(config, ServiceDaemon):
@@ -462,6 +459,7 @@ def main(config_name, argv, init, bootstrap=None,
 
     if config.name is None:
         config.name = config_name
+
     if daemon_name is not None:
         config.name = daemon_name
 
@@ -519,12 +517,20 @@ def main(config_name, argv, init, bootstrap=None,
 
     deferLater(reactor, 0, _compile_mappers)
 
-    logger.info("Starting reactor... Max. RSS: %f",
-                    resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000.0)
+    orig_stack = inspect.stack()
+
+    def _log_ready():
+        import resource
+        max_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000.0
+
+        frame, file_name, line_num, func_name, lines, line_id = orig_stack[1]
+        module = inspect.getmodule(frame)
+        package_name = module.__name__.split('.')[0]
+        logger.info("%s version %s ready. Max RSS: %.1f", config_name,
+                                     get_package_version(package_name), max_rss)
 
     deferLater(reactor, 0, _set_reactor_thread)
-    deferLater(reactor, 0, logger.info,
-               "%s version %s ready to accept requests", )
+    deferLater(reactor, 0, _log_ready)
 
     if config.autoreload:
         from spyne.util.autorel import AutoReloader
