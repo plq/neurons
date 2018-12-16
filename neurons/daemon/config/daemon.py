@@ -244,7 +244,7 @@ class Daemon(ConfigBase):
     ]
 
     # FIXME: We need all this hacky magic with custom constructor and properties
-    # because Spyne doesn't support custom containers
+    #        because Spyne doesn't support custom containers
     def __init__(self, *args, **kwargs):
         super(Daemon, self).__init__(*args, **kwargs)
 
@@ -253,16 +253,16 @@ class Daemon(ConfigBase):
             self.services = services
         if self.services is None:
             self.services = Twrdict(self, 'name')()
-        self._set_parent(self.services)
+        self._set_parent_of_children(self.services)
 
         loggers = kwargs.get('loggers', None)
         if loggers is not None:
             self.loggers = loggers
         if self.loggers is None:
             self.loggers = wdict()
-        self._set_parent(self.loggers)
+        self._set_parent_of_children(self.loggers)
 
-    def _set_parent(self, wrd):
+    def _set_parent_of_children(self, wrd):
         for v in wrd.values():
             v.set_parent(self)
 
