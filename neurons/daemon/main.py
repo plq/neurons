@@ -33,11 +33,13 @@
 
 from __future__ import print_function
 
+from time import time
+py_start_t = time()
+
 import logging
 logger = logging.getLogger(__name__)
 
 import os
-import inspect
 import threading
 import warnings
 
@@ -249,7 +251,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
             return _do_drop_all_tables(config, init)
 
     config.apply()
-    logger.info("%s config ok, initializing services...", config.name)
+    logger.info("%s config valid, initializing services...", config.name)
 
     # initialize main table model
     if isinstance(config, ServiceDaemon):
@@ -515,23 +517,38 @@ def main(config_name, argv, init, bootstrap=None,
     from twisted.internet import reactor
     from twisted.internet.task import deferLater
 
-    deferLater(reactor, 0, _compile_mappers)
-
+    import inspect
     orig_stack = inspect.stack()
-
     def _log_ready():
         import resource
+
+        try:
+            import psutil
+            proc_start_t = psutil.Process(os.getpid()).create_time()
+        except ImportError:
+            proc_start_t = '?'
+
         max_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000.0
 
         frame, file_name, line_num, func_name, lines, line_id = orig_stack[1]
         module = inspect.getmodule(frame)
         package_name = module.__name__.split('.')[0]
-        logger.info("%s version %s ready. Max RSS: %.1f", config_name,
-                                     get_package_version(package_name), max_rss)
 
+
+        logger.info(
+            "%s version %s ready. Max RSS: %.1fmb, uptime: %s, pyinit: %.2fs",
+            config_name, get_package_version(package_name),
+            max_rss,
+            '[?psutil?]' if proc_start_t == '?'
+                                        else '%.2fs' % (time() - proc_start_t,),
+            time() - py_start_t,
+        )
+
+    deferLater(reactor, 0, _compile_mappers)
     deferLater(reactor, 0, _set_reactor_thread)
     deferLater(reactor, 0, _log_ready)
 
+    # this needs to be done as late as possible
     if config.autoreload:
         from spyne.util.autorel import AutoReloader
         frequency = 0.5
