@@ -522,6 +522,8 @@ def main(config_name, argv, init, bootstrap=None,
                     resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000.0)
 
     deferLater(reactor, 0, _set_reactor_thread)
+    deferLater(reactor, 0, logger.info,
+               "%s version %s ready to accept requests", )
 
     if config.autoreload:
         from spyne.util.autorel import AutoReloader
