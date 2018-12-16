@@ -104,7 +104,8 @@ class Logger(ComplexModel):
         _logger.setLevel(LOGLEVEL_MAP[self.level])
 
         if self.path == '.':
-            logger.info("Root Logger level override: %s", self.level)
+            self._parent.boot_message()
+            logger.info("Root logger level override: %s", self.level)
         else:
             logger.info("Logger level override %s = %s", self.path, self.level)
 

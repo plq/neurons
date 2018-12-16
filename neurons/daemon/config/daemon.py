@@ -42,6 +42,7 @@ import traceback
 
 from os import access
 from uuid import uuid1
+from warnings import warn
 from os.path import isfile, abspath, dirname, getsize
 from argparse import Action
 from pwd import getpwnam, getpwuid
@@ -247,6 +248,7 @@ class Daemon(ConfigBase):
     #        because Spyne doesn't support custom containers
     def __init__(self, *args, **kwargs):
         super(Daemon, self).__init__(*args, **kwargs)
+        self._boot_messaged = False
 
         services = kwargs.get('services', None)
         if services is not None:
@@ -349,7 +351,7 @@ class Daemon(ConfigBase):
     def apply_logging(self):
         # We're using twisted logging only for IO.
         from twisted.logger import FileLogObserver
-        from twisted.logger import Logger, globalLogPublisher
+        from twisted.logger import globalLogPublisher
 
         loggers = {}
 
@@ -362,7 +364,7 @@ class Daemon(ConfigBase):
                 log_dest = DynamicallyRotatedLog.fromFullPath(self.logger_dest)
 
             else:
-                Logger().warn("%r is not accessible. We need at least rw- on "
+                warn("'%s' is not accessible. We need at least rw- on "
                                "it to rotate logs." % dirname(self.logger_dest))
 
                 log_dest = open(self.logger_dest, 'w+')
@@ -384,10 +386,12 @@ class Daemon(ConfigBase):
             try:
                 import colorama
                 colorama.init()
-                logger.debug("colorama loaded.")
+                if self.debug:
+                    print("colorama loaded.")
 
             except Exception as e:
-                logger.debug("coloarama not loaded: %r" % e)
+                if self.debug:
+                    print("coloarama not loaded: %r" % e)
 
         record_as_string = Trecord_as_string(formatter)
         observer = FileLogObserver(log_dest, record_as_string)
@@ -403,31 +407,40 @@ class Daemon(ConfigBase):
         self.pre_logging_apply()
 
         for l in self.loggers.values() or []:
+            l.set_parent(self)
             l.apply()
+
+        self.boot_message()
 
         return self
 
     def boot_message(self):
+        if self._boot_messaged:
+            return
+        self._boot_messaged = True
+
         import spyne
         import neurons
         import twisted
         import sqlalchemy
 
-        logging.info("Booting daemon '%s'. We have spyne-%s, neurons-%s, "
-                     "sqlalchemy-%s and twisted-%s.",
-                        self.name, B(spyne.__version__), B(neurons.__version__),
-                          B(sqlalchemy.__version__), B(twisted.version.short()))
+        logger.info("Booting daemon '%s' with spyne-%s, neurons-%s, "
+            "sqlalchemy-%s and twisted-%s.", self.name,
+                                spyne.__version__, neurons.__version__,
+                                sqlalchemy.__version__, twisted.version.short())
 
     @staticmethod
     def hello_darkness_my_old_friend():
+        # while nice to keep in mind, this is sent before logging is initialized
+        # so should not be displayed in any way :)
         logger.info("Quis custodiet ipsos custodes?")
 
     def pre_logging_apply(self):
-        logging.info("Root logger level = %s",
+        if self.debug:
+            print("Root logger level = %s" %
                                     LOGLEVEL_STR_MAP[logging.getLogger().level])
 
         self.hello_darkness_my_old_friend()
-        self.boot_message()
 
     def pre_limits_apply(self):
         """Override this function in case a resource-intensive task needs to be
@@ -539,6 +552,8 @@ class Daemon(ConfigBase):
         """Daemonizes the process if requested, then sets up logging and pid
         files.
         """
+
+        # FIXME: this should really be "may_daemonize"
         if daemonize:
             self.apply_daemonize()
             self.apply_pid_file()
@@ -726,14 +741,14 @@ class ServiceDaemon(Daemon):
     # FIXME: We need all this hacky magic with custom constructor and properties
     # because Spyne doesn't support custom containers
     def __init__(self, *args, **kwargs):
-        super(Daemon, self).__init__(*args, **kwargs)
+        super(ServiceDaemon, self).__init__(*args, **kwargs)
 
         stores = kwargs.get('stores', None)
         if stores is not None:
             self.stores = stores
         if not hasattr(self, 'stores') or self.stores is None:
             self.stores = wdict()
-        self._set_parent(self.stores)
+        self._set_parent_of_children(self.stores)
 
     @property
     def _stores(self):
@@ -834,15 +849,27 @@ class ServiceDaemon(Daemon):
         logging.info("Sublogger level initialized for '%s' as %s", ns,
                                                         LOGLEVEL_STR_MAP[level])
 
+    RPC_LOGGERS = (
+        'spyne.protocol',
+        'spyne.protocol.xml',
+        'spyne.protocol.dictdoc',
+        'spyne.protocol.cloth.to_parent',
+        'spyne.protocol.cloth.to_cloth.serializer',
+
+        'neurons.form',
+        'neurons.polymer.protocol',
+    )
+
     def pre_logging_apply(self):
+        super(ServiceDaemon, self).pre_logging_apply()
+
         if self.log_protocol or self.log_queries or self.log_results or \
-                    self.log_model or self.log_interface or self.log_protocol or \
-                                                                self.log_cloth:
+              self.log_model or self.log_interface or self.log_protocol or \
+                                                                 self.log_cloth:
             logging.getLogger().setLevel(logging.DEBUG)
 
         if self.log_model:
             self._set_log_level('spyne.model', logging.DEBUG)
-
         else:
             self._set_log_level('spyne.model', logging.INFO)
 
@@ -851,22 +878,12 @@ class ServiceDaemon(Daemon):
         else:
             self._set_log_level('spyne.interface', logging.INFO)
 
-        rpc_loggers = (
-            'spyne.protocol',
-            'spyne.protocol.xml',
-            'spyne.protocol.dictdoc',
-            'spyne.protocol.cloth.to_parent',
-            'spyne.protocol.cloth.to_cloth.serializer',
-            'neurons.form',
-            'neurons.polymer.protocol',
-        )
-
         if self.log_protocol:
-            for ns in rpc_loggers:
+            for ns in self.RPC_LOGGERS:
                 self._set_log_level(ns, logging.DEBUG)
 
         else:
-            for ns in rpc_loggers:
+            for ns in self.RPC_LOGGERS:
                 self._set_log_level(ns, logging.INFO)
 
         if self.log_cloth:
