@@ -219,7 +219,6 @@ def _do_start_shell(config):
 
 def _set_real_factory(lp, subconfig, factory):
     # lp = listening port -- what endpoint.listen()'s return value ends up as
-
     if hasattr(lp.factory, 'wrappedFactory'):
         import twisted.protocols.tls
         assert isinstance(lp.factory, twisted.protocols.tls.TLSMemoryBIOFactory)
