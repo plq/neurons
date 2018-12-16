@@ -46,7 +46,7 @@ from os.path import isfile, join, dirname
 from colorama import Fore
 
 from spyne.util.six import StringIO
-from spyne.util.color import YEL, R
+from spyne.util.color import R, DARK_R
 from spyne.store.relational.util import database_exists, create_database
 
 from sqlalchemy import MetaData
@@ -249,7 +249,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
             return _do_drop_all_tables(config, init)
 
     config.apply()
-    logger.info("%s configuration applied, initializing services.", config.name)
+    logger.info("%s config ok, initializing services...", config.name)
 
     # initialize main table model
     if isinstance(config, ServiceDaemon):
@@ -275,7 +275,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
             disabled = config.services[k].disabled
 
         if disabled:
-            logger.info("%s Service disabled.", R('[%s]' % (k,)))
+            logger.info("%s Service disabled.", DARK_R('[%s]' % (k,)))
             continue
 
         try:

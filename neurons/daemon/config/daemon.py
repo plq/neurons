@@ -232,7 +232,7 @@ class Daemon(ConfigBase):
             default=False, help=u"Auto-relaunch daemon process when one of "
                                 u"the source files change.")),
 
-        ('dry_run', Boolean(
+        ('dry_run', Boolean(no_file=True,
             default=False, help=u"Do everything up until the reactor start and "
                                 u"exit instead of starting the reactor.")),
 
