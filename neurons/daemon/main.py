@@ -245,9 +245,10 @@ def _inner_main(config, init, bootstrap, bootstrapper):
     if config.bootstrap:
         return _do_bootstrap(config, init, bootstrap, bootstrapper)
 
-    # if requested, drop all tables and exit
-    if config.drop_all_tables:
-        return _do_drop_all_tables(config, init)
+    if isinstance(config, ServiceDaemon):
+        # if requested, drop all tables and exit
+        if config.drop_all_tables:
+            return _do_drop_all_tables(config, init)
 
     config.apply()
     logger.info("Initialized '%s' version %s.", config.name,
