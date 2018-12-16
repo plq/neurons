@@ -35,6 +35,7 @@ from __future__ import print_function
 
 from time import time
 py_start_t = time()
+"""Approximate start time of the python code"""
 
 import logging
 logger = logging.getLogger(__name__)
@@ -453,6 +454,9 @@ def main(config_name, argv, init, bootstrap=None,
     :return: Exit code of the daemon as int.
     """
 
+    func_start_t = time()
+    """Start time of post-import initialization code"""
+
     config = cls.parse_config(config_name, argv)
     if config.help:
         from neurons.daemon.cli import spyne_to_argparse
@@ -536,12 +540,14 @@ def main(config_name, argv, init, bootstrap=None,
 
 
         logger.info(
-            "%s version %s ready. Max RSS: %.1fmb, uptime: %s, pyinit: %.2fs",
+            "%s version %s ready. Max RSS: %.1fmb uptime: %s import: %.2fs, "
+                                                                  "main: %.2fs",
             config_name, get_package_version(package_name),
             max_rss,
             '[?psutil?]' if proc_start_t == '?'
                                         else '%.2fs' % (time() - proc_start_t,),
             time() - py_start_t,
+            time() - func_start_t,
         )
 
     deferLater(reactor, 0, _compile_mappers)
