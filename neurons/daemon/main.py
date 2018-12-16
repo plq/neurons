@@ -554,7 +554,8 @@ def main(config_name, argv, init, bootstrap=None,
     deferLater(reactor, 0, _set_reactor_thread)
     deferLater(reactor, 0, _log_ready)
 
-    # this needs to be done as late as possible
+    # this needs to be done as late as possible to capture the highest number of
+    # watched (ie imported) modules.
     if config.autoreload:
         from spyne.util.autorel import AutoReloader
         frequency = 0.5
