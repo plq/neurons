@@ -534,10 +534,12 @@ def main(config_name, argv, init, bootstrap=None,
 
         max_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000.0
 
+        package_name = config_name
+
         frame, file_name, line_num, func_name, lines, line_id = orig_stack[1]
         module = inspect.getmodule(frame)
-        package_name = module.__name__.split('.')[0]
-
+        if module is not None:
+            package_name = module.__name__.split('.')[0]
 
         logger.info(
             "%s version %s ready. Max RSS: %.1fmb uptime: %s import: %.2fs "
