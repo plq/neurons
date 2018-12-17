@@ -540,7 +540,7 @@ def main(config_name, argv, init, bootstrap=None,
 
 
         logger.info(
-            "%s version %s ready. Max RSS: %.1fmb uptime: %s import: %.2fs, "
+            "%s version %s ready. Max RSS: %.1fmb uptime: %s import: %.2fs "
                                                                   "main: %.2fs",
             config_name, get_package_version(package_name),
             max_rss,
