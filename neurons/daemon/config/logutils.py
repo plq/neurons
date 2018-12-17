@@ -90,9 +90,7 @@ class Logger(ComplexModel):
         super(Logger, self).__init__(*args, **kwargs)
 
     def set_parent(self, parent):
-        assert self._parent is None
         assert parent is not None
-
         self._parent = parent
 
     def apply(self):
