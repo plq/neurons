@@ -129,7 +129,7 @@ class RelationalStore(StorageInfo):
     pool_recycle = UnsignedInteger(default=3600)
     pool_timeout = UnsignedInteger(default=30)
     pool_use_lifo = Boolean(default=False)
-    pool_pre_ping = Boolean(default=False)
+    pool_pre_ping = Boolean(default=True)
     max_overflow = UnsignedInteger(default=3)
     echo_pool = Boolean(default=False)
 
