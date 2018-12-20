@@ -127,17 +127,25 @@ def _TFactoryProxy():
 _lock_factory_proxy = Lock()
 
 
-class Listener(Service):
+class Client(Service):
+    host = Unicode(nullable=False, default='0.0.0.0')
+    port = UnsignedInteger16(nullable=False, default=0)
     type = M(Unicode(values=('tcp4', 'tcp6', 'udp4', 'udp6', 'unix'),
                                                                 default='tcp4'))
-    host = Unicode(nullable=False, default='0.0.0.0')
+
+
+class Server(Service):
     backlog = Integer32(default=50)
+
+    host = Unicode(nullable=False, default='0.0.0.0')
     port = UnsignedInteger16(nullable=False, default=0)
+    type = M(Unicode(values=('tcp4', 'tcp6', 'udp4', 'udp6', 'unix'),
+                                                                default='tcp4'))
 
     FactoryProxy = None
 
     def __init__(self, *args, **kwargs):
-        super(Listener, self).__init__(*args, **kwargs)
+        super(Server, self).__init__(*args, **kwargs)
 
         self.d = None
         self.listener = None
@@ -171,10 +179,10 @@ class Listener(Service):
     def get_factory_proxy(self):
         # Why thread-safe application of daemon configuration? I say why not :)
         with _lock_factory_proxy:
-            if Listener.FactoryProxy is None:
-                Listener.FactoryProxy = _TFactoryProxy()
+            if Server.FactoryProxy is None:
+                Server.FactoryProxy = _TFactoryProxy()
 
-        return Listener.FactoryProxy
+        return Server.FactoryProxy
 
     @property
     def lstr(self):
@@ -234,7 +242,7 @@ def _listfiles(dirpath):
             yield fp
 
 
-class SslListener(Listener):
+class SslServer(Server):
     _type_info = [
         ('cacert_path', Unicode),
         ('cacert', Unicode),
@@ -371,7 +379,7 @@ class StaticFileServer(HttpApplication):
         return StaticFile(abspath(self.path))
 
 
-class HttpListener(Listener):
+class HttpServer(Server):
     _type_info = [
         ('static_dir', Unicode),
         ('_subapps', Array(HttpApplication, sub_name='subapps')),
@@ -393,7 +401,7 @@ class HttpListener(Listener):
                          "'%s', url '%s' to '%s'", self.name, obj.url, obj.path)
 
     def __init__(self, *args, **kwargs):
-        super(HttpListener, self).__init__(*args, **kwargs)
+        super(HttpServer, self).__init__(*args, **kwargs)
 
     def gen_site(self):
         from twisted.web.server import Site
@@ -472,6 +480,6 @@ class HttpListener(Listener):
             self.subapps = wdict([(s.url, s) for s in subapps])
 
 
-class WsgiListener(HttpListener):
+class WsgiServer(HttpServer):
     thread_min = UnsignedInteger
     thread_max = UnsignedInteger

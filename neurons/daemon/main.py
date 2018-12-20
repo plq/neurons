@@ -55,7 +55,7 @@ from spyne.store.relational.util import database_exists, create_database
 from sqlalchemy import MetaData
 
 from neurons.daemon.config import FileStore, ServiceDisabled, ServiceDaemon, \
-    RelationalStore, LdapStore, Listener
+    RelationalStore, LdapStore, Server
 
 
 def get_package_version(pkg_name):
@@ -230,7 +230,7 @@ def _set_real_factory(lp, subconfig, factory):
 
     subconfig.color = Fore.GREEN
 
-    assert isinstance(target_factory, Listener.FactoryProxy)
+    assert isinstance(target_factory, Server.FactoryProxy)
     target_factory.real_factory = factory
 
     logger.info("%s Service ready with factory %r",
@@ -315,7 +315,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
             logger.info("%s Service disabled.", R('[%s]' % (k,)))
             continue
 
-        if not isinstance(subconfig, Listener):
+        if not isinstance(subconfig, Server):
             continue
 
         if subconfig.d is not None:

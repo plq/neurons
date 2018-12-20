@@ -42,14 +42,14 @@ from spyne.protocol.http import HttpRpc
 
 from twisted.internet import reactor
 
-from neurons.daemon.config import HttpListener, StaticFileServer
+from neurons.daemon.config import HttpServer, StaticFileServer
 
 from garage.const import T_INDEX
 from garage.service import GarageService
 
 
 def start_garage(config):
-    subconfig = config.services.getwrite('http', HttpListener(
+    subconfig = config.services.getwrite('http', HttpServer(
         host='0.0.0.0',
         port=7111,
         disabled=False,

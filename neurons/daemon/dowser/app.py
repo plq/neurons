@@ -35,7 +35,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from neurons import Application
-from neurons.daemon.config import HttpListener, StaticFileServer
+from neurons.daemon.config import HttpServer, StaticFileServer
 from neurons.daemon.dowser.const import ASSETS_DIR
 from neurons.daemon.dowser.service import DowserServices
 
@@ -44,7 +44,7 @@ from spyne.protocol.html import HtmlBase
 from spyne.protocol.http import HttpRpc
 
 
-class DowserListener(HttpListener):
+class DowserServer(HttpServer):
     tick_period_sec = Double(default=60)
 
     @property

@@ -33,11 +33,26 @@
 
 from neurons.daemon import dowser
 from neurons.daemon.main import main
-from neurons.daemon.config import Daemon
-from neurons.daemon.config import HttpListener
+
+from neurons.daemon.config import Service
+from neurons.daemon.config import Client
+from neurons.daemon.config import Server
+from neurons.daemon.config import SslServer
+from neurons.daemon.config import HttpServer
+from neurons.daemon.config import WsgiServer
 from neurons.daemon.config import ServiceDaemon
 from neurons.daemon.config import HttpApplication
 from neurons.daemon.config import StaticFileServer
+
+from neurons.daemon.config import FileStore
+from neurons.daemon.config import LdapStore
+from neurons.daemon.config import RelationalStore
+
+from neurons.daemon.config import Daemon
+from neurons.daemon.config import ServiceDaemon
+from neurons.daemon.config import EmailAlert
+from neurons.daemon.config import AlertDestination
+
 from neurons.daemon.config import ServiceDefinition
 
 

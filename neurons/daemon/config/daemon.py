@@ -65,7 +65,7 @@ from neurons.daemon.config._wdict import wdict, Twrdict
 from neurons.daemon.config.limits import LimitsChoice
 
 from neurons.daemon.config import FILE_VERSION_KEY
-from neurons.daemon.config.listener import Service, Listener
+from neurons.daemon.config.endpoint import Service, Server
 from neurons.daemon.config.logutils import Logger, Trecord_as_string, \
     TDynamicallyRotatedLog, TTwistedHandler
 from neurons.daemon.config.store import RelationalStore, StorageInfo
@@ -129,7 +129,8 @@ class ConfigBaseMeta(ComplexModelMeta):
 
         for k, v in list(self._type_info.items()):
             if getattr(v.Attributes, 'no_config', None):
-                self._type_info[k] = v.customize(pa={YamlDocument: dict(exc=True)})
+                self._type_info[k] = \
+                                  v.customize(pa={YamlDocument: dict(exc=True)})
 
 
 @six.add_metaclass(ConfigBaseMeta)
@@ -272,7 +273,8 @@ class Daemon(ConfigBase):
     def _services(self):
         if self.services is not None:
             for k, v in self.services.items():
-                v.name = k
+                if v is not None:
+                    v.name = k
 
             return self.services.values()
 
@@ -456,7 +458,7 @@ class Daemon(ConfigBase):
         dl = []
 
         for s in self._services:
-            if isinstance(s, Listener):
+            if isinstance(s, Server):
                 if not s.disabled:
                     dl.append(s.listen())
 
@@ -687,6 +689,46 @@ class Daemon(ConfigBase):
 
         else:
             self.migrate(config_dict, config_version)
+
+        if config_version < 2:
+            print("Performing config file migration "
+                                  "from version %d to 2..." % (config_version,))
+
+            for k1, v1 in config_root.items():
+                if k1 == 'services':
+                    for v2 in v1:
+                        for k3, v3 in v2.items():
+                            old = new = k3
+
+                            if k3 == 'Listener':
+                                new = 'Server'
+
+                            if k3 == 'SslListener':
+                                new = 'SslServer'
+
+                            if k3 == 'IpcListener':
+                                new = 'IpcServer'
+
+                            if k3 == 'HttpListener':
+                                new = 'HttpServer'
+
+                            if k3 == 'DowserListener':
+                                new = 'DowserServer'
+
+                            if k3 == 'WsgiListener':
+                                new = 'WsgiServer'
+
+                            if k3 == 'StaticFileListener':
+                                new = 'StaticFileServer'
+
+                            if old != new:
+                                v2[new] = v2[old]
+                                print("\tRenamed service type %s to %s" %
+                                                                     (old, new))
+                                del v2[old]
+
+            print("Config file migration from version %d to 2 "
+                                              "successful." % (config_version,))
 
         config_root[FILE_VERSION_KEY] = CONFIG_FILE_VERSION
         return yaml.dump(config_dict, indent=4, default_flow_style=False)
