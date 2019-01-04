@@ -687,6 +687,10 @@ class Daemon(ConfigBase):
                 del config_root['stores'][0]['Relational']
                 config_root['stores'][0]['RelationalStore'] = z
 
+            # use the minimum version number to have all the migration
+            # operations be run
+            config_version = 1
+
         else:
             self.migrate(config_dict, config_version)
 
