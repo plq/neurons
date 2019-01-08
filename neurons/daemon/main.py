@@ -553,13 +553,13 @@ def main(config_name, argv, init, bootstrap=None,
         )
 
     deferLater(reactor, 0, _compile_mappers) \
-        .addErrback(lambda err: logger.error(err.getTraceback()))
+        .addErrback(lambda err: logger.error("%s", err.getTraceback()))
 
     deferLater(reactor, 0, _set_reactor_thread) \
-        .addErrback(lambda err: logger.error(err.getTraceback()))
+        .addErrback(lambda err: logger.error("%s", err.getTraceback()))
 
     deferLater(reactor, 0, _log_ready) \
-        .addErrback(lambda err: logger.error(err.getTraceback()))
+        .addErrback(lambda err: logger.error("%s", err.getTraceback()))
 
     # this needs to be done as late as possible to capture the highest number of
     # watched (ie imported) modules.
