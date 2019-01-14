@@ -232,8 +232,9 @@ class SqlDataStore(DataStoreBase):
                                                             min=self.txpool_min)
         self.txpool_start_deferred = self.txpool.start()
         self.txpool_start_deferred \
-            .addCallback(lambda p: logger.info("{%s} (txpool) %r started.",
-                                                                self.name, p)) \
+            .addCallback(lambda p:
+                logger.info("{%s} (txpool) %r started with dsn: %s.",
+                                                           self.name, p, dsn)) \
             .addErrback(lambda err: err.printTraceback())
 
         return self.txpool_start_deferred
@@ -297,8 +298,13 @@ class SqlDataStore(DataStoreBase):
                     del self.__kwargs['pool_size']
 
             self.engine = create_engine(what, **self.__kwargs)
-            logger.info("{%s} (sqla) %r started with: %r", self.name,
-                                                       self.engine, self.kwargs)
+            try:
+                dsn = self.engine.raw_connection().connection.dsn
+            except Exception:
+                dsn = None
+
+            logger.info("{%s} (sqla) %r started with args: %r dsn: %r",
+                                       self.name, self.engine, self.kwargs, dsn)
 
 
 def get_data_store(type, *args, **kwargs):
