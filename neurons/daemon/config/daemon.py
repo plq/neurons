@@ -844,8 +844,8 @@ class ServiceDaemon(Daemon):
                     pool_recycle=3600,
                     pool_timeout=30,
                     max_overflow=3,
-                    conn_str='postgresql://{user}:@/{daemon}_{user}'.format(
-                                        daemon=db_name, user=getpass.getuser()),
+                    conn_str='postgresql://{user}:@/{daemon}_{user}' \
+                                .format(daemon=db_name, user=getpass.getuser()),
                     sync_pool=True,
                     async_pool=True,
                 ),
