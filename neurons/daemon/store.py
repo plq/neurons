@@ -204,7 +204,12 @@ class SqlDataStore(DataStoreBase):
                 logger.warning('%s (txpool) connection recovered.', self.NAME_G)
                 return DeadConnectionDetector.connectionRecovered(self)
 
-        dsn = self.engine.raw_connection().connection.dsn
+        try:
+            dsn = self.engine.raw_connection().connection.dsn
+        except Exception:
+            print("Error getting dsn for conn_str", self.connection_string)
+            raise
+
         txpool_min = self.txpool_min
 
         class NeuronsConnectionPool(ConnectionPool):
