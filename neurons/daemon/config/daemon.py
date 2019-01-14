@@ -638,8 +638,14 @@ class Daemon(ConfigBase):
         retval = cls.get_default(daemon_name)
         if len(s) > 0:
             s = retval._migrate_impl(s)
-            retval = get_yaml_as_object(s, cls,
+            try:
+                retval = get_yaml_as_object(s, cls,
                                              validator='soft', polymorphic=True)
+            except Exception as e:
+                logger.error("Error parsing %s", repr(e))
+                logger.exception(e)
+                logger.error("File: %s", s)
+                raise
 
         retval._parse_overrides()
 
