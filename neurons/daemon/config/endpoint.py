@@ -70,6 +70,9 @@ class Service(ComplexModel):
 
         self._parent = parent
 
+    def _parse_overrides(self):
+        pass
+
     @property
     def colored_name(self):
         if self.color is None:
@@ -132,6 +135,28 @@ class Client(Service):
     port = UnsignedInteger16(nullable=False, default=0)
     type = M(Unicode(values=('tcp4', 'tcp6', 'udp4', 'udp6', 'unix'),
                                                                 default='tcp4'))
+
+    def _parse_overrides(self):
+        super(Client, self)._parse_overrides()
+
+        for k, v in config_overrides.items():
+            if k.startswith('--host-%s' % self.name):
+                host = v
+                self.host = host
+                logger.debug("Overriding host for server service '%s' to '%s'",
+                                                           self.name, self.host)
+
+                del config_overrides[k]
+                continue
+
+            if k.startswith('--port-%s' % self.name):
+                port = v
+                self.port = int(port)
+                logger.debug("Overriding port for server service '%s' to '%s'",
+                                                           self.name, self.port)
+                del config_overrides[k]
+                continue
+
 
 
 class Server(Service):
@@ -217,21 +242,25 @@ class Server(Service):
         assert not (listening_port is None)
         self.listener = listening_port
 
-    def check_overrides(self):
-        # FIXME: integrate this with argparse
-        for a in config_overrides:
-            if a.startswith('--host-%s' % self.name):
-                _, host = a.split('=', 1)
+    def _parse_overrides(self):
+        super(Server, self)._parse_overrides()
+
+        for k, v in config_overrides.items():
+            if k.startswith('--host-%s' % self.name):
+                host = v
                 self.host = host
-                logger.debug("Overriding host for service '%s' to '%s'",
+                logger.debug("Overriding host for server service '%s' to '%s'",
                                                            self.name, self.host)
+
+                del config_overrides[k]
                 continue
 
-            if a.startswith('--port-%s' % self.name):
-                _, port = a.split('=', 1)
+            if k.startswith('--port-%s' % self.name):
+                port = v
                 self.port = int(port)
-                logger.debug("Overriding port for service '%s' to '%s'",
+                logger.debug("Overriding port for server service '%s' to '%s'",
                                                            self.name, self.port)
+                del config_overrides[k]
                 continue
 
 
@@ -405,8 +434,6 @@ class HttpServer(Server):
 
     def gen_site(self):
         from twisted.web.server import Site
-
-        self.check_overrides()
 
         subapps = []
         for url, subapp in self.subapps.items():

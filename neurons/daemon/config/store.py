@@ -45,6 +45,7 @@ from spyne import ComplexModel, Boolean, Unicode, \
     UnsignedInteger16, M, Decimal, UnsignedInteger
 from spyne.util import get_version
 
+from neurons.daemon.cli import config_overrides
 from neurons.daemon.store import SqlDataStore, LdapDataStore
 
 
@@ -62,6 +63,9 @@ class StorageInfo(ComplexModel):
         assert parent is not None
 
         self._parent = parent
+
+    def _parse_overrides(self):
+        pass
 
     def close(self):
         pass
@@ -122,6 +126,7 @@ class FileStore(StorageInfo):
 
 
 class RelationalStore(StorageInfo):
+    # this is not supposed to be mandatory because it's overrideable by cli args
     conn_str = Unicode
 
     # move these to QueuePool config.
@@ -144,11 +149,32 @@ class RelationalStore(StorageInfo):
 
     async_pool = Boolean(default=True)
 
+    def _parse_overrides(self):
+        super(RelationalStore, self)._parse_overrides()
+
+        config_keys = self.config_keys()
+        ovs = set(config_overrides).intersection(set(config_keys))
+        for c in ovs:
+            setattr(self, config_keys[c], config_overrides[c])
+            del config_overrides[c]
+
+
+    def config_keys(self):
+        return {'--store-{}-{}'.format(self.name, k.replace("_", "-")): k
+                               for k in self.get_flat_type_info(self.__class__)}
+
     def __init__(self, *args, **kwargs):
         super(RelationalStore, self).__init__(*args, **kwargs)
         self.itself = None
 
     def apply(self):
+        if self.name is None:
+            raise ValueError("Unnamed store entry")
+
+        if self.conn_str is None:
+            raise ValueError("Connection string is None for store %s"
+                                                                  % (self.name))
+
         kwargs = dict(
             pool_size=self.pool_size,
             echo_pool=self.echo_pool,

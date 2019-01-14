@@ -31,7 +31,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from __future__ import print_function, absolute_import
+from __future__ import print_function, absolute_import, unicode_literals
 
 import logging
 logger = logging.getLogger(__name__)
@@ -49,11 +49,11 @@ from pwd import getpwnam, getpwuid
 from grp import getgrnam
 
 from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
-    Array, String, UnsignedInteger16, M, Integer32, ComplexModelMeta, ComplexModelBase
+    Array, String, UnsignedInteger16, M, Integer32, ComplexModelMeta, \
+    ComplexModelBase
 from spyne.protocol import ProtocolBase
 from spyne.protocol.yaml import YamlDocument
 from spyne.util import six
-from spyne.util.color import B
 from spyne.util.dictdoc import get_object_as_yaml, get_yaml_as_object
 
 from neurons import is_reactor_thread, CONFIG_FILE_VERSION
@@ -144,10 +144,10 @@ class Daemon(ConfigBase):
     """
 
     LOGGING_DEBUG_FORMAT = \
-                     u"%(l)s %(r)s | %(module)12s:%(lineno)-4d | %(message)s"
-    LOGGING_DEVEL_FORMAT = u"%(l)s | %(module)12s:%(lineno)-4d | %(message)s"
+                     "%(l)s %(r)s | %(module)12s:%(lineno)-4d | %(message)s"
+    LOGGING_DEVEL_FORMAT = "%(l)s | %(module)12s:%(lineno)-4d | %(message)s"
     LOGGING_PROD_FORMAT = \
-               u"%(l)s %(asctime)s | %(module)12s:%(lineno)-4d | %(message)s"
+               "%(l)s %(asctime)s | %(module)12s:%(lineno)-4d | %(message)s"
 
     _type_info = [
         ('name', Unicode(no_cli=True, help="Daemon Name")),
@@ -157,41 +157,41 @@ class Daemon(ConfigBase):
                                                   default=CONFIG_FILE_VERSION)),
         ('uuid', Uuid(
             no_cli=True,
-            help=u"Daemon uuid. Regenerated every time a new config file is "
-                 u"written. It could come in handy.")),
+            help="Daemon uuid. Regenerated every time a new config file is "
+                 "written. It could come in handy.")),
 
         ('secret', ByteArray(
             no_cli=True,
-            help=u"Secret key for signing cookies and other stuff.")),
+            help="Secret key for signing cookies and other stuff.")),
 
         ('daemonize', Boolean(
             default=False,
-            help=u"Daemonizes before everything else.")),
+            help="Daemonizes before everything else.")),
 
         ('workdir', Unicode(
-            help=u"The daemon workdir. The daemon won't boot if this doesn't "
-                 u"exist and can't be " u"created.")),
+            help="The daemon workdir. The daemon won't boot if this doesn't "
+                 "exist and can't be created.")),
         ('uid', Unicode(
-            help=u"The daemon user. You need to start the server as a "
-                 u"privileged user for this to work.")),
+            help="The daemon user. You need to start the server as a "
+                 "privileged user for this to work.")),
         ('gid', Unicode(
-            help=u"The daemon group. You need to start the server as a "
-                 u"privileged user for this to work.")),
+            help="The daemon group. You need to start the server as a "
+                 "privileged user for this to work.")),
 
         ('gids', Array(Unicode,
-            help=u"Additional groups for the daemon. Use an empty to drop"
-                 u"all additional groups.")),
+            help="Additional groups for the daemon. Use an empty to drop"
+                 "all additional groups.")),
 
         ('limits', LimitsChoice.customize(not_wrapped=True,
-            help=u"Process limits.")),
+            help="Process limits.")),
 
         ('pid_file', String(
-            help=u"The path to a text file that contains the pid of the "
-                 u"daemonized process.")),
+            help="The path to a text file that contains the pid of the "
+                 "daemonized process.")),
 
         ('logger_dest', String(
-            help=u"The path to the log file. The server won't daemonize "
-                 u"without this. Converted to an absolute path if not.")),
+            help="The path to the log file. The server won't daemonize "
+                 "without this. Converted to an absolute path if not.")),
 
         ('logger_dest_rotation_period', Unicode(
             values=['DAILY', 'WEEKLY', 'MONTHLY'],
@@ -201,42 +201,42 @@ class Daemon(ConfigBase):
             values=['gzip'],
             help="Logs rotation compression")),
 
-        ('version', Boolean(help=u"Show version", no_file=True)),
+        ('version', Boolean(help="Show version", no_file=True)),
 
         ('bootstrap', Boolean(
             no_file=True,
-            help=u"Bootstrap the application. Create schema, insert initial "
-                 u"data, etc.")),
+            help="Bootstrap the application. Create schema, insert initial "
+                 "data, etc.")),
 
         ('log_rss', Boolean(default=False,
-            help=u"Prepend resident set size to all logging messages. "
-                 u"Requires psutil")),
+            help="Prepend resident set size to all logging messages. "
+                 "Requires psutil")),
 
-        ('log_protocol', Boolean(default=False, help=u"Log protocol operations.")),
-        ('log_model', Boolean(default=False, help=u"Log model operations.")),
-        ('log_cloth', Boolean(default=False, help=u"Log cloth generation.")),
+        ('log_protocol', Boolean(default=False, help="Log protocol operations.")),
+        ('log_model', Boolean(default=False, help="Log model operations.")),
+        ('log_cloth', Boolean(default=False, help="Log cloth generation.")),
         ('log_interface', Boolean(default=False,
-                                         help=u"Log interface build process.")),
+                                         help="Log interface build process.")),
 
         ('write_config', Boolean(no_file=True,
-                                   help=u"Write configuration file and exit.")),
+                                   help="Write configuration file and exit.")),
 
         ('alert_dests', Array(AlertDestination, default=[])),
 
         ('shell', Boolean(
             no_file=True, default=False,
-            help=u"Drop to IPython shell. Useful for trying ORM stuff")),
+            help="Drop to IPython shell. Useful for trying ORM stuff")),
         ('ikernel', Boolean(
             no_file=True, default=False,
-            help=u"Start IPython kernel.")),
+            help="Start IPython kernel.")),
 
         ('autoreload', Boolean(
-            default=False, help=u"Auto-relaunch daemon process when one of "
-                                u"the source files change.")),
+            default=False, help="Auto-relaunch daemon process when one of "
+                                "the source files change.")),
 
         ('dry_run', Boolean(no_file=True,
-            default=False, help=u"Do everything up until the reactor start and "
-                                u"exit instead of starting the reactor.")),
+            default=False, help="Do everything up until the reactor start and "
+                                "exit instead of starting the reactor.")),
 
         ('debug', Boolean(default=False)),
         ('debug_reactor', Boolean(default=False)),
@@ -268,6 +268,10 @@ class Daemon(ConfigBase):
     def _set_parent_of_children(self, wrd):
         for v in wrd.values():
             v.set_parent(self)
+
+    def _parse_overrides(self):
+        for s in self.services.values():
+            s._parse_overrides()
 
     @property
     def _services(self):
@@ -637,6 +641,8 @@ class Daemon(ConfigBase):
             retval = get_yaml_as_object(s, cls,
                                              validator='soft', polymorphic=True)
 
+        retval._parse_overrides()
+
         for k, v in cli.items():
             if not v in (None, False):
                 setattr(retval, k, v)
@@ -756,31 +762,31 @@ class ServiceDaemon(Daemon):
 
     _type_info = [
         ('write_wsdl', Unicode(
-            help=u"Write Wsdl document(s) to the given directory and exit. "
-                 u"It is created if missing", no_file=True, metavar='WSDL_DIR')),
+            help="Write Wsdl document(s) to the given directory and exit. "
+                 "It is created if missing", no_file=True, metavar='WSDL_DIR')),
 
         ('write_xsd', Unicode(
-            help=u"Write Xml Schema document(s) to given directory and exit. "
-                 u"It is created if missing", no_file=True, metavar='XSD_DIR')),
+            help="Write Xml Schema document(s) to given directory and exit. "
+                  "It is created if missing", no_file=True, metavar='XSD_DIR')),
 
         ('log_orm', Boolean(default=False,
-                                       help=u"Log SQLAlchemy ORM operations.")),
-        ('log_queries', Boolean(default=False, help=u"Log SQL queries.")),
+                                        help="Log SQLAlchemy ORM operations.")),
+        ('log_queries', Boolean(default=False, help="Log SQL queries.")),
         ('log_results', Boolean(default=False,
-                        help=u"Log SQL query results in addition to queries.")),
+                         help="Log SQL query results in addition to queries.")),
         ('log_dbconn', Boolean(default=False,
-            help=u"Prepend number of open database connections to all "
-                                                         u"logging messages.")),
+            help="Prepend number of open database connections to all "
+                                                          "logging messages.")),
         ('log_sqlalchemy', Boolean(default=False,
-                               help=u"Log SQLAlchemy messages in debug level")),
+                                help="Log SQLAlchemy messages in debug level")),
 
-        ('drop_all_tables', Boolean(help=u"Drops all tables in the database.",
+        ('drop_all_tables', Boolean(help="Drops all tables in the database.",
                                                                  no_file=True)),
 
-        ('main_store', Unicode(help=u"The name of the store for binding "
-                                         u"neurons.TableModel's metadata to.")),
+        ('main_store', Unicode(help="The name of the store for binding "
+                                          "neurons.TableModel's metadata to.")),
 
-        ('gen_data', Boolean(help=u"Generates random data", no_file=True)),
+        ('gen_data', Boolean(help="Generates random data", no_file=True)),
         ('_stores', Array(StorageInfo, sub_name='stores')),
     ]
 
@@ -826,25 +832,25 @@ class ServiceDaemon(Daemon):
             name=daemon_name,
             _stores=[
                 RelationalStore(
-                    name=u"sql_main",
-                    backend=u"sqlalchemy",
+                    name="sql_main",
+                    backend="sqlalchemy",
                     pool_size=10,
                     pool_recycle=3600,
                     pool_timeout=30,
                     max_overflow=3,
-                    conn_str=u'postgresql://{user}:@/{daemon}_{user}'.format(
-                                    daemon=db_name, user=getpass.getuser()),
+                    conn_str='postgresql://{user}:@/{daemon}_{user}'.format(
+                                        daemon=db_name, user=getpass.getuser()),
                     sync_pool=True,
                     async_pool=True,
                 ),
             ],
-            main_store=u'sql_main',
+            main_store='sql_main',
             logger_dest_rotation_period='WEEKLY',
             logger_dest_rotation_compression='gzip',
             _loggers=[
                 Logger(
-                    path=u'.',
-                    level=u'DEBUG',
+                    path='.',
+                    level='DEBUG',
                     # TODO: implement this
                     # format=cls.LOGGING_DEVEL_FORMAT
                 ),
@@ -875,6 +881,12 @@ class ServiceDaemon(Daemon):
             handler._modify_record = _modify_record
 
         return self
+
+    def _parse_overrides(self):
+        super(ServiceDaemon, self)._parse_overrides()
+
+        for s in self.stores.values():
+            s._parse_overrides()
 
     def apply(self, daemonize=True):
         """Daemonizes the process if requested, then sets up logging and pid
