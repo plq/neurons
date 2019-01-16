@@ -390,10 +390,18 @@ class Daemon(ConfigBase):
             log_dest = sys.stdout
 
             try:
-                import colorama
-                colorama.init()
-                if self.debug:
-                    print("colorama loaded.")
+                callers = {
+                    func_name for file_name, line_number, func_name, code in
+                                                      traceback.extract_stack()}
+
+                if 'pytest_cmdline_main' in callers:
+                    print("colorama not loaded because pytest was detected.")
+
+                else:
+                    import colorama
+                    colorama.init()
+                    if self.debug:
+                        print("colorama loaded.")
 
             except Exception as e:
                 if self.debug:
