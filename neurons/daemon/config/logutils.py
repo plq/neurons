@@ -262,6 +262,8 @@ def TDynamicallyRotatedLog(config, comp_method):
 
         else:
             def shouldRotate(self):
+                logger.warning("Invalid logger_dest_rotation_period value %r",
+                                             config.logger_dest_rotation_period)
                 return False
 
     return DynamicallyRotatedLog
