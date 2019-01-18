@@ -179,7 +179,7 @@ class Daemon(ConfigBase):
                  "privileged user for this to work.")),
 
         ('gids', Array(Unicode,
-            help="Additional groups for the daemon. Use an empty to drop"
+            help="Additional groups for the daemon. Use an empty list to drop"
                  "all additional groups.")),
 
         ('limits', LimitsChoice.customize(not_wrapped=True,
@@ -205,18 +205,18 @@ class Daemon(ConfigBase):
 
         ('bootstrap', Boolean(
             no_file=True,
-            help="Bootstrap the application. Create schema, insert initial "
-                 "data, etc.")),
+            help="Bootstrap the application instead of starting it. "
+                 "Create database schema, insert initial data, etc.")),
 
         ('log_rss', Boolean(default=False,
             help="Prepend resident set size to all logging messages. "
                  "Requires psutil")),
-
-        ('log_protocol', Boolean(default=False, help="Log protocol operations.")),
+        ('log_protocol', Boolean(default=False,
+                                              help="Log protocol operations.")),
         ('log_model', Boolean(default=False, help="Log model operations.")),
         ('log_cloth', Boolean(default=False, help="Log cloth generation.")),
         ('log_interface', Boolean(default=False,
-                                         help="Log interface build process.")),
+                                          help="Log interface build process.")),
 
         ('write_config', Boolean(no_file=True,
                                    help="Write configuration file and exit.")),
@@ -231,12 +231,14 @@ class Daemon(ConfigBase):
             help="Start IPython kernel.")),
 
         ('autoreload', Boolean(
-            default=False, help="Auto-relaunch daemon process when one of "
-                                "the source files change.")),
+            default=False,
+            help="Auto-relaunch daemon process when one of "
+                 "the source files change.")),
 
-        ('dry_run', Boolean(no_file=True,
-            default=False, help="Do everything up until the reactor start and "
-                                "exit instead of starting the reactor.")),
+        ('dry_run', Boolean(
+            no_file=True, default=False,
+            help="Do everything up until the reactor start and "
+                 "exit instead of starting the reactor.")),
 
         ('debug', Boolean(default=False)),
         ('debug_reactor', Boolean(default=False)),
