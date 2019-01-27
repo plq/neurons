@@ -113,7 +113,9 @@ class Version(TableModel):
             keys.sort()
 
             if len(keys) > 0:
-                logger.info("Migration operations %r will be performed", keys)
+                logger.info("%s schema version detected as %s. "
+                                "Migration operation(s) %r will be performed",
+                                            submodule, db_version.version, keys)
 
             for vernum in keys:
                 migrate = migration_dict[vernum]
