@@ -48,9 +48,8 @@ from argparse import Action
 from pwd import getpwnam, getpwuid
 from grp import getgrnam
 
-from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, \
-    Array, String, UnsignedInteger16, M, Integer32, ComplexModelMeta, \
-    ComplexModelBase
+from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, Array, \
+    String, UnsignedInteger16, M, Integer32, ComplexModelMeta, ComplexModelBase
 from spyne.protocol import ProtocolBase
 from spyne.protocol.yaml import YamlDocument
 from spyne.util import six
@@ -447,9 +446,9 @@ class Daemon(ConfigBase):
 
     @staticmethod
     def hello_darkness_my_old_friend():
-        # while nice to keep in mind, this is sent before logging is initialized
-        # so should not be displayed in any way :)
-        logger.info("Quis custodiet ipsos custodes?")
+        logger.info("If you see this, it means something else has also "
+                "initialized the logging subsystem. This means you will get "
+                                                     "duplicate logging lines.")
 
     def pre_logging_apply(self):
         if self.debug:
