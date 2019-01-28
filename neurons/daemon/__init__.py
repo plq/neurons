@@ -31,6 +31,15 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+# Exit codes
+EXIT_SUCCESS = 0
+EXIT_ERR_UNKNOWN = 1
+# EXIT_SIGNAL = 100
+EXIT_ERR_MEMORY = 201
+EXIT_ERR_LISTEN_TCP = 100000
+EXIT_ERR_LISTEN_UDP = 200000
+
+
 from neurons.daemon import dowser
 from neurons.daemon.main import main
 

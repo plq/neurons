@@ -50,6 +50,8 @@ from spyne import Application, UnsignedInteger, ComplexModel, Unicode, \
     ValidationError, Integer32
 from spyne.util.resource import get_resource_path
 
+from neurons.daemon import EXIT_ERR_LISTEN_TCP, EXIT_ERR_LISTEN_UDP, \
+                                                                EXIT_ERR_UNKNOWN
 from neurons.daemon.cli import config_overrides
 from neurons.daemon.config._wdict import wdict, wrdict, Twrdict
 
@@ -230,13 +232,17 @@ class Server(Service):
     def _eb_listen(self, err):
         self.failed = True
 
-        from twisted.internet import reactor
         self.color = Fore.RED
         logging.error("%s Error listening to %s, stopping reactor\n%s",
                                self.colored_name, self.lstr, err.getTraceback())
 
-        from twisted.internet.task import deferLater
-        deferLater(reactor, 0, reactor.stop)
+        if self.type.startswith('udp'):
+            raise os._exit(EXIT_ERR_LISTEN_UDP + self.port)
+
+        elif self.type.startswith('tcp'):
+            raise os._exit(EXIT_ERR_LISTEN_TCP + self.port)
+
+        raise os._exit(EXIT_ERR_UNKNOWN)
 
     def set_listening_port(self, listening_port):
         assert not (listening_port is None)
