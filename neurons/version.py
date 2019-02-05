@@ -78,10 +78,9 @@ class Version(TableModel):
 
         db = config.get_main_store()
         with closing(db.Session()) as session:
-            logger.info("Locking table '%s' for schema version checks",
-                                                                     table_name)
-            session.connection().execute(
-                                   "lock %s in exclusive mode;" % (table_name,))
+            logger.info("Acquiring pg_advisory_xact_lock(0) "
+                                                    "for schema version checks")
+            session.connection().execute("select pg_advisory_xact_lock(0)")
 
             # Create missing tables
             TableModel.Attributes.sqla_metadata.create_all(checkfirst=True)
