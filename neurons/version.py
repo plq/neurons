@@ -125,7 +125,17 @@ class Version(TableModel):
                                            .filter_by(submodule=submodule).one()
                     inner_db_version.version = vernum
 
-                    migrate(config, inner_session)
+                    try:
+                        migrate(config, inner_session)
+                    except Exception as e:
+                        logger.exception(e)
+                        logger.error("Migration operation %d failed, "
+                                                     "stopping reactor", vernum)
+
+                        from twisted.internet import reactor
+                        from twisted.internet.task import deferLater
+                        deferLater(reactor, 0, reactor.stop)
+                        raise
 
                     inner_session.commit()
 
