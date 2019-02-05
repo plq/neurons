@@ -121,7 +121,7 @@ class Version(TableModel):
                 migrate = migration_dict[vernum]
 
                 with closing(db.Session()) as inner_session:
-                    inner_db_version = session.query(Version) \
+                    inner_db_version = inner_session.query(Version) \
                                            .filter_by(submodule=submodule).one()
                     inner_db_version.version = vernum
 
