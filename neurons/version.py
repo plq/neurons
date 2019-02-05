@@ -120,11 +120,14 @@ class Version(TableModel):
             for vernum in keys:
                 migrate = migration_dict[vernum]
 
-                db_version.version = vernum
+                with closing(db.Session()) as inner_session:
+                    inner_db_version = session.query(Version) \
+                                           .filter_by(submodule=submodule).one()
+                    inner_db_version.version = vernum
 
-                migrate(config, session)
+                    migrate(config, inner_session)
 
-                session.commit()
+                    inner_session.commit()
 
                 num_migops += 1
                 logger.info("%s schema migration to version %d was "
