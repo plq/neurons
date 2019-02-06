@@ -35,6 +35,8 @@
 import logging
 logger = logging.getLogger(__name__)
 
+from time import time
+
 from contextlib import closing
 from collections import namedtuple
 
@@ -125,7 +127,9 @@ class Version(TableModel):
                     inner_db_version.version = vernum
 
                     try:
+                        start_t = time()
                         migrate(config, inner_session)
+
                     except Exception as e:
                         logger.exception(e)
                         logger.error("Migration operation %d failed, "
@@ -139,8 +143,8 @@ class Version(TableModel):
                     inner_session.commit()
 
                 num_migops += 1
-                logger.info("%s schema migration to version %d was "
-                                   "performed successfully.", submodule, vernum)
+                logger.info("%s schema migration to version %d took %.1fs.",
+                                            submodule, vernum, time() - start_t)
 
         if num_migops == 0:
             logger.info("%s schema version detected as %s. Table unlocked.",
