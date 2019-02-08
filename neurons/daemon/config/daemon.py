@@ -575,6 +575,16 @@ class Daemon(ConfigBase):
 
         self.apply_logging()
 
+        if self.debug:
+            import twisted.internet.base
+            twisted.internet.base.DelayedCall.debug = True
+
+            import twisted.internet.defer
+            twisted.internet.defer.setDebugging(True)
+
+            logger.info("Enabled debugging for "
+                 "twisted.internet.base.DelayedCall and twisted.internet.defer")
+
         if daemonize:
             self.apply_limits()
             self.apply_listeners()
