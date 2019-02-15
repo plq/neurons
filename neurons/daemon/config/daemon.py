@@ -60,7 +60,7 @@ from neurons.daemon.cli import spyne_to_argparse
 from neurons.daemon.daemonize import daemonize_do
 
 from neurons.daemon.config import LOGLEVEL_STR_MAP
-from neurons.daemon.config._wdict import wdict, Twrdict
+from neurons.daemon.config._wdict import wdict, Twdict
 from neurons.daemon.config.limits import LimitsChoice
 
 from neurons.daemon.config import FILE_VERSION_KEY
@@ -256,7 +256,7 @@ class Daemon(ConfigBase):
         if services is not None:
             self.services = services
         if self.services is None:
-            self.services = Twrdict(self, 'name')()
+            self.services = Twdict(self, 'name')()
         self._set_parent_of_children(self.services)
 
         loggers = kwargs.get('loggers', None)
@@ -283,14 +283,14 @@ class Daemon(ConfigBase):
 
             return self.services.values()
 
-        self.services = Twrdict(self, 'name')()
+        self.services = Twdict(self, 'name')()
         return []
 
     @_services.setter
     def _services(self, what):
         self.services = what
         if what is not None:
-            self.services = Twrdict(self, 'name')([(s.name, s) for s in what])
+            self.services = Twdict(self, 'name')([(s.name, s) for s in what])
 
     @property
     def _loggers(self):

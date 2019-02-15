@@ -53,7 +53,7 @@ from spyne.util.resource import get_resource_path
 from neurons.daemon import EXIT_ERR_LISTEN_TCP, EXIT_ERR_LISTEN_UDP, \
                                                                 EXIT_ERR_UNKNOWN
 from neurons.daemon.cli import config_overrides
-from neurons.daemon.config._wdict import wdict, wrdict, Twrdict
+from neurons.daemon.config._wdict import wdict, Twdict
 
 
 class Service(ComplexModel):
@@ -492,18 +492,18 @@ class HttpServer(Server):
 
             return self.subapps.values()
 
-        self.subapps = wrdict()
+        self.subapps = wdict()
         return []
 
     @_subapps.setter
     def _subapps(self, subapps):
         if isinstance(subapps, dict):
-            self.subapps = Twrdict(self, 'url')()
+            self.subapps = Twdict(self, 'url')()
             for k, v in subapps.items():
                 self.subapps[k] = v
 
         elif isinstance(subapps, (tuple, list)):
-            self.subapps = Twrdict(self, 'url')()
+            self.subapps = Twdict(self, 'url')()
             for v in subapps:
                 assert v.url is not None, "%r.url is None" % v
                 self.subapps[v.url] = v
