@@ -353,7 +353,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
             return 0
 
 
-class BootStrapper(object):
+class Bootstrapper(object):
     """Creates all databases"""
 
     def __init__(self, init):
@@ -440,7 +440,7 @@ def _compile_mappers():
 
 
 def boot(config_name, argv, init, bootstrap=None,
-                bootstrapper=BootStrapper, cls=ServiceDaemon, daemon_name=None):
+                bootstrapper=Bootstrapper, cls=ServiceDaemon, daemon_name=None):
     """Boots the daemon. The signature is the same as the ``main()`` function in
     this module.
 
@@ -448,7 +448,7 @@ def boot(config_name, argv, init, bootstrap=None,
     :param argv: A sequence of command line arguments.
     :param init: A callable that returns the init dict.
     :param bootstrap: A callable that bootstraps daemon's environment.
-        It's deprecated in favor of bootstrapper.
+        It's DEPRECATED in favor of bootstrapper.
     :param bootstrapper: A factory for a callable that bootstraps daemon's
         environment. This is supposed to be run once for every new deployment.
     :param cls: a class:`Daemon` subclass
@@ -551,7 +551,7 @@ def _log_ready(config_name, orig_stack, py_start_t, func_start_t):
 
 
 def main(config_name, argv, init, bootstrap=None,
-                bootstrapper=BootStrapper, cls=ServiceDaemon, daemon_name=None):
+                bootstrapper=Bootstrapper, cls=ServiceDaemon, daemon_name=None):
     """Boots and runs the daemon, making it ready to accept requests. This is a
     typical main function for daemons. If you just want to boot the daemon
     and take care of running it yourself, see the ``boot()`` function.
