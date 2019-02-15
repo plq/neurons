@@ -17,7 +17,7 @@ SomeClass:
     name: somedaemon
     secret: c29tZSBzZWNyZXQ=
     services:
-    -   HttpListener:
+    -   HttpServer:
             type: tcp4
             host: 0.0.0.0
             name: someservice

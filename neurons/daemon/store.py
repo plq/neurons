@@ -40,6 +40,8 @@ import traceback
 
 import neurons
 
+from spyne.util.color import G, YEL, R
+
 from sqlalchemy import MetaData
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine import Engine
@@ -136,6 +138,7 @@ class SqlDataStore(DataStoreBase):
 
         if engine is not None:
             assert isinstance(engine, Engine)
+
         if metadata is not None:
             assert isinstance(metadata, MetaData)
 
@@ -143,6 +146,7 @@ class SqlDataStore(DataStoreBase):
         self.__metadata = None
         self.__engine = None
         self.Session = None
+        """SQLAlchemy session constructor."""
 
         self.metadata = metadata or MetaData()
         self.engine = engine
@@ -151,6 +155,9 @@ class SqlDataStore(DataStoreBase):
 
         self.txpool = None
         """TxPostgres connection pool. Added when `add_txpool` is called."""
+
+        self.txpool_min = 1
+        """TxPostgres minimum number of pooled connections."""
 
         self.txpool_start_deferred = None
         """Deferred from TxPostgres pool start()."""
@@ -180,19 +187,30 @@ class SqlDataStore(DataStoreBase):
         from txpostgres.reconnection import DeadConnectionDetector
 
         class LoggingDeadConnectionDetector(DeadConnectionDetector):
+            NAME_G = G('{%s}' % (self.name,))
+            NAME_R = R('{%s}' % (self.name,))
+            NAME_YEL = YEL('{%s}' % (self.name,))
+
             def startReconnecting(self, err):
-                logger.warning('TxPool database connection down: %r)', err.value)
+                logger.warning('%s (txpool) database connection down: %r)',
+                                                         self.NAME_R, err.value)
                 return DeadConnectionDetector.startReconnecting(self, err)
 
             def reconnect(self):
-                logger.warning('TxPool reconnecting...')
+                logger.warning('%s (txpool) reconnecting...', self.NAME_YEL)
                 return DeadConnectionDetector.reconnect(self)
 
             def connectionRecovered(self):
-                logger.warning('TxPool connection recovered')
+                logger.warning('%s (txpool) connection recovered.', self.NAME_G)
                 return DeadConnectionDetector.connectionRecovered(self)
 
-        dsn = self.engine.raw_connection().connection.dsn
+        try:
+            dsn = self.engine.raw_connection().connection.dsn
+        except Exception:
+            print("Error getting dsn for conn_str", self.connection_string)
+            raise
+
+        txpool_min = self.txpool_min
 
         class NeuronsConnectionPool(ConnectionPool):
             @staticmethod
@@ -200,14 +218,28 @@ class SqlDataStore(DataStoreBase):
                 retval = Connection(reactor=reactor, cooperator=cooperator,
                                        detector=LoggingDeadConnectionDetector())
 
-                logger.debug("Spawning postgresql backend")
-
+                logger.debug("{%s} (txpool) spawning backend", self.name)
                 return retval
 
-        self.txpool = NeuronsConnectionPool("heleleley", dsn, min=1)
+            def __repr__(self):
+                data = (
+                    ', '.join(repr(c) for c in self.connargs),
+                    'min=%d' % (txpool_min,),
+                    ', '.join(("%s=%r" % (k, v)
+                                              for k, v in self.connkw.items())),
+                )
+
+                data = [s for s in data if len(s) > 0]
+
+                return "NeuronsConnectionPool(%s)" % (', '.join(data),)
+
+        self.txpool = NeuronsConnectionPool("heleleley", dsn,
+                                                            min=self.txpool_min)
         self.txpool_start_deferred = self.txpool.start()
         self.txpool_start_deferred \
-            .addCallback(lambda p: logger.info("TxPool %r started.", p)) \
+            .addCallback(lambda p:
+                logger.info("{%s} (txpool) %r started with dsn: '%s'.",
+                                                           self.name, p, dsn)) \
             .addErrback(lambda err: err.printTraceback())
 
         return self.txpool_start_deferred
@@ -271,8 +303,13 @@ class SqlDataStore(DataStoreBase):
                     del self.__kwargs['pool_size']
 
             self.engine = create_engine(what, **self.__kwargs)
-            logger.info("[%s] %r started with: %r", self.name,
-                                                       self.engine, self.kwargs)
+            try:
+                dsn = self.engine.raw_connection().connection.dsn
+            except Exception:
+                dsn = None
+
+            logger.info("{%s} (sqla) %r started with args: %r dsn: %r",
+                                       self.name, self.engine, self.kwargs, dsn)
 
 
 def get_data_store(type, *args, **kwargs):

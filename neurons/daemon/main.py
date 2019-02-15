@@ -33,32 +33,37 @@
 
 from __future__ import print_function
 
+from time import time
+py_start_t = time()
+"""Approximate start time of the python code"""
+
 import logging
 logger = logging.getLogger(__name__)
 
 import os
-import sys
 import threading
-import resource
 import warnings
+import inspect
 
 from os.path import isfile, join, dirname
 
+from colorama import Fore
+
 from spyne.util.six import StringIO
+from spyne.util.color import R, DARK_R
 from spyne.store.relational.util import database_exists, create_database
 
 from sqlalchemy import MetaData
 
 from neurons.daemon.config import FileStore, ServiceDisabled, ServiceDaemon, \
-    RelationalStore, LdapStore, Listener
+    RelationalStore, LdapStore, Server
 
 
 def get_package_version(pkg_name):
     try:
         import pkg_resources
         return pkg_resources.get_distribution(pkg_name).version
-    except Exception as e:
-        sys.stderr.write(repr(e))
+    except Exception:
         return 'unknown'
 
 
@@ -214,9 +219,8 @@ def _do_start_shell(config):
         return IPython.embed_kernel()
 
 
-def _cb_listen_ok(lp, subconfig, factory):
+def _set_real_factory(lp, subconfig, factory):
     # lp = listening port -- what endpoint.listen()'s return value ends up as
-
     if hasattr(lp.factory, 'wrappedFactory'):
         import twisted.protocols.tls
         assert isinstance(lp.factory, twisted.protocols.tls.TLSMemoryBIOFactory)
@@ -225,10 +229,13 @@ def _cb_listen_ok(lp, subconfig, factory):
     else:
         target_factory = lp.factory
 
-    assert isinstance(target_factory, Listener.FactoryProxy)
+    subconfig.color = Fore.GREEN
+
+    assert isinstance(target_factory, Server.FactoryProxy)
     target_factory.real_factory = factory
 
-    logger.info("[%s] Set factory ok", subconfig.name)
+    logger.info("%s Service ready with factory %r",
+                                                subconfig.colored_name, factory)
 
 
 def _inner_main(config, init, bootstrap, bootstrapper):
@@ -240,13 +247,13 @@ def _inner_main(config, init, bootstrap, bootstrapper):
     if config.bootstrap:
         return _do_bootstrap(config, init, bootstrap, bootstrapper)
 
-    # if requested, drop all tables and exit
-    if config.drop_all_tables:
-        return _do_drop_all_tables(config, init)
+    if isinstance(config, ServiceDaemon):
+        # if requested, drop all tables and exit
+        if config.drop_all_tables:
+            return _do_drop_all_tables(config, init)
 
     config.apply()
-    logger.info("Initialized '%s' version %s.", config.name,
-                                               get_package_version(config.name))
+    logger.info("%s config valid, initializing services...", config.name)
 
     # initialize main table model
     if isinstance(config, ServiceDaemon):
@@ -272,7 +279,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
             disabled = config.services[k].disabled
 
         if disabled:
-            logger.info("Service '%s' is disabled in the config.", k)
+            logger.info("%s Service disabled.", DARK_R('[%s]' % (k,)))
             continue
 
         try:
@@ -289,32 +296,39 @@ def _inner_main(config, init, bootstrap, bootstrapper):
                 else:
                     subconfig = config.services[k] = v.force
 
-                logger.info("[%s] Configuration initialized from "
-                                                        "hard-coded object.", k)
+                logger.info("%s Configuration initialized from "
+                                   "hard-coded object.", subconfig.colored_name)
 
             else:
-                if k in config.services:
-                    logger.info("[%s] Configuration initialized from file.", k)
-                else:
-                    logger.info("[%s] Configuration initialized from "
-                                                                  "default.", k)
-
+                k_was_there = k in config.services
                 subconfig = config.services.getwrite(k, v.default)
 
-            factory = v.init(config)
-            if subconfig.d is not None:
-                if subconfig.listener is None:
-                    subconfig.d.addCallback(_cb_listen_ok, subconfig, factory)
-
+                if k_was_there:
+                    logger.info("%s Configuration initialized from file.",
+                                                         subconfig.colored_name)
                 else:
-                    _cb_listen_ok(subconfig.listener, subconfig, factory)
+                    logger.info("%s Configuration initialized from default.",
+                                                         subconfig.colored_name)
 
-            else:
-                subconfig.listen() \
-                    .addCallback(_cb_listen_ok, subconfig, factory)
+            factory = v.init(config)
 
         except ServiceDisabled:
-            logger.info("Service '%s' is disabled.", k)
+            logger.info("%s Service disabled.", R('[%s]' % (k,)))
+            continue
+
+        if not isinstance(subconfig, Server):
+            continue
+
+        if subconfig.d is not None:
+            if subconfig.listener is None:
+                subconfig.d.addCallback(_set_real_factory, subconfig, factory)
+
+            else:
+                _set_real_factory(subconfig.listener, subconfig, factory)
+
+        else:
+            subconfig.listen() \
+                .addCallback(_set_real_factory, subconfig, factory)
 
     # if requested, write interface documents and exit
     if isinstance(config, ServiceDaemon):
@@ -425,9 +439,10 @@ def _compile_mappers():
     compile_mappers()
 
 
-def main(config_name, argv, init, bootstrap=None,
+def boot(config_name, argv, init, bootstrap=None,
                 bootstrapper=BootStrapper, cls=ServiceDaemon, daemon_name=None):
-    """A typical main function for daemons.
+    """Boots the daemon. The signature is the same as the ``main()`` function in
+    this module.
 
     :param config_name: Configuration file name. .yaml suffix is appended.
     :param argv: A sequence of command line arguments.
@@ -438,17 +453,21 @@ def main(config_name, argv, init, bootstrap=None,
         environment. This is supposed to be run once for every new deployment.
     :param cls: a class:`Daemon` subclass
     :param daemon_name: Daemon name. If ``None``, ``config_name`` is used.
-    :return: Exit code of the daemon as int.
+    :return: The return code to be passed to sys.exit() and the daemon config
+        object. If the return code is None, it's OK to proceed with running the
+        daemon.
     """
 
     config = cls.parse_config(config_name, argv)
     if config.help:
         from neurons.daemon.cli import spyne_to_argparse
+
         print(spyne_to_argparse(cls, ignore_defaults=False).format_help())
-        return 0
+        return 0, config
 
     if config.name is None:
         config.name = config_name
+
     if daemon_name is not None:
         config.name = daemon_name
 
@@ -465,11 +484,11 @@ def main(config_name, argv, init, bootstrap=None,
         stores = list(config._stores)
 
     try:
-        retval = _inner_main(config, init, bootstrap, bootstrapper)
+        retcode = _inner_main(config, init, bootstrap, bootstrapper)
 
         # if _inner_main did something other than initializing daemons
-        if retval is not None:
-            return retval
+        if retcode is not None:
+            return retcode, config
 
     finally:
         if not isfile(config.config_file):
@@ -499,18 +518,79 @@ def main(config_name, argv, init, bootstrap=None,
             logger.info("Updating configuration file because new secret was "
                                                                     "generated")
 
+    return None, config
+
+def _log_ready(config_name, orig_stack, py_start_t, func_start_t):
+    import resource
+
+    try:
+        import psutil
+        proc_start_t = psutil.Process(os.getpid()).create_time()
+    except ImportError:
+        proc_start_t = '?'
+
+    max_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000.0
+
+    package_name = config_name
+
+    frame, file_name, line_num, func_name, lines, line_id = orig_stack[1]
+    module = inspect.getmodule(frame)
+    if module is not None:
+        package_name = module.__name__.split('.')[0]
+
+    logger.info(
+        "%s version %s ready. Max RSS: %.1fmb uptime: %s import: %.2fs "
+                                                              "main: %.2fs",
+        config_name, get_package_version(package_name),
+        max_rss,
+        '[?psutil?]' if proc_start_t == '?'
+                                    else '%.2fs' % (time() - proc_start_t,),
+        time() - py_start_t,
+        time() - func_start_t,
+    )
+
+
+def main(config_name, argv, init, bootstrap=None,
+                bootstrapper=BootStrapper, cls=ServiceDaemon, daemon_name=None):
+    """Boots and runs the daemon, making it ready to accept requests. This is a
+    typical main function for daemons. If you just want to boot the daemon
+    and take care of running it yourself, see the ``boot()`` function.
+
+    :param config_name: Configuration file name. .yaml suffix is appended.
+    :param argv: A sequence of command line arguments.
+    :param init: A callable that returns the init dict.
+    :param bootstrap: A callable that bootstraps daemon's environment.
+        It's deprecated in favor of bootstrapper.
+    :param bootstrapper: A factory for a callable that bootstraps daemon's
+        environment. This is supposed to be run once for every new deployment.
+    :param cls: a class:`Daemon` subclass
+    :param daemon_name: Daemon name. If ``None``, ``config_name`` is used.
+    :return: Exit code of the daemon as int.
+    """
+
+    func_start_t = time()
+    """Start time of post-import initialization code"""
+
+    retcode, config = boot(config_name, argv, init, bootstrap,
+                                                 bootstrapper, cls, daemon_name)
+
     # at this point it's safe to import the reactor (or anything else from
     # twisted) because the decision on whether to fork has already been made.
     from twisted.internet import reactor
     from twisted.internet.task import deferLater
 
-    deferLater(reactor, 0, _compile_mappers)
+    deferLater(reactor, 0, _compile_mappers) \
+        .addErrback(lambda err: logger.error("%s", err.getTraceback()))
 
-    logger.info("Starting reactor... Max. RSS: %f",
-                    resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000.0)
+    deferLater(reactor, 0, _set_reactor_thread) \
+        .addErrback(lambda err: logger.error("%s", err.getTraceback()))
 
-    deferLater(reactor, 0, _set_reactor_thread)
+    deferLater(reactor, 0, _log_ready,
+                       config_name, inspect.stack(), py_start_t, func_start_t) \
+        .addErrback(lambda err: logger.error("%s", err.getTraceback()))
 
+    # this needs to be done as late as possible to capture the highest number of
+    # watched (ie imported) modules.
     if config.autoreload:
         from spyne.util.autorel import AutoReloader
         frequency = 0.5
@@ -518,7 +598,7 @@ def main(config_name, argv, init, bootstrap=None,
         assert autorel.start() is not None
         num_files = len(autorel.sysfiles() | autorel.files)
         logger.info("Auto reloader init success: Watching %d files "
-                    "every %g seconds.", num_files, frequency)
+                                      "every %g seconds.", num_files, frequency)
 
     if config.dry_run:
         return 0

@@ -46,13 +46,14 @@ from neurons.daemon.config._base import LOGLEVEL_MAP_ABB
 from neurons.daemon.config._base import LOGLEVEL_STR_MAP
 from neurons.daemon.config._base import ServiceDefinition
 
-from neurons.daemon.config.listener import Service
-from neurons.daemon.config.listener import Listener
-from neurons.daemon.config.listener import SslListener
-from neurons.daemon.config.listener import HttpListener
-from neurons.daemon.config.listener import WsgiListener
-from neurons.daemon.config.listener import HttpApplication
-from neurons.daemon.config.listener import StaticFileServer
+from neurons.daemon.config.endpoint import Service
+from neurons.daemon.config.endpoint import Client
+from neurons.daemon.config.endpoint import Server
+from neurons.daemon.config.endpoint import SslServer
+from neurons.daemon.config.endpoint import HttpServer
+from neurons.daemon.config.endpoint import WsgiServer
+from neurons.daemon.config.endpoint import HttpApplication
+from neurons.daemon.config.endpoint import StaticFileServer
 
 from neurons.daemon.config.store import FileStore
 from neurons.daemon.config.store import LdapStore

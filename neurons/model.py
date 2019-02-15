@@ -44,8 +44,8 @@ class TableModelBase(TTableModelBase()):
 
         super(TableModelBase, self).__init__(*args, **kwargs)
 
-    def _safe_set(self, key, value, t):
-        retval = super(TableModelBase, self)._safe_set(key, value, t)
+    def _safe_set(self, key, value, t, attrs):
+        retval = super(TableModelBase, self)._safe_set(key, value, t, attrs)
         if retval:
             self._changes.add(key)
         return retval

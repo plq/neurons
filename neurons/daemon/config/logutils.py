@@ -90,9 +90,7 @@ class Logger(ComplexModel):
         super(Logger, self).__init__(*args, **kwargs)
 
     def set_parent(self, parent):
-        assert self._parent is None
         assert parent is not None
-
         self._parent = parent
 
     def apply(self):
@@ -104,7 +102,8 @@ class Logger(ComplexModel):
         _logger.setLevel(LOGLEVEL_MAP[self.level])
 
         if self.path == '.':
-            logger.info("Root Logger level override: %s", self.level)
+            self._parent.boot_message()
+            logger.info("Root logger level override: %s", self.level)
         else:
             logger.info("Logger level override %s = %s", self.path, self.level)
 
@@ -263,6 +262,8 @@ def TDynamicallyRotatedLog(config, comp_method):
 
         else:
             def shouldRotate(self):
+                logger.warning("Invalid logger_dest_rotation_period value %r",
+                                             config.logger_dest_rotation_period)
                 return False
 
     return DynamicallyRotatedLog

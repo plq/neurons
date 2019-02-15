@@ -35,6 +35,8 @@
 import logging
 logger = logging.getLogger(__name__)
 
+from time import time
+
 from contextlib import closing
 from collections import namedtuple
 
@@ -78,10 +80,9 @@ class Version(TableModel):
 
         db = config.get_main_store()
         with closing(db.Session()) as session:
-            logger.info("Locking table '%s' for schema version checks",
-                                                                     table_name)
-            session.connection().execute(
-                                   "lock %s in exclusive mode;" % (table_name,))
+            logger.info("Acquiring pg_advisory_xact_lock(0) "
+                                                    "for schema version checks")
+            session.connection().execute("select pg_advisory_xact_lock(0)")
 
             # Create missing tables
             TableModel.Attributes.sqla_metadata.create_all(checkfirst=True)
@@ -112,20 +113,38 @@ class Version(TableModel):
                               if db_version.version < vernum <= current_version]
             keys.sort()
 
-            logger.info("Migration operations %r will be performed", keys)
+            if len(keys) > 0:
+                logger.info("%s schema version detected as %s. "
+                                "Migration operation(s) %r will be performed",
+                                            submodule, db_version.version, keys)
 
             for vernum in keys:
                 migrate = migration_dict[vernum]
 
-                db_version.version = vernum
+                with closing(db.Session()) as inner_session:
+                    inner_db_version = inner_session.query(Version) \
+                                           .filter_by(submodule=submodule).one()
+                    inner_db_version.version = vernum
 
-                migrate(config, session)
+                    try:
+                        start_t = time()
+                        migrate(config, inner_session)
 
-                session.commit()
+                    except Exception as e:
+                        logger.exception(e)
+                        logger.error("Migration operation %d failed, "
+                                                     "stopping reactor", vernum)
+
+                        from twisted.internet import reactor
+                        from twisted.internet.task import deferLater
+                        deferLater(reactor, 0, reactor.stop)
+                        raise
+
+                    inner_session.commit()
 
                 num_migops += 1
-                logger.info("%s schema migration to version %d was "
-                                   "performed successfully.", submodule, vernum)
+                logger.info("%s schema migration to version %d took %.1fs.",
+                                            submodule, vernum, time() - start_t)
 
         if num_migops == 0:
             logger.info("%s schema version detected as %s. Table unlocked.",

@@ -43,11 +43,15 @@ import re
 from threading import Lock
 from os.path import abspath, join, isfile
 
+from colorama import Fore, Style
+
 from spyne import Application, UnsignedInteger, ComplexModel, Unicode, \
     UnsignedInteger16, Boolean, String, Array, ComplexModelBase, M, \
     ValidationError, Integer32
 from spyne.util.resource import get_resource_path
 
+from neurons.daemon import EXIT_ERR_LISTEN_TCP, EXIT_ERR_LISTEN_UDP, \
+                                                                EXIT_ERR_UNKNOWN
 from neurons.daemon.cli import config_overrides
 from neurons.daemon.config._wdict import wdict, wrdict, Twrdict
 
@@ -58,6 +62,7 @@ class Service(ComplexModel):
 
     def __init__(self, *args, **kwargs):
         self._parent = None
+        self.color = None
 
         super(Service, self).__init__(*args, **kwargs)
 
@@ -66,6 +71,17 @@ class Service(ComplexModel):
         assert parent is not None
 
         self._parent = parent
+
+    def _parse_overrides(self):
+        pass
+
+    @property
+    def colored_name(self):
+        if self.color is None:
+            return self.name
+
+        return '%s%s[%s]%s' % (self.color, Style.BRIGHT, self.name,
+                                                                Style.RESET_ALL)
 
 
 # noinspection PyPep8Naming
@@ -116,21 +132,52 @@ def _TFactoryProxy():
 _lock_factory_proxy = Lock()
 
 
-class Listener(Service):
+class Client(Service):
+    host = Unicode(nullable=False, default='0.0.0.0')
+    port = UnsignedInteger16(nullable=False, default=0)
     type = M(Unicode(values=('tcp4', 'tcp6', 'udp4', 'udp6', 'unix'),
                                                                 default='tcp4'))
-    host = Unicode(nullable=False, default='0.0.0.0')
+
+    def _parse_overrides(self):
+        super(Client, self)._parse_overrides()
+
+        for k, v in config_overrides.items():
+            if k.startswith('--host-%s' % self.name):
+                host = v
+                self.host = host
+                logger.debug("Overriding host for server service '%s' to '%s'",
+                                                           self.name, self.host)
+
+                del config_overrides[k]
+                continue
+
+            if k.startswith('--port-%s' % self.name):
+                port = v
+                self.port = int(port)
+                logger.debug("Overriding port for server service '%s' to '%s'",
+                                                           self.name, self.port)
+                del config_overrides[k]
+                continue
+
+
+
+class Server(Service):
     backlog = Integer32(default=50)
+
+    host = Unicode(nullable=False, default='0.0.0.0')
     port = UnsignedInteger16(nullable=False, default=0)
+    type = M(Unicode(values=('tcp4', 'tcp6', 'udp4', 'udp6', 'unix'),
+                                                                default='tcp4'))
 
     FactoryProxy = None
 
     def __init__(self, *args, **kwargs):
-        super(Listener, self).__init__(*args, **kwargs)
+        super(Server, self).__init__(*args, **kwargs)
 
         self.d = None
         self.listener = None
         self.failed = False
+        self.color = Fore.YELLOW  # set to G by daemon.main._set_real_factory
 
     def gen_endpoint(self, reactor):
         # FIXME: We might not need endpoints after all..
@@ -159,10 +206,10 @@ class Listener(Service):
     def get_factory_proxy(self):
         # Why thread-safe application of daemon configuration? I say why not :)
         with _lock_factory_proxy:
-            if Listener.FactoryProxy is None:
-                Listener.FactoryProxy = _TFactoryProxy()
+            if Server.FactoryProxy is None:
+                Server.FactoryProxy = _TFactoryProxy()
 
-        return Listener.FactoryProxy
+        return Server.FactoryProxy
 
     @property
     def lstr(self):
@@ -176,8 +223,8 @@ class Listener(Service):
         retval = self.d = self.gen_endpoint(reactor) \
             .listen(FactoryProxy()) \
                 .addCallback(self.set_listening_port) \
-                .addCallback(lambda _: logger.info("[%s] listening on %s",
-                                                        self.name, self.lstr)) \
+                .addCallback(lambda _: logger.info("%s listening on %s",
+                                                self.colored_name, self.lstr)) \
                 .addErrback(self._eb_listen)
 
         return retval
@@ -185,32 +232,41 @@ class Listener(Service):
     def _eb_listen(self, err):
         self.failed = True
 
-        from twisted.internet import reactor
-        logging.error("[%s] Error listening to %s, stopping reactor\n%s",
-                                       self.name, self.lstr, err.getTraceback())
+        self.color = Fore.RED
+        logging.error("%s Error listening to %s, stopping reactor\n%s",
+                               self.colored_name, self.lstr, err.getTraceback())
 
-        from twisted.internet.task import deferLater
-        deferLater(reactor, 0, reactor.stop)
+        if self.type.startswith('udp'):
+            raise os._exit(EXIT_ERR_LISTEN_UDP + self.port)
+
+        elif self.type.startswith('tcp'):
+            raise os._exit(EXIT_ERR_LISTEN_TCP + self.port)
+
+        raise os._exit(EXIT_ERR_UNKNOWN)
 
     def set_listening_port(self, listening_port):
         assert not (listening_port is None)
         self.listener = listening_port
 
-    def check_overrides(self):
-        # FIXME: integrate this with argparse
-        for a in config_overrides:
-            if a.startswith('--host-%s' % self.name):
-                _, host = a.split('=', 1)
+    def _parse_overrides(self):
+        super(Server, self)._parse_overrides()
+
+        for k, v in config_overrides.items():
+            if k.startswith('--host-%s' % self.name):
+                host = v
                 self.host = host
-                logger.debug("Overriding host for service '%s' to '%s'",
+                logger.debug("Overriding host for server service '%s' to '%s'",
                                                            self.name, self.host)
+
+                del config_overrides[k]
                 continue
 
-            if a.startswith('--port-%s' % self.name):
-                _, port = a.split('=', 1)
+            if k.startswith('--port-%s' % self.name):
+                port = v
                 self.port = int(port)
-                logger.debug("Overriding port for service '%s' to '%s'",
+                logger.debug("Overriding port for server service '%s' to '%s'",
                                                            self.name, self.port)
+                del config_overrides[k]
                 continue
 
 
@@ -221,7 +277,7 @@ def _listfiles(dirpath):
             yield fp
 
 
-class SslListener(Listener):
+class SslServer(Server):
     _type_info = [
         ('cacert_path', Unicode),
         ('cacert', Unicode),
@@ -244,26 +300,26 @@ class SslListener(Listener):
         cert = None
         if self.cert is not None:
             fn = self.get_path(self.cert)
-            logger.debug("[%s] Loading cert from: %s", self.name, fn)
+            logger.debug("%s Loading cert from: %s", self.colored_name, fn)
             fdata = open(fn, 'rb').read()
             cert = crypto.load_certificate(crypto.FILETYPE_PEM, fdata)
         else:
-            logger.warning("[%s] No cert loaded", self.name)
+            logger.warning("%s No cert loaded", self.colored_name)
 
 
         key = None
         if self.key is not None:
             fn = self.get_path(self.key)
-            logger.debug("[%s] Loading key from: %s", self.name, fn)
+            logger.debug("%s Loading key from: %s", self.colored_name, fn)
             fdata = open(fn, 'rb').read()
             key = crypto.load_privatekey(crypto.FILETYPE_PEM, fdata)
         else:
-            logger.warning("[%s] No key loaded", self.name)
+            logger.warning("%s No key loaded", self.colored_name)
 
         cacerts = []
         if self.cacert is not None:
             fn = self.get_path(self.key)
-            logger.debug("[%s] Loading cacert from: %s", self.name, fn)
+            logger.debug("%s Loading cacert from: %s", self.colored_name, fn)
             fdata = open(fn, 'rb').read()
             cacert = crypto.load_certificate(crypto.FILETYPE_PEM, fdata)
             cacerts.append(cacert)
@@ -273,7 +329,8 @@ class SslListener(Listener):
             # TODO: ignore errors
             for fn in _listfiles(cacert_path):
                 fdata = open(fn, 'rb').read()
-                logger.debug("[%s] Loading cacert from: %s", self.name, fn)
+                logger.debug("%s Loading cacert from: %s",
+                                                          self.colored_name, fn)
                 cacert = crypto.load_certificate(crypto.FILETYPE_PEM, fdata)
                 cacerts.append(cacert)
 
@@ -357,7 +414,7 @@ class StaticFileServer(HttpApplication):
         return StaticFile(abspath(self.path))
 
 
-class HttpListener(Listener):
+class HttpServer(Server):
     _type_info = [
         ('static_dir', Unicode),
         ('_subapps', Array(HttpApplication, sub_name='subapps')),
@@ -375,29 +432,14 @@ class HttpListener(Listener):
                 _, dest = a.split('=', 1)
                 obj.path = abspath(dest)
 
-                logger.debug(
-                    "Overriding asset path for app '%s', url '%s' to '%s'" % (
-                                                  self.name, obj.url, obj.path))
+                logger.debug("Overriding asset path for app "
+                         "'%s', url '%s' to '%s'", self.name, obj.url, obj.path)
 
     def __init__(self, *args, **kwargs):
-        super(HttpListener, self).__init__(*args, **kwargs)
-
-        subapps = kwargs.get('subapps', None)
-        if isinstance(subapps, dict):
-            self.subapps = Twrdict(self, 'url')()
-            for k, v in subapps.items():
-                self.subapps[k] = v
-
-        elif isinstance(subapps, (tuple, list)):
-            self.subapps = Twrdict(self, 'url')()
-            for v in subapps:
-                assert v.url is not None, "%r.url is None" % v
-                self.subapps[v.url] = v
+        super(HttpServer, self).__init__(*args, **kwargs)
 
     def gen_site(self):
         from twisted.web.server import Site
-
-        self.check_overrides()
 
         subapps = []
         for url, subapp in self.subapps.items():
@@ -454,12 +496,23 @@ class HttpListener(Listener):
         return []
 
     @_subapps.setter
-    def _subapps(self, what):
-        self.subapps = what
-        if what is not None:
-            self.subapps = wdict([(s.url, s) for s in what])
+    def _subapps(self, subapps):
+        if isinstance(subapps, dict):
+            self.subapps = Twrdict(self, 'url')()
+            for k, v in subapps.items():
+                self.subapps[k] = v
+
+        elif isinstance(subapps, (tuple, list)):
+            self.subapps = Twrdict(self, 'url')()
+            for v in subapps:
+                assert v.url is not None, "%r.url is None" % v
+                self.subapps[v.url] = v
+
+        self.subapps = subapps
+        if subapps is not None:
+            self.subapps = wdict([(s.url, s) for s in subapps])
 
 
-class WsgiListener(HttpListener):
+class WsgiServer(HttpServer):
     thread_min = UnsignedInteger
     thread_max = UnsignedInteger

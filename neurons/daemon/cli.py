@@ -54,7 +54,9 @@ ARGTYPE_MAP = cdict({
 })
 
 
-config_overrides = set()
+config_overrides = dict()
+"""Wildcard command line arguments that don't fit into argparse's fixed
+argument keys model."""
 
 
 class ArgumentParser(argparse.ArgumentParser):
@@ -67,18 +69,26 @@ class ArgumentParser(argparse.ArgumentParser):
                 if a.startswith("--assets-"):
                     opt, val = a.split("=", 2)
                     val = os.path.abspath(val)
-                    config_overrides.add('='.join([opt, val]))
 
                 elif a.startswith("--host-") or a.startswith("--port-"):
-                    config_overrides.add(a)
+                    opt, val = a.split("=", 2)
+
+                elif a.startswith("--store-"):
+                    opt, val = a.split("=", 2)
 
                 else:
                     newargv.append(a)
+                    continue
+
+                config_overrides[opt] = val
+
             argv = newargv
 
         if len(argv) > 0:
             msg = gettext('unrecognized arguments: %s')
             self.error(msg % ' '.join(argv))
+
+        print("Overrides:", config_overrides)
 
         return args
 

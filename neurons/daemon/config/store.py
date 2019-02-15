@@ -43,7 +43,9 @@ from os.path import abspath
 
 from spyne import ComplexModel, Boolean, Unicode, \
     UnsignedInteger16, M, Decimal, UnsignedInteger
+from spyne.util import get_version
 
+from neurons.daemon.cli import config_overrides
 from neurons.daemon.store import SqlDataStore, LdapDataStore
 
 
@@ -61,6 +63,9 @@ class StorageInfo(ComplexModel):
         assert parent is not None
 
         self._parent = parent
+
+    def _parse_overrides(self):
+        pass
 
     def close(self):
         pass
@@ -121,12 +126,16 @@ class FileStore(StorageInfo):
 
 
 class RelationalStore(StorageInfo):
+    # this is not supposed to be mandatory because it's overrideable by cli args
     conn_str = Unicode
 
     # move these to QueuePool config.
     pool_size = UnsignedInteger(default=10)
     pool_recycle = UnsignedInteger(default=3600)
     pool_timeout = UnsignedInteger(default=30)
+    pool_use_lifo = Boolean(default=False)
+    pool_pre_ping = Boolean(default=True)
+
     max_overflow = UnsignedInteger(default=3)
     echo_pool = Boolean(default=False)
 
@@ -141,13 +150,48 @@ class RelationalStore(StorageInfo):
 
     async_pool = Boolean(default=True)
 
+    def _parse_overrides(self):
+        super(RelationalStore, self)._parse_overrides()
+
+        config_keys = self.config_keys()
+        ovs = set(config_overrides).intersection(set(config_keys))
+        for c in ovs:
+            setattr(self, config_keys[c], config_overrides[c])
+            del config_overrides[c]
+
+
+    def config_keys(self):
+        return {'--store-{}-{}'.format(self.name, k.replace("_", "-")): k
+                               for k in self.get_flat_type_info(self.__class__)}
+
     def __init__(self, *args, **kwargs):
         super(RelationalStore, self).__init__(*args, **kwargs)
         self.itself = None
 
     def apply(self):
-        self.itself = SqlDataStore(self.name, self.conn_str,
-                             pool_size=self.pool_size, echo_pool=self.echo_pool)
+        if self.name is None:
+            raise ValueError("Unnamed store entry")
+
+        if self.conn_str is None:
+            raise ValueError("Connection string is None for store %s"
+                                                                  % (self.name))
+
+        kwargs = dict(
+            pool_size=self.pool_size,
+            echo_pool=self.echo_pool,
+            pool_timeout=self.pool_timeout,
+            pool_recycle=self.pool_recycle,
+            max_overflow=self.max_overflow,
+            logging_name=self.name,
+        )
+
+        if get_version('sqlalchemy')[0:2] >= (1, 2):
+            kwargs['pool_pre_ping'] = self.pool_pre_ping
+
+        if get_version('sqlalchemy')[0:2] >= (1, 3):
+            kwargs['pool_use_lifo'] = self.pool_use_lifo
+
+        self.itself = SqlDataStore(self.name, self.conn_str, **kwargs)
 
         if not (self.async_pool or self.sync_pool):
             logger.debug("Store '%s' is disabled.", self.name)
