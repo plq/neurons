@@ -36,17 +36,28 @@ Implementation of the GeoJson in terms of Spyne types.
 
 See http://geojson.org/ for more info.
 
-You need to use ``JsonDocument(polymorphic=True)`` for this to work.
+You need to use ``JsonDocument(polymorphic=True)`` as your out_protocol to make
+sure the output is proper json.
+
+Here's also how to use it in a non-RPC context:
 
 >>> from spyne.util.dictdoc import get_object_as_json
->>> from neurons,geojson import Feature, Point, Position
+>>> from neurons.geojson import Feature, Point
 >>> f = Feature(
 ...     geometry=Point(Position(1,2)),
 ...     properties=dict(key="value"),
 ... )
->>> get_object_as_json(f, Feature, complex_as=dict, polymorphic=True)
-'{"type": "Feature", "geometry": {"type": "Point", "coordinates": [1, 2]}, "properties": {"key": "value"}}'
+>>> print(get_object_as_json(f, Feature, complex_as=dict, polymorphic=True))
+{
+    "type": "Feature",
+    "geometry": {
+        "type": "Point",
+        "coordinates": [1, 2]
+    },
+    "properties": {"key": "value"}
+}
 """
+
 
 from spyne import Unicode, ComplexModel, Double, Array, AnyDict
 

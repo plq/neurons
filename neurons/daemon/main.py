@@ -43,6 +43,7 @@ logger = logging.getLogger(__name__)
 import os
 import threading
 import warnings
+import inspect
 
 from os.path import isfile, join, dirname
 
@@ -438,9 +439,10 @@ def _compile_mappers():
     compile_mappers()
 
 
-def main(config_name, argv, init, bootstrap=None,
+def boot(config_name, argv, init, bootstrap=None,
                 bootstrapper=BootStrapper, cls=ServiceDaemon, daemon_name=None):
-    """A typical main function for daemons.
+    """Boots the daemon. The signature is the same as the ``main()`` function in
+    this module.
 
     :param config_name: Configuration file name. .yaml suffix is appended.
     :param argv: A sequence of command line arguments.
@@ -451,15 +453,13 @@ def main(config_name, argv, init, bootstrap=None,
         environment. This is supposed to be run once for every new deployment.
     :param cls: a class:`Daemon` subclass
     :param daemon_name: Daemon name. If ``None``, ``config_name`` is used.
-    :return: Exit code of the daemon as int.
+    :return: The daemon config file.
     """
-
-    func_start_t = time()
-    """Start time of post-import initialization code"""
 
     config = cls.parse_config(config_name, argv)
     if config.help:
         from neurons.daemon.cli import spyne_to_argparse
+
         print(spyne_to_argparse(cls, ignore_defaults=False).format_help())
         return 0
 
@@ -516,41 +516,66 @@ def main(config_name, argv, init, bootstrap=None,
             logger.info("Updating configuration file because new secret was "
                                                                     "generated")
 
+    return config
+
+def _log_ready(config_name, orig_stack, py_start_t, func_start_t):
+    import resource
+
+    try:
+        import psutil
+        proc_start_t = psutil.Process(os.getpid()).create_time()
+    except ImportError:
+        proc_start_t = '?'
+
+    max_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000.0
+
+    package_name = config_name
+
+    frame, file_name, line_num, func_name, lines, line_id = orig_stack[1]
+    module = inspect.getmodule(frame)
+    if module is not None:
+        package_name = module.__name__.split('.')[0]
+
+    logger.info(
+        "%s version %s ready. Max RSS: %.1fmb uptime: %s import: %.2fs "
+                                                              "main: %.2fs",
+        config_name, get_package_version(package_name),
+        max_rss,
+        '[?psutil?]' if proc_start_t == '?'
+                                    else '%.2fs' % (time() - proc_start_t,),
+        time() - py_start_t,
+        time() - func_start_t,
+    )
+
+
+def main(config_name, argv, init, bootstrap=None,
+                bootstrapper=BootStrapper, cls=ServiceDaemon, daemon_name=None):
+    """Boots and runs the daemon, making it ready to accept requests. This is a
+    typical main function for daemons. If you just want to boot the daemon
+    and take care of running it yourself, see the ``boot()`` function.
+
+    :param config_name: Configuration file name. .yaml suffix is appended.
+    :param argv: A sequence of command line arguments.
+    :param init: A callable that returns the init dict.
+    :param bootstrap: A callable that bootstraps daemon's environment.
+        It's deprecated in favor of bootstrapper.
+    :param bootstrapper: A factory for a callable that bootstraps daemon's
+        environment. This is supposed to be run once for every new deployment.
+    :param cls: a class:`Daemon` subclass
+    :param daemon_name: Daemon name. If ``None``, ``config_name`` is used.
+    :return: Exit code of the daemon as int.
+    """
+
+    func_start_t = time()
+    """Start time of post-import initialization code"""
+
+    config = boot(config_name, argv, init, bootstrap, bootstrapper, cls,
+                                                                    daemon_name)
+
     # at this point it's safe to import the reactor (or anything else from
     # twisted) because the decision on whether to fork has already been made.
     from twisted.internet import reactor
     from twisted.internet.task import deferLater
-
-    import inspect
-    orig_stack = inspect.stack()
-    def _log_ready():
-        import resource
-
-        try:
-            import psutil
-            proc_start_t = psutil.Process(os.getpid()).create_time()
-        except ImportError:
-            proc_start_t = '?'
-
-        max_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000.0
-
-        package_name = config_name
-
-        frame, file_name, line_num, func_name, lines, line_id = orig_stack[1]
-        module = inspect.getmodule(frame)
-        if module is not None:
-            package_name = module.__name__.split('.')[0]
-
-        logger.info(
-            "%s version %s ready. Max RSS: %.1fmb uptime: %s import: %.2fs "
-                                                                  "main: %.2fs",
-            config_name, get_package_version(package_name),
-            max_rss,
-            '[?psutil?]' if proc_start_t == '?'
-                                        else '%.2fs' % (time() - proc_start_t,),
-            time() - py_start_t,
-            time() - func_start_t,
-        )
 
     deferLater(reactor, 0, _compile_mappers) \
         .addErrback(lambda err: logger.error("%s", err.getTraceback()))
@@ -558,7 +583,8 @@ def main(config_name, argv, init, bootstrap=None,
     deferLater(reactor, 0, _set_reactor_thread) \
         .addErrback(lambda err: logger.error("%s", err.getTraceback()))
 
-    deferLater(reactor, 0, _log_ready) \
+    deferLater(reactor, 0, _log_ready,
+                       config_name, inspect.stack(), py_start_t, func_start_t) \
         .addErrback(lambda err: logger.error("%s", err.getTraceback()))
 
     # this needs to be done as late as possible to capture the highest number of
