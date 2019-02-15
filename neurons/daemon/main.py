@@ -50,12 +50,12 @@ from os.path import isfile, join, dirname
 from colorama import Fore
 
 from spyne.util.six import StringIO
-from spyne.util.color import R, DARK_R
+from spyne.util.color import DARK_R
 from spyne.store.relational.util import database_exists, create_database
 
 from sqlalchemy import MetaData
 
-from neurons.daemon.config import FileStore, ServiceDisabled, ServiceDaemon, \
+from neurons.daemon.config import FileStore, ServiceDaemon, \
     RelationalStore, LdapStore, Server
 
 
@@ -296,10 +296,8 @@ def _inner_main(config, init, bootstrap, bootstrapper):
 
         else:
             k_was_there = k in config.services
-            try:
-                subconfig = config.services.getwrite(k, v.default)
-            except ServiceDisabled:
-                disabled = True
+            subconfig = config.services.getwrite(k, v.default)
+            disabled = subconfig.disabled
 
             if k_was_there:
                 logger.info("%s Configuration initialized from file.",
@@ -323,7 +321,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
             else:
                 _set_real_factory(subconfig.listener, subconfig, factory)
 
-        else:
+        elif not subconfig.disabled:
             subconfig.listen() \
                 .addCallback(_set_real_factory, subconfig, factory)
 

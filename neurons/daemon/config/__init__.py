@@ -37,10 +37,6 @@ STATIC_DESC_ROOT = "Directory that contains static files for the root url."
 STATIC_DESC_URL = "Directory that contains static files for the url '%s'."
 
 
-class ServiceDisabled(Exception):
-    pass
-
-
 from neurons.daemon.config._base import LOGLEVEL_MAP
 from neurons.daemon.config._base import LOGLEVEL_MAP_ABB
 from neurons.daemon.config._base import LOGLEVEL_STR_MAP
