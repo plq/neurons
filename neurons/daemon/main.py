@@ -278,43 +278,40 @@ def _inner_main(config, init, bootstrap, bootstrapper):
         if k in config.services:
             disabled = config.services[k].disabled
 
-        if disabled:
-            logger.info("%s Service disabled.", DARK_R('[%s]' % (k,)))
-            continue
+        if v.force is not None:
+            if k in config.services:
+                oldconfig = config.services[k]
+                subconfig = config.services[k] = v.force
+                if oldconfig.d is not None:
+                    subconfig.d = oldconfig.d
 
-        try:
-            if v.force is not None:
-                if k in config.services:
-                    oldconfig = config.services[k]
-                    subconfig = config.services[k] = v.force
-                    if oldconfig.d is not None:
-                        subconfig.d = oldconfig.d
-
-                    if oldconfig.listener is not None:
-                        subconfig.listener = oldconfig.listener
-
-                else:
-                    subconfig = config.services[k] = v.force
-
-                logger.info("%s Configuration initialized from "
-                                   "hard-coded object.", subconfig.colored_name)
+                if oldconfig.listener is not None:
+                    subconfig.listener = oldconfig.listener
 
             else:
-                k_was_there = k in config.services
+                subconfig = config.services[k] = v.force
+
+            logger.info("%s Configuration initialized from "
+                               "hard-coded object.", subconfig.colored_name)
+
+        else:
+            k_was_there = k in config.services
+            try:
                 subconfig = config.services.getwrite(k, v.default)
+            except ServiceDisabled:
+                disabled = True
 
-                if k_was_there:
-                    logger.info("%s Configuration initialized from file.",
-                                                         subconfig.colored_name)
-                else:
-                    logger.info("%s Configuration initialized from default.",
-                                                         subconfig.colored_name)
+            if k_was_there:
+                logger.info("%s Configuration initialized from file.",
+                                                     subconfig.colored_name)
+            else:
+                logger.info("%s Configuration initialized from default.",
+                                                     subconfig.colored_name)
 
-            factory = v.init(config)
+        factory = v.init(config)
 
-        except ServiceDisabled:
-            logger.info("%s Service disabled.", R('[%s]' % (k,)))
-            continue
+        if disabled:
+            logger.info("%s Service disabled.", DARK_R('[%s]' % (k,)))
 
         if not isinstance(subconfig, Server):
             continue
