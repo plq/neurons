@@ -722,9 +722,6 @@ class Daemon(ConfigBase):
             # operations be run
             config_version = 1
 
-        else:
-            self.migrate(config_dict, config_version)
-
         if config_version < 2:
             print("Performing config file migration "
                                   "from version %d to 2..." % (config_version,))
@@ -767,18 +764,6 @@ class Daemon(ConfigBase):
 
         config_root[FILE_VERSION_KEY] = CONFIG_FILE_VERSION
         return yaml.dump(config_dict, indent=4, default_flow_style=False)
-
-    def migrate(self, config_dict, config_version):
-        """Makes in-place changes in the config_dict before it's parsed and
-        applied by the configuration engine."""
-
-        # example
-        if config_version < (0, 6, 0):
-            key, = config_dict.keys()
-            _ = config_dict[key]
-            # do something with the dict
-
-        pass
 
 
 class ServiceDaemon(Daemon):
