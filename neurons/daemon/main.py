@@ -453,7 +453,9 @@ def boot(config_name, argv, init, bootstrap=None,
         environment. This is supposed to be run once for every new deployment.
     :param cls: a class:`Daemon` subclass
     :param daemon_name: Daemon name. If ``None``, ``config_name`` is used.
-    :return: The daemon config file.
+    :return: The return code to be passed to sys.exit() and the daemon config
+        object. If the return code is None, it's OK to proceed with running the
+        daemon.
     """
 
     config = cls.parse_config(config_name, argv)
@@ -461,7 +463,7 @@ def boot(config_name, argv, init, bootstrap=None,
         from neurons.daemon.cli import spyne_to_argparse
 
         print(spyne_to_argparse(cls, ignore_defaults=False).format_help())
-        return 0
+        return 0, config
 
     if config.name is None:
         config.name = config_name
@@ -482,11 +484,11 @@ def boot(config_name, argv, init, bootstrap=None,
         stores = list(config._stores)
 
     try:
-        retval = _inner_main(config, init, bootstrap, bootstrapper)
+        retcode = _inner_main(config, init, bootstrap, bootstrapper)
 
         # if _inner_main did something other than initializing daemons
-        if retval is not None:
-            return retval
+        if retcode is not None:
+            return retcode, config
 
     finally:
         if not isfile(config.config_file):
@@ -516,7 +518,7 @@ def boot(config_name, argv, init, bootstrap=None,
             logger.info("Updating configuration file because new secret was "
                                                                     "generated")
 
-    return config
+    return None, config
 
 def _log_ready(config_name, orig_stack, py_start_t, func_start_t):
     import resource
@@ -569,8 +571,8 @@ def main(config_name, argv, init, bootstrap=None,
     func_start_t = time()
     """Start time of post-import initialization code"""
 
-    config = boot(config_name, argv, init, bootstrap, bootstrapper, cls,
-                                                                    daemon_name)
+    retcode, config = boot(config_name, argv, init, bootstrap,
+                                                 bootstrapper, cls, daemon_name)
 
     # at this point it's safe to import the reactor (or anything else from
     # twisted) because the decision on whether to fork has already been made.
@@ -596,7 +598,7 @@ def main(config_name, argv, init, bootstrap=None,
         assert autorel.start() is not None
         num_files = len(autorel.sysfiles() | autorel.files)
         logger.info("Auto reloader init success: Watching %d files "
-                    "every %g seconds.", num_files, frequency)
+                                      "every %g seconds.", num_files, frequency)
 
     if config.dry_run:
         return 0
