@@ -315,7 +315,8 @@ class SqlDataStore(DataStoreBase):
 def get_data_store(type, *args, **kwargs):
     if type == 'ldap':
         return LdapDataStore(*args, **kwargs)
-    elif type == 'sqlalchemy':
+
+    if type == 'sqlalchemy':
         return SqlDataStore(*args, **kwargs)
-    else:
-        raise ValueError("Unrecognized data store %r" % type)
+
+    raise ValueError("Unrecognized data store %r" % type)
