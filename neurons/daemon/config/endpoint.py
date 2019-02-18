@@ -90,9 +90,9 @@ def _TFactoryProxy():
 
     class FactoryProxy(ServerFactory):
         def __init__(self):
+            self.run_start_factory = False
             # real_factory is set by neurons.daemon.main
             self.real_factory = None
-            self.run_start_factory = False
             self.noisy = False
 
         @classmethod
@@ -107,7 +107,7 @@ def _TFactoryProxy():
         def real_factory(self, what):
             self.__rf = what
             if self.run_start_factory:
-                what.startFactory()
+                self.__rf.startFactory()
 
         def logPrefix(self):
             if self.real_factory is not None:
