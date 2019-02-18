@@ -31,10 +31,9 @@
 
 from __future__ import absolute_import
 
-from spyne import ComplexModel, Unicode, Integer, Array, Integer32, table
+from spyne import Unicode, Integer, Array, Integer32, table
 
 from neurons.model import TableModel
-
 
 p = lambda s: "neurons_%s" % s
 

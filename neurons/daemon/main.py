@@ -50,12 +50,12 @@ from os.path import isfile, join, dirname
 from colorama import Fore
 
 from spyne.util.six import StringIO
-from spyne.util.color import R, DARK_R
+from spyne.util.color import DARK_R
 from spyne.store.relational.util import database_exists, create_database
 
 from sqlalchemy import MetaData
 
-from neurons.daemon.config import FileStore, ServiceDisabled, ServiceDaemon, \
+from neurons.daemon.config import FileStore, ServiceDaemon, \
     RelationalStore, LdapStore, Server
 
 
@@ -278,43 +278,38 @@ def _inner_main(config, init, bootstrap, bootstrapper):
         if k in config.services:
             disabled = config.services[k].disabled
 
-        if disabled:
-            logger.info("%s Service disabled.", DARK_R('[%s]' % (k,)))
-            continue
+        if v.force is not None:
+            if k in config.services:
+                oldconfig = config.services[k]
+                subconfig = config.services[k] = v.force
+                if oldconfig.d is not None:
+                    subconfig.d = oldconfig.d
 
-        try:
-            if v.force is not None:
-                if k in config.services:
-                    oldconfig = config.services[k]
-                    subconfig = config.services[k] = v.force
-                    if oldconfig.d is not None:
-                        subconfig.d = oldconfig.d
-
-                    if oldconfig.listener is not None:
-                        subconfig.listener = oldconfig.listener
-
-                else:
-                    subconfig = config.services[k] = v.force
-
-                logger.info("%s Configuration initialized from "
-                                   "hard-coded object.", subconfig.colored_name)
+                if oldconfig.listener is not None:
+                    subconfig.listener = oldconfig.listener
 
             else:
-                k_was_there = k in config.services
-                subconfig = config.services.getwrite(k, v.default)
+                subconfig = config.services[k] = v.force
 
-                if k_was_there:
-                    logger.info("%s Configuration initialized from file.",
-                                                         subconfig.colored_name)
-                else:
-                    logger.info("%s Configuration initialized from default.",
-                                                         subconfig.colored_name)
+            logger.info("%s Configuration initialized from "
+                               "hard-coded object.", subconfig.colored_name)
 
-            factory = v.init(config)
+        else:
+            k_was_there = k in config.services
+            subconfig = config.services.getwrite(k, v.default)
+            disabled = subconfig.disabled
 
-        except ServiceDisabled:
-            logger.info("%s Service disabled.", R('[%s]' % (k,)))
-            continue
+            if k_was_there:
+                logger.info("%s Configuration initialized from file.",
+                                                     subconfig.colored_name)
+            else:
+                logger.info("%s Configuration initialized from default.",
+                                                     subconfig.colored_name)
+
+        factory = v.init(config)
+
+        if disabled:
+            logger.info("%s Service disabled.", DARK_R('[%s]' % (k,)))
 
         if not isinstance(subconfig, Server):
             continue
@@ -326,7 +321,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
             else:
                 _set_real_factory(subconfig.listener, subconfig, factory)
 
-        else:
+        elif not subconfig.disabled:
             subconfig.listen() \
                 .addCallback(_set_real_factory, subconfig, factory)
 
@@ -353,7 +348,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
             return 0
 
 
-class BootStrapper(object):
+class Bootstrapper(object):
     """Creates all databases"""
 
     def __init__(self, init):
@@ -440,7 +435,7 @@ def _compile_mappers():
 
 
 def boot(config_name, argv, init, bootstrap=None,
-                bootstrapper=BootStrapper, cls=ServiceDaemon, daemon_name=None):
+                bootstrapper=Bootstrapper, cls=ServiceDaemon, daemon_name=None):
     """Boots the daemon. The signature is the same as the ``main()`` function in
     this module.
 
@@ -448,7 +443,7 @@ def boot(config_name, argv, init, bootstrap=None,
     :param argv: A sequence of command line arguments.
     :param init: A callable that returns the init dict.
     :param bootstrap: A callable that bootstraps daemon's environment.
-        It's deprecated in favor of bootstrapper.
+        It's DEPRECATED in favor of bootstrapper.
     :param bootstrapper: A factory for a callable that bootstraps daemon's
         environment. This is supposed to be run once for every new deployment.
     :param cls: a class:`Daemon` subclass
@@ -551,7 +546,7 @@ def _log_ready(config_name, orig_stack, py_start_t, func_start_t):
 
 
 def main(config_name, argv, init, bootstrap=None,
-                bootstrapper=BootStrapper, cls=ServiceDaemon, daemon_name=None):
+                bootstrapper=Bootstrapper, cls=ServiceDaemon, daemon_name=None):
     """Boots and runs the daemon, making it ready to accept requests. This is a
     typical main function for daemons. If you just want to boot the daemon
     and take care of running it yourself, see the ``boot()`` function.

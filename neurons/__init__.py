@@ -31,7 +31,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-__version__ = '0.8.0'
+__version__ = '0.8.1'
 
 CONFIG_FILE_VERSION = 2
 

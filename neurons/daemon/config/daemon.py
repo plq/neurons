@@ -60,7 +60,7 @@ from neurons.daemon.cli import spyne_to_argparse
 from neurons.daemon.daemonize import daemonize_do
 
 from neurons.daemon.config import LOGLEVEL_STR_MAP
-from neurons.daemon.config._wdict import wdict, Twrdict
+from neurons.daemon.config._wdict import wdict, Twdict
 from neurons.daemon.config.limits import LimitsChoice
 
 from neurons.daemon.config import FILE_VERSION_KEY
@@ -256,7 +256,7 @@ class Daemon(ConfigBase):
         if services is not None:
             self.services = services
         if self.services is None:
-            self.services = Twrdict(self, 'name')()
+            self.services = Twdict(self, 'name')()
         self._set_parent_of_children(self.services)
 
         loggers = kwargs.get('loggers', None)
@@ -283,14 +283,14 @@ class Daemon(ConfigBase):
 
             return self.services.values()
 
-        self.services = Twrdict(self, 'name')()
+        self.services = Twdict(self, 'name')()
         return []
 
     @_services.setter
     def _services(self, what):
         self.services = what
         if what is not None:
-            self.services = Twrdict(self, 'name')([(s.name, s) for s in what])
+            self.services = Twdict(self, 'name')([(s.name, s) for s in what])
 
     @property
     def _loggers(self):
@@ -722,9 +722,6 @@ class Daemon(ConfigBase):
             # operations be run
             config_version = 1
 
-        else:
-            self.migrate(config_dict, config_version)
-
         if config_version < 2:
             print("Performing config file migration "
                                   "from version %d to 2..." % (config_version,))
@@ -767,18 +764,6 @@ class Daemon(ConfigBase):
 
         config_root[FILE_VERSION_KEY] = CONFIG_FILE_VERSION
         return yaml.dump(config_dict, indent=4, default_flow_style=False)
-
-    def migrate(self, config_dict, config_version):
-        """Makes in-place changes in the config_dict before it's parsed and
-        applied by the configuration engine."""
-
-        # example
-        if config_version < (0, 6, 0):
-            key, = config_dict.keys()
-            _ = config_dict[key]
-            # do something with the dict
-
-        pass
 
 
 class ServiceDaemon(Daemon):

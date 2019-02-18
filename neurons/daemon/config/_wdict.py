@@ -34,8 +34,6 @@
 
 from spyne.util.odict import odict
 
-from neurons.daemon.config import ServiceDisabled
-
 
 class wdict(odict):
     def getwrite(self, key, *args):
@@ -45,28 +43,16 @@ class wdict(odict):
         return self[key]
 
 
-class wrdict(wdict):
-    def getwrite(self, key, *args):
-        """Raises ServiceDisabled when the service has disabled == True"""
-
-        retval = super(wrdict, self).getwrite(key, *args)
-
-        if getattr(retval, 'disabled', None):
-            raise ServiceDisabled(getattr(retval, 'name', "??"))
-
-        return retval
-
-
-def Twrdict(parent, keyattr=None):
-    class twrdict(wrdict):
+def Twdict(parent, keyattr=None):
+    class _wdict(wdict):
         if keyattr is not None:
             def __setitem__(self, key, value):
-                super(wrdict, self).__setitem__(key, value)
+                super(wdict, self).__setitem__(key, value)
                 setattr(value, keyattr, key)
                 value._parent = parent
         else:
             def __setitem__(self, key, value):
-                super(wrdict, self).__setitem__(key, value)
+                super(wdict, self).__setitem__(key, value)
                 value._parent = parent
 
-    return twrdict
+    return _wdict
