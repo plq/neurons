@@ -135,6 +135,7 @@ class RelationalStore(StorageInfo):
     pool_timeout = UnsignedInteger(default=30)
     pool_use_lifo = Boolean(default=False)
     pool_pre_ping = Boolean(default=True)
+    sync_case_sensitive = Boolean(default=True)
 
     max_overflow = UnsignedInteger(default=3)
     echo_pool = Boolean(default=False)
@@ -183,6 +184,7 @@ class RelationalStore(StorageInfo):
             pool_recycle=self.pool_recycle,
             max_overflow=self.max_overflow,
             logging_name=self.name,
+            case_sensitive=self.sync_case_sensitive,
         )
 
         if get_version('sqlalchemy')[0:2] >= (1, 2):
