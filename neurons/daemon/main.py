@@ -569,6 +569,9 @@ def main(config_name, argv, init, bootstrap=None,
     retcode, config = boot(config_name, argv, init, bootstrap,
                                                  bootstrapper, cls, daemon_name)
 
+    if retcode is not None:
+        return retcode
+
     # at this point it's safe to import the reactor (or anything else from
     # twisted) because the decision on whether to fork has already been made.
     from twisted.internet import reactor
