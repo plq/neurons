@@ -33,10 +33,6 @@
 
 from __future__ import print_function
 
-from time import time
-py_start_t = time()
-"""Approximate start time of the python code"""
-
 import logging
 logger = logging.getLogger(__name__)
 
@@ -45,6 +41,7 @@ import threading
 import warnings
 import inspect
 
+from time import time
 from os.path import isfile, join, dirname
 
 from colorama import Fore
@@ -55,6 +52,7 @@ from spyne.store.relational.util import database_exists, create_database
 
 from sqlalchemy import MetaData
 
+from neurons import py_start_t
 from neurons.daemon.config import FileStore, ServiceDaemon, \
     RelationalStore, LdapStore, Server
 

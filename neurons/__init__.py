@@ -39,6 +39,7 @@ REACTOR_THREAD = None
 REACTOR_THREAD_ID = None
 
 from neurons._base import _is_reactor_thread_none as is_reactor_thread
+from neurons._base import py_start_t
 
 from neurons.application import Application
 from neurons.model import TableModel
