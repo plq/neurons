@@ -164,7 +164,7 @@ def _do_bootstrap(config, init, bootstrap, bootstrapper):
     if bootstrap is None:
         bootstrap = bootstrapper(init)
     else:
-        config.apply()
+        config.apply(daemonize=False)
 
     assert callable(bootstrap), \
                       "'bootstrap' must be a callable. It's %r." % bootstrap
