@@ -167,13 +167,14 @@ def _do_bootstrap(config, init, bootstrap, bootstrapper):
         config.apply(daemonize=False)
 
     assert callable(bootstrap), \
-                      "'bootstrap' must be a callable. It's %r." % bootstrap
+                          "'bootstrap' must be a callable. It's %r." % bootstrap
 
     # perform bootstrap
     retval = bootstrap(config)
 
     if retval is None:
         return 0  # to force exit
+
     return retval
 
 
