@@ -700,7 +700,7 @@ class Daemon(ConfigBase):
         """
 
         import yaml
-        config_dict = yaml.load(s)
+        config_dict = yaml.safe_load(s)
         key, = config_dict.keys()
 
         config_root = config_dict[key]
