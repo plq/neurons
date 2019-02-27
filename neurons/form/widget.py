@@ -641,12 +641,18 @@ class SimpleRenderWidget(HtmlFormWidget):
     def _gen_text_str(self, cls, inst, **kwargs):
         text_str = self.to_unicode(cls, inst, **kwargs)
 
+        cls_attr = self.get_cls_attrs(cls)
         if text_str is None:
             text_str = ''
 
-            cls_attr = self.get_cls_attrs(cls)
             if cls_attr.min_occurs == 0:
                 return None
+
+        if cls_attr.values_dict is not None:
+            data = cls_attr.values_dict.get(text_str, None)
+            if data is None:
+                return "{} (!?)".format(text_str)
+            return data
 
         return text_str
 
