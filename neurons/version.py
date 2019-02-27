@@ -79,10 +79,10 @@ class Version(TableModel):
         Version.Attributes.sqla_table.create(checkfirst=True)
 
         db = config.get_main_store()
+        lock_name = "pg_advisory_xact_lock(0)"
         with closing(db.Session()) as session:
-            logger.info("Acquiring pg_advisory_xact_lock(0) "
-                                                    "for schema version checks")
-            session.connection().execute("select pg_advisory_xact_lock(0)")
+            logger.info("Acquiring %s for schema version checks", lock_name)
+            session.connection().execute("select {}".format(lock_name))
 
             # Create missing tables
             TableModel.Attributes.sqla_metadata.create_all(checkfirst=True)
@@ -147,10 +147,10 @@ class Version(TableModel):
                                             submodule, vernum, time() - start_t)
 
         if num_migops == 0:
-            logger.info("%s schema version detected as %s. Table unlocked.",
-                                                     submodule, current_version)
+            logger.info("%s schema version detected as %s, released %s.",
+                                          submodule, current_version, lock_name)
 
         elif num_migops > 0:
             logger.info("%s schema version upgraded to %s "
-                           "after %d migration operations. Table unlocked.",
-                                         submodule, current_version, num_migops)
+                           "after %d migration operations, released %s.",
+                              submodule, current_version, num_migops, lock_name)
