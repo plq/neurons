@@ -131,7 +131,7 @@ if (window.$) $(function() {
 
 _jstag = lambda src: E.script(src=src, type="text/javascript")
 _csstag = lambda src: E.link(href=src, type="text/css", rel="stylesheet")
-
+_NONEXISTENT = type('_NONEXISTENT', (object,), {})()
 
 
 def THtmlFormRoot(Base):
@@ -322,8 +322,18 @@ def THtmlFormRoot(Base):
                     mapper = self.get_cls_attrs(cls).sqla_mapper
                     pmap = mapper.polymorphic_map
                     pon = mapper.polymorphic_on.key
-                    pval = getattr(inst, pon)
-                    ptype = pmap.get(pval)
+
+                    pval = getattr(inst, pon, _NONEXISTENT)
+                    if pval is not _NONEXISTENT:
+                        ptype = pmap.get(pval)
+                        if ptype is None:
+                            pval = mapper.polymorphic_identity
+                            ptype = pmap.get(pval)
+
+                    else:
+                        pval = mapper.polymorphic_identity
+                        ptype = pmap.get(pval)
+
                     if ptype is not None:
                         default_text = ptype.class_.get_type_name()
 
