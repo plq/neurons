@@ -323,7 +323,9 @@ def THtmlFormRoot(Base):
                     pmap = mapper.polymorphic_map
                     pon = mapper.polymorphic_on.key
                     pval = getattr(inst, pon)
-                    default_text = pmap.get(pval).class_.get_type_name()
+                    ptype = pmap.get(pval)
+                    if ptype is not None:
+                        default_text = ptype.class_.get_type_name()
 
                 tr = self.trc(cls, ctx.locale, default_text)
                 parent.write(E.legend(tr))
