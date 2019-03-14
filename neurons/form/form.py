@@ -319,23 +319,35 @@ def THtmlFormRoot(Base):
             if in_fset:
                 default_text = cls.get_type_name()
                 if self.polymorphic:
-                    mapper = self.get_cls_attrs(cls).sqla_mapper
-                    pmap = mapper.polymorphic_map
-                    pon = mapper.polymorphic_on.key
+                    # give priority to sqla polymorphic types
 
-                    pval = getattr(inst, pon, _NONEXISTENT)
-                    if pval is not _NONEXISTENT:
-                        ptype = pmap.get(pval)
-                        if ptype is None:
+                    cls_attrs = self.get_cls_attrs(cls)
+                    mapper = cls_attrs.sqla_mapper
+                    if mapper is not None:
+                        pmap = mapper.polymorphic_map
+                        pon = mapper.polymorphic_on.key
+
+                        pval = getattr(inst, pon, _NONEXISTENT)
+                        if pval is not _NONEXISTENT:
+                            ptype = pmap.get(pval)
+                            if ptype is None:
+                                pval = mapper.polymorphic_identity
+                                ptype = pmap.get(pval)
+
+                        else:
                             pval = mapper.polymorphic_identity
                             ptype = pmap.get(pval)
 
-                    else:
-                        pval = mapper.polymorphic_identity
-                        ptype = pmap.get(pval)
+                        if ptype is not None:
+                            if isinstance(ptype.class_, cls):
+                                default_text = ptype.class_.get_type_name()
+                            else:
+                                logger.debug("Ignoring sqla subclass %r "
+                                             "because not subclass of %r",
+                                                              ptype.class_, cls)
 
-                    if ptype is not None:
-                        default_text = ptype.class_.get_type_name()
+                    elif isinstance(inst, cls):
+                        default_text = inst.__class__.get_type_name()
 
                 tr = self.trc(cls, ctx.locale, default_text)
                 parent.write(E.legend(tr))
