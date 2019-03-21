@@ -110,7 +110,7 @@ class Logger(ComplexModel):
         return self
 
 
-def TTwistedHandler(config, loggers, _meminfo):
+def TTwistedHandler(config, loggers, _meminfo, _fdinfo):
     from twisted.logger import LogLevel
 
     # this is supposed to override the Logger object above. that's not cool but
@@ -129,17 +129,32 @@ def TTwistedHandler(config, loggers, _meminfo):
         if config.log_rss:
             if _meminfo is None:
                 @staticmethod
-                def _modify_record(record):
+                def _modify_record_rss(record):
                     record.msg = '[psutil?] %s' % record.msg
             else:
                 @staticmethod
-                def _modify_record(record):
+                def _modify_record_rss(record):
                     meminfo = _meminfo()
                     record.msg = '[%.2f] %s' % \
                                          (meminfo.rss / 1024.0 ** 2, record.msg)
 
         else:
-            def _modify_record(self, record):
+            def _modify_record_rss(self, record):
+                pass
+
+        if config.log_fdstats:
+            if _fdinfo is None:
+                @staticmethod
+                def _modify_record_fd(record):
+                    record.msg = '[psutil?] %s' % record.msg
+            else:
+                @staticmethod
+                def _modify_record_fd(record):
+                    record.msg = '[%d/%d] %s' % \
+                      (len(_fdinfo.open_files()), _fdinfo.num_fds(), record.msg)
+
+        else:
+            def _modify_record_fd(self, record):
                 pass
 
         def emit(self, record):
@@ -148,7 +163,8 @@ def TTwistedHandler(config, loggers, _meminfo):
             record.l = LOGLEVEL_MAP_ABB.get(record.levelno, "?")
             record.r = _get_reactor_thread_sigil(record)
 
-            self._modify_record(record)
+            self._modify_record_fd(record)
+            self._modify_record_rss(record)
 
             _logger = loggers.get(record.name, None)
             if _logger is None:

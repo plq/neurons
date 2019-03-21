@@ -73,11 +73,13 @@ from neurons.daemon.config.store import RelationalStore, StorageInfo
 _some_prot = ProtocolBase()
 
 meminfo = None
+fdinfo = None
 
-def update_meminfo():
+def update_psutil_calls():
     """Call this when the process pid changes."""
 
     global meminfo
+    global fdinfo
 
     try:
         import psutil
@@ -87,13 +89,15 @@ def update_meminfo():
         except AttributeError:  # psutil 3
             meminfo = process.memory_info
 
+        fdinfo = process
+
         del process
 
     except ImportError:
         pass
 
 
-update_meminfo()
+update_psutil_calls()
 
 
 class _SetStaticPathAction(Action):
@@ -208,6 +212,9 @@ class Daemon(ConfigBase):
                  "Create database schema, insert initial data, etc.")),
 
         ('log_rss', Boolean(default=False,
+            help="Prepend resident set size to all logging messages. "
+                 "Requires psutil")),
+        ('log_fdstats', Boolean(default=False,
             help="Prepend resident set size to all logging messages. "
                  "Requires psutil")),
         ('log_protocol', Boolean(default=False,
@@ -413,7 +420,7 @@ class Daemon(ConfigBase):
         globalLogPublisher.addObserver(observer)
         self._clear_other_observers(globalLogPublisher, observer)
 
-        TwistedHandler = TTwistedHandler(self, loggers, meminfo)
+        TwistedHandler = TTwistedHandler(self, loggers, meminfo, fdinfo)
 
         handler = TwistedHandler()
         handler.setFormatter(formatter)
