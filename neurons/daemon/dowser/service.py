@@ -45,9 +45,10 @@ import sys
 from types import FrameType, ModuleType
 from collections import defaultdict
 
+from lxml.html.builder import E
 from neurons.daemon.dowser.const import ASSETS_DIR
 
-from spyne import rpc, Unicode, Service, ByteArray, AnyHtml
+from spyne import rpc, Unicode, Service, ByteArray, AnyHtml, Iterable
 from spyne import Integer
 from spyne.protocol.http import HttpPattern, HttpRpc
 from spyne.util.six import BytesIO
@@ -93,6 +94,11 @@ def template(name, **params):
     p.update(params)
     return open(os.path.join(ASSETS_DIR, name)).read() % p
 
+"""
+curl $(python -c \
+    "from neurons.daemon.ipc import get_dowser_address_for_pid; \
+    print '%s:%d' % get_dowser_address_for_pid( $(pgrep ink_) )" )
+"""
 
 class DowserServices(Service):
     period = 5
@@ -100,7 +106,54 @@ class DowserServices(Service):
     history = {}
     samples = 0
     id_history = []
-    max_id_history = 2
+    max_id_history = 200
+
+    @rpc(_returns=AnyHtml)
+    def snapshot(ctx):
+        ids = set()
+        for obj in gc.get_objects():
+            ids.add(id(obj))
+
+        DowserServices.id_history.append(ids)
+        if len(DowserServices.id_history) > DowserServices.max_id_history:
+            DowserServices.id_history.pop(0)
+
+        idhist = DowserServices.id_history
+        retval = E.table()
+        if len(idhist) > 1:
+            new, old = idhist[-1], idhist[0]
+            ids = sorted(new | old)
+            for oid in ids:
+                tr = E.tr()
+
+                if oid in new and not (oid in old):
+                    tr.append(E.td("New: {}".format(oid)))
+                    try:
+                        obj = next(ob for ob in gc.get_objects() if id(ob) == oid)
+                        if obj in idhist:
+                            continue
+                        try:
+                            if obj.__name__ in ('cell', 'frame'):
+                                continue
+                            if obj.__class__.__name__ in ('cell', 'frame'):
+                                continue
+                        except:
+                            pass
+
+                        reprobj = repr(obj)
+                        if len (reprobj) > 1024:
+                            reprobj = reprobj[:1024]
+                        tr.append(E.td(E.pre(repr(type(obj)))))
+                        tr.append(E.td(E.pre(reprobj)))
+                    except StopIteration:
+                        continue
+
+                    retval.append(tr)
+
+        return E.html(
+            E.head(E.style("td { vertical-align:top; }\n")),
+            E.body(retval)
+        )
 
     @classmethod
     def tick(cls):
@@ -108,20 +161,13 @@ class DowserServices(Service):
         gc.collect()
 
         typecounts = {}
-        new_ids = defaultdict(set)
         for obj in gc.get_objects():
             objtype = type(obj)
-            typename = ".".join((objtype.__module__, objtype.__name__))
-            new_ids[typename].add(id(obj))
 
             if objtype in typecounts:
                 typecounts[objtype] += 1
             else:
                 typecounts[objtype] = 1
-
-        if len(DowserServices.id_history) > DowserServices.max_id_history:
-            DowserServices.id_history.pop(0)
-        DowserServices.id_history.append(new_ids)
 
         for objtype, count in typecounts.items():
             typename = objtype.__module__ + "." + objtype.__name__
@@ -171,10 +217,11 @@ class DowserServices(Service):
             minhist = max(hist)
             cur = hist[-1]
 
-            idhist = DowserServices.id_history
-            last = idhist[-1][typename]
-            first = idhist[0][typename]
-            diff = len(last) - len(first)
+            # idhist = DowserServices.id_history
+            # last = idhist[-1][typename]
+            # first = idhist[0][typename]
+            # diff = len(last) - len(first)
+            diff = -1  # FIXME
 
             # check floors
             show_this = cur >= cur_floor and \
