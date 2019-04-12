@@ -75,7 +75,6 @@ class Version(TableModel):
     def migrate(config, submodule, migration_dict, current_version,
                                                                   migrate_init):
         num_migops = 0
-        table_name = Version.Attributes.table_name
         Version.Attributes.sqla_table.create(checkfirst=True)
 
         db = config.get_main_store()
