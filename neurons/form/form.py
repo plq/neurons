@@ -323,7 +323,7 @@ def THtmlFormRoot(Base):
 
                     cls_attrs = self.get_cls_attrs(cls)
                     mapper = cls_attrs.sqla_mapper
-                    if mapper is not None:
+                    if mapper is not None and mapper.polymorphic_on is not None:
                         pmap = mapper.polymorphic_map
                         pon = mapper.polymorphic_on.key
 
