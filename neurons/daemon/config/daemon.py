@@ -555,7 +555,7 @@ class Daemon(ConfigBase):
                 workdir = '/'
             daemonize_do(workdir=workdir)
 
-            update_meminfo()
+            update_psutil_calls()
 
         else:
             if self.workdir is not None:
