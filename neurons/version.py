@@ -117,6 +117,10 @@ class Version(TableModel):
                                 "Migration operation(s) %r will be performed",
                                             submodule, db_version.version, keys)
 
+            if config.dry_run:
+                logger.warning("Skipping migration due to dry run")
+                return
+
             for vernum in keys:
                 migrate = migration_dict[vernum]
 
