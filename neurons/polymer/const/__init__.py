@@ -31,13 +31,13 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from spyne.util.resource import parse_cloth_resource, read_resource_contents, \
+from spyne.util.resource import parse_cloth_resource, get_resource_file_contents, \
     parse_html_resource
 
 T_SCREEN = parse_html_resource(__name__, 'screen.html')
 T_DOM_MODULE = parse_cloth_resource(__name__, 'dom_module.html')
-POLYMER_PREAMBLE = read_resource_contents(__name__, 'preamble.js')
-POLYMER_DEFN_TEMPLATE = read_resource_contents(__name__, 'defn.js')
+POLYMER_PREAMBLE = get_resource_file_contents(__name__, 'preamble.js')
+POLYMER_DEFN_TEMPLATE = get_resource_file_contents(__name__, 'defn.js')
 
 DEFAULT_URL_POLYFILL = \
             '/static/bower_components/webcomponentsjs/webcomponents-lite.min.js'
@@ -45,5 +45,5 @@ DEFAULT_URL_POLYFILL = \
 from . import comp
 
 del parse_cloth_resource
-del read_resource_contents
+del get_resource_file_contents
 del parse_html_resource
