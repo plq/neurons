@@ -648,10 +648,18 @@ class SimpleRenderWidget(HtmlFormWidget):
             if cls_attr.min_occurs == 0:
                 return None
 
-        if cls_attr.values_dict is not None:
-            data = cls_attr.values_dict.get(text_str, None)
+        vd = cls_attr.values_dict
+        if vd is not None and len(vd) > 0:
+            try:
+                data =vd.get(text_str, None)
+            except TypeError:
+                logger.error("Invalid value %r for dict %r", text_str,
+                                                           cls_attr.values_dict)
+                raise
+
             if data is None:
                 return "{} (!?)".format(text_str)
+
             return data
 
         return text_str
