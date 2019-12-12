@@ -146,6 +146,8 @@ class Daemon(ConfigBase):
     No setuid/setgid support is implemented.
     """
 
+    logging_init_done = False
+
     LOGGING_DEBUG_FORMAT = \
                      "%(l)s %(r)s | %(module)12s:%(lineno)-4d | %(message)s"
     LOGGING_DEVEL_FORMAT = "%(l)s | %(module)12s:%(lineno)-4d | %(message)s"
@@ -211,6 +213,10 @@ class Daemon(ConfigBase):
             help="Bootstrap the application instead of starting it. "
                  "Create database schema, insert initial data, etc.")),
 
+        ('log_exclusive', Boolean(default=False,
+            help="Remove previously configured log handlers.")),
+        ('log_optional', Boolean(default=False,
+            help="Don't configure a log handler if there are others already.")),
         ('log_rss', Boolean(default=False,
             help="Prepend resident set size to all logging messages. "
                  "Requires psutil")),
@@ -367,6 +373,19 @@ class Daemon(ConfigBase):
         from twisted.logger import FileLogObserver
         from twisted.logger import globalLogPublisher
 
+        if Daemon.logging_init_done:
+            return self
+
+        if len(logging.root.handlers) > 0 and self.log_optional:
+            logger.debug("Not configuring a neurons logging "
+                 "handler because previous logging handler(s) are found "
+                                                     "and log_optional == True")
+            return self
+
+        if len(logging.root.handlers) > 0 and self.log_exclusive:
+            logger.debug("Deleting previous logging handler(s)")
+            del logging.root.handlers[:]
+
         loggers = {}
 
         if self.logger_dest is not None:
@@ -433,6 +452,8 @@ class Daemon(ConfigBase):
             l.apply()
 
         self.boot_message()
+
+        Daemon.logging_init_done = True
 
         return self
 
