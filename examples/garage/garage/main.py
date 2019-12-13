@@ -31,7 +31,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-# NO IMPORTS IN MAIN FUNCTION!!!
+# NO IMPORTS IN MAIN MODULE !!!
 
 def init(config):
     """Daemon initialization function. This is run after daemon configuration is
