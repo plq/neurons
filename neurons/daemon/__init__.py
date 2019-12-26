@@ -40,6 +40,14 @@ EXIT_ERR_LISTEN_TCP = 100000
 EXIT_ERR_LISTEN_UDP = 200000
 
 
+def get_package_version(pkg_name):
+    try:
+        import pkg_resources
+        return pkg_resources.get_distribution(pkg_name).version
+    except Exception:
+        return 'unknown'
+
+
 from neurons.daemon import dowser
 from neurons.daemon.main import main
 

@@ -56,6 +56,7 @@ from spyne.util import six
 from spyne.util.dictdoc import get_object_as_yaml, get_yaml_as_object
 
 from neurons import is_reactor_thread, CONFIG_FILE_VERSION
+from neurons.daemon  import get_package_version
 from neurons.daemon.cli import spyne_to_argparse
 from neurons.daemon.daemonize import daemonize_do
 
@@ -74,6 +75,7 @@ _some_prot = ProtocolBase()
 
 meminfo = None
 fdinfo = None
+
 
 def update_psutil_calls():
     """Call this when the process pid changes."""
@@ -467,15 +469,21 @@ class Daemon(ConfigBase):
         import twisted
         import sqlalchemy
 
-        logger.info("Booting daemon '%s' with spyne-%s, neurons-%s, "
-            "sqlalchemy-%s and twisted-%s.", self.name,
+        myver = get_package_version(self.name)
+        if myver != "unknown":
+            myname = "{}-{}".format(self.name, myver)
+        else:
+            myname = self.name
+
+        logger.info("Booting daemon %s with spyne-%s, neurons-%s, "
+            "sqlalchemy-%s and twisted-%s.", myname,
                                 spyne.__version__, neurons.__version__,
                                 sqlalchemy.__version__, twisted.version.short())
 
     @staticmethod
     def hello_darkness_my_old_friend():
         logger.info("If you see this, it means something else has also "
-                "initialized the logging subsystem. This means you will get "
+                "initialized the logging subsystem. This means you may get "
                                                      "duplicate logging lines.")
 
     def pre_logging_apply(self):

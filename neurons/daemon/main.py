@@ -53,16 +53,9 @@ from spyne.store.relational.util import database_exists, create_database
 from sqlalchemy import MetaData
 
 from neurons import py_start_t
+from neurons.daemon import get_package_version
 from neurons.daemon.config import FileStore, ServiceDaemon, \
     RelationalStore, LdapStore, Server
-
-
-def get_package_version(pkg_name):
-    try:
-        import pkg_resources
-        return pkg_resources.get_distribution(pkg_name).version
-    except Exception:
-        return 'unknown'
 
 
 def _print_version(config):
