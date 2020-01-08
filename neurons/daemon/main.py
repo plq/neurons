@@ -588,7 +588,7 @@ def main(config_name, argv, init, bootstrap=None,
         assert autorel.start() is not None
         num_files = len(autorel.sysfiles() | autorel.files)
         logger.info("Auto reloader init success: Watching %d files "
-                                      "every %g seconds.", num_files, frequency)
+                                    "every %g second(s).", num_files, frequency)
 
     if config.dry_run:
         return 0
