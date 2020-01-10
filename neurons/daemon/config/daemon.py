@@ -215,25 +215,33 @@ class Daemon(ConfigBase):
             help="Bootstrap the application instead of starting it. "
                  "Create database schema, insert initial data, etc.")),
 
-        ('log_exclusive', Boolean(default=False,
+        ('log_exclusive', Boolean(
             help="Remove previously configured log handlers.")),
-        ('log_optional', Boolean(default=False,
+        ('log_optional', Boolean(
             help="Don't configure a log handler if there are others already.")),
-        ('log_rss', Boolean(default=False,
+        ('log_rss', Boolean(
             help="Prepend resident set size to all logging messages. "
                  "Requires psutil")),
-        ('log_fdstats', Boolean(default=False,
+        ('log_fdstats', Boolean(
             help="Prepend resident set size to all logging messages. "
                  "Requires psutil")),
-        ('log_protocol', Boolean(default=False,
-                                              help="Log protocol operations.")),
-        ('log_model', Boolean(default=False, help="Log model operations.")),
-        ('log_cloth', Boolean(default=False, help="Log cloth generation.")),
-        ('log_interface', Boolean(default=False,
-                                          help="Log interface build process.")),
+        ('log_protocol', Boolean(
+            help="Log protocol operations."
+        )),
+        ('log_model', Boolean(
+            help="Log model operations."
+        )),
+        ('log_cloth', Boolean(
+            help="Log cloth generation."
+        )),
+        ('log_interface', Boolean(
+            help="Log interface build process."
+        )),
 
-        ('write_config', Boolean(no_file=True,
-                                   help="Write configuration file and exit.")),
+        ('write_config', Boolean(
+            no_file=True,
+            help="Write configuration file and exit."
+        )),
 
         ('alert_dests', Array(AlertDestination, default=[])),
 
@@ -1013,6 +1021,9 @@ class ServiceDaemon(Daemon):
 
     def get_main_store(self):
         return self.stores[self.main_store].itself
+
+    def has_main_store(self):
+        return self.main_store in self.stores
 
     def get_main_store_config(self):
         return self.stores[self.main_store]
