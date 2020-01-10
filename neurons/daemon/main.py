@@ -255,9 +255,12 @@ def _inner_main(config, init, bootstrap, bootstrapper):
         if config.debug_reactor:
             config.add_reactor_checks()
 
-        from neurons import TableModel
-        TableModel.Attributes.sqla_metadata.bind = \
+        if config.has_main_store():
+            from neurons import TableModel
+            TableModel.Attributes.sqla_metadata.bind = \
                                                   config.get_main_store().engine
+        else:
+            logger.debug('No sql data store configured.')
 
     # initialize applications
     items = init(config)
