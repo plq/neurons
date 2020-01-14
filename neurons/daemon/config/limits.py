@@ -61,26 +61,26 @@ RLIMIT_DICT = {}
 
 
 _check_and_add_rlimit("CORE", 'mb', Double, 2 ** 20,
-    help="""The maximum size (in megabytes) of a core file that the current 
-    process can create. This may result in the creation of a partial core file 
+    help="""The maximum size (in megabytes) of a core file that the current
+    process can create. This may result in the creation of a partial core file
     if a larger core would be required to contain the entire process image.""")
 
 _check_and_add_rlimit("CPU", 'h', Double, 3600,
-    help="""The maximum amount of processor time (in hours) that a process can 
+    help="""The maximum amount of processor time (in hours) that a process can
     use. If this limit is exceeded, a SIGXCPU signal is sent to the process.
     (See the signal module documentation for information about how to catch
     this signal and do something useful, e.g. flush open files to disk.)""")
 
 _check_and_add_rlimit("FSIZE", 'mb', Double, 2 ** 20,
-    help="""The maximum size (in bytes) of a file which the process may 
+    help="""The maximum size (in bytes) of a file which the process may
     create.""")
 
 _check_and_add_rlimit("DATA", 'mb', Double, 2 ** 20,
     help="""The maximum size (in bytes) of the process’s heap.""")
 
 _check_and_add_rlimit("STACK", 'mb', Double, 2 ** 20,
-    help="""The maximum size (in bytes) of the call stack for the current 
-    process. This only affects the stack of the main thread in a multi-threaded 
+    help="""The maximum size (in bytes) of the call stack for the current
+    process. This only affects the stack of the main thread in a multi-threaded
     process.""")
 
 _check_and_add_rlimit("RSS", 'mb', Double, 2 ** 20,
@@ -91,7 +91,7 @@ _check_and_add_rlimit("NPROC", '', Integer32, 1,
     help="""The maximum number of processes the current process may create.""")
 
 _check_and_add_rlimit("NOFILE", '', Integer32, 1,
-    help="""The maximum number of open file descriptors for the current 
+    help="""The maximum number of open file descriptors for the current
     process.""")
 
 _check_and_add_rlimit("OFILE", '', Integer32, 1,
@@ -101,7 +101,7 @@ _check_and_add_rlimit("MEMLOCK", 'mb', Double, 2 ** 20,
     help="""The maximum address space which may be locked in memory.""")
 
 _check_and_add_rlimit("AS", 'mb', Double, 2 ** 20,
-    help="""The maximum area (in bytes) of address space which may be taken by 
+    help="""The maximum area (in bytes) of address space which may be taken by
     the process.""")
 
 

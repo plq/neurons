@@ -40,7 +40,7 @@ Configurable daemon behaviors:
 
    1.) The current working directory set to the "/" directory.
    2.) The current file creation mode mask set to 0.
-   3.) Close all open files (1024). 
+   3.) Close all open files (1024).
    4.) Redirect standard I/O streams to "/dev/null".
 
 A failed call to fork() now raises an exception.
