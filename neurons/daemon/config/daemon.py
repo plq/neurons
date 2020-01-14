@@ -823,19 +823,27 @@ class ServiceDaemon(Daemon):
             help="Write Xml Schema document(s) to given directory and exit. "
                   "It is created if missing", no_file=True, metavar='XSD_DIR')),
 
-        ('log_orm', Boolean(default=False,
-                                        help="Log SQLAlchemy ORM operations.")),
-        ('log_queries', Boolean(default=False, help="Log SQL queries.")),
-        ('log_results', Boolean(default=False,
-                         help="Log SQL query results in addition to queries.")),
-        ('log_dbconn', Boolean(default=False,
+        ('log_orm', Boolean(
+            help="Log SQLAlchemy ORM operations."
+        )),
+        ('log_queries', Boolean(
+            help="Log SQL queries."
+        )),
+        ('log_results', Boolean(
+            help="Log SQL query results in addition to queries."
+        )),
+        ('log_dbconn', Boolean(
             help="Prepend number of open database connections to all "
-                                                          "logging messages.")),
-        ('log_sqlalchemy', Boolean(default=False,
-                                help="Log SQLAlchemy messages in debug level")),
+                                                             "logging messages."
+        )),
+        ('log_sqlalchemy', Boolean(
+            help="Log SQLAlchemy messages in debug level"
+        )),
 
-        ('drop_all_tables', Boolean(help="Drops all tables in the database.",
-                                                                 no_file=True)),
+        ('drop_all_tables', Boolean(
+            no_file=True,
+            help="Drops all tables in the database.",
+        )),
 
         ('main_store', Unicode(help="The name of the store for binding "
                                           "neurons.TableModel's metadata to.")),
