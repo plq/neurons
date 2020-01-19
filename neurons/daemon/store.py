@@ -167,8 +167,8 @@ class SqlDataStore(DataStoreBase):
         if neurons.REACTOR_THREAD_ID is not None and \
                   neurons.REACTOR_THREAD_ID != threading.current_thread().ident:
 
-            logger.warning("Using txpostgres outside of reactor thread is "
-                           "dangerous.")
+            logger.warning(
+                     "Using txpostgres outside of reactor thread is dangerous.")
 
             for elt in traceback.format_stack():
                 for line in elt.split("\n"):
