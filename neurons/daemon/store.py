@@ -260,7 +260,7 @@ class SqlDataStore(DataStoreBase):
             .addCallback(lambda p:
                 logger.info("{%s} (txpool) %r started with dsn: '%s'.",
                                                            self.name, p, dsn)) \
-            .addErrback(lambda err: err.printTraceback())
+            .addErrback(lambda err: logger.error(err.getTraceback()))
 
         return self.txpool_start_deferred
 
