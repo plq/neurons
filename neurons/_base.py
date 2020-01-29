@@ -32,6 +32,11 @@
 #
 
 
+from time import time
+py_start_t = time()
+"""Approximate start time of the python code"""
+
+
 import neurons
 import threading
 
@@ -44,8 +49,3 @@ def _is_reactor_thread():
 
 def _is_reactor_thread_none():
     return None
-
-
-from time import time
-py_start_t = time()
-"""Approximate start time of the python code"""
