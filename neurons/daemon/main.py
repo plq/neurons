@@ -597,4 +597,5 @@ def main(config_name, argv, init, bootstrap=None,
     if config.dry_run:
         return 0
 
+    logger.debug("Starting reactor.")
     return reactor.run()
