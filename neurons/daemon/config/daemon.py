@@ -243,7 +243,7 @@ class Daemon(ConfigBase):
             help="Write configuration file and exit."
         )),
 
-        ('alert_dests', Array(AlertDestination, default=[])),
+        ('alert_dests', Array(AlertDestination, default=tuple())),
 
         ('shell', Boolean(
             no_file=True, default=False,
