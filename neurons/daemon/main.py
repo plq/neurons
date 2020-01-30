@@ -301,10 +301,11 @@ def _inner_main(config, init, bootstrap, bootstrapper):
                 logger.info("%s Configuration initialized from default.",
                                                      subconfig.colored_name)
 
-        factory = v.init(config)
-
         if disabled:
             logger.info("%s Service disabled.", DARK_R('[%s]' % (k,)))
+            continue
+
+        factory = v.init(config)
 
         if not isinstance(subconfig, Server):
             continue
