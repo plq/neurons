@@ -74,6 +74,7 @@ def start_dowser(config):
 
     subconfig = config.services['dowser']
     if subconfig.subapps is None:
+        subconfig.disabled = True
         subconfig.subapps = {}
 
     subconfig.subapps[''] = \
