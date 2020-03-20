@@ -333,9 +333,10 @@ def _inner_main(config, init, bootstrap, bootstrapper):
         config.do_write_config()
         return 0
 
-    # Perform schema migrations
-    from neurons.version import Version
-    Version.migrate_all(config)
+    if not config.skip_migration:
+        # Perform schema migrations
+        from neurons.version import Version
+        Version.migrate_all(config)
 
     # if requested, drop to shell
     if config.shell or config.ikernel:

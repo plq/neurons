@@ -845,8 +845,14 @@ class ServiceDaemon(Daemon):
             help="Drops all tables in the database.",
         )),
 
-        ('main_store', Unicode(help="The name of the store for binding "
-                                          "neurons.TableModel's metadata to.")),
+        ('main_store', Unicode(
+            help="The name of the store for binding neurons.TableModel's "\
+                 "metadata to."
+        )),
+
+        ('skip_migration', Boolean(
+            help="Skip schema migration operations", default=False,
+        )),
 
         ('gen_data', Boolean(help="Generates random data", no_file=True)),
         ('_stores', Array(StorageInfo, sub_name='stores')),
