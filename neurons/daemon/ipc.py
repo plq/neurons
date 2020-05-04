@@ -80,21 +80,42 @@ def get_mgmt_address_for_tcp_port(port):
     Returns a tuple containing the computed host as string and the port as int.
     """
 
-    pid = None
+    for conn in psutil.net_connections():
+        if conn.status != 'LISTEN':
+            continue
+
+        if conn.pid is None:
+            continue
+
+        h, p = conn.laddr
+        if p == port:
+            return get_mgmt_address_for_pid(conn.pid)
+
+    return None, None
+
+
+def get_mgmt_addresses_for_tcp_port(port):
+    """Gets management service address from a tcp port.
+
+    Returns a tuple containing the computed host as string and the port as int.
+    """
+
+    conns = {(conn.laddr.ip, conn.laddr.port)
+                    for conn in psutil.net_connections()
+                            if conn.status == 'LISTEN' and conn.pid is not None}
 
     for conn in psutil.net_connections():
         if conn.status != 'LISTEN':
             continue
 
+        if conn.pid is None:
+            continue
+
         h, p = conn.laddr
         if p == port:
-            pid = conn.pid
-            break
-
-    if pid is not None:
-        return get_mgmt_address_for_pid(pid)
-
-    return None, None
+            ma = get_mgmt_address_for_pid(conn.pid)
+            if ma in conns:
+                yield ma
 
 
 def get_own_mgmt_address():
