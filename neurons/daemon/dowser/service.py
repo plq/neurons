@@ -170,7 +170,7 @@ class DowserServices(Service):
                 typecounts[objtype] = 1
 
         for objtype, count in typecounts.items():
-            typename = objtype.__module__ + "." + objtype.__name__
+            typename = str(objtype.__module__) + "." + objtype.__name__
             if typename not in cls.history:
                 cls.history[typename] = [0] * cls.samples
             cls.history[typename].append(count)
