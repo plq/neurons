@@ -483,8 +483,10 @@ class Daemon(ConfigBase):
         else:
             myname = self.name
 
-        logger.info("Booting daemon %s with spyne-%s, neurons-%s, "
-            "sqlalchemy-%s and twisted-%s.", myname,
+        pyversion = '.'.join([str(i) for i in sys.version_info[:3]])
+
+        logger.info("Booting daemon %s on python-%s with spyne-%s, neurons-%s, "
+            "sqlalchemy-%s and twisted-%s.", myname, pyversion,
                                 spyne.__version__, neurons.__version__,
                                 sqlalchemy.__version__, twisted.version.short())
 
