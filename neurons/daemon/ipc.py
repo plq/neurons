@@ -100,22 +100,19 @@ def get_mgmt_addresses_for_tcp_port(port):
     Returns a tuple containing the computed host as string and the port as int.
     """
 
-    conns = {(conn.laddr.ip, conn.laddr.port)
+    known_listeners = {(conn.laddr.ip, conn.laddr.port) : conn.pid
                     for conn in psutil.net_connections()
                             if conn.status == 'LISTEN' and conn.pid is not None}
 
-    for conn in psutil.net_connections():
-        if conn.status != 'LISTEN':
+    for ((h, p), pid) in known_listeners.items():
+        if p != port:
             continue
 
-        if conn.pid is None:
+        ma = get_mgmt_address_for_pid(pid)
+        if not (ma in known_listeners):
             continue
 
-        h, p = conn.laddr
-        if p == port:
-            ma = get_mgmt_address_for_pid(conn.pid)
-            if ma in conns:
-                yield ma
+        yield ma
 
 
 def get_own_mgmt_address():
