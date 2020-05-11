@@ -195,8 +195,8 @@ class DowserServices(Service):
         'min': lambda x: min(DowserServices.history[x]),
         'cur': lambda x: DowserServices.history[x][-1],
         'max': lambda x: max(DowserServices.history[x]),
-        'diff': lambda x: len(DowserServices.id_history[-1][x]) - \
-                          len(DowserServices.id_history[0][x]),
+        'diff': lambda x: len(DowserServices.id_history[-1][x]) -
+                                           len(DowserServices.id_history[0][x]),
     }
 
     @rpc(Unicode(values=['max', 'min', 'cur', 'diff']), Integer(default=0),
