@@ -114,7 +114,7 @@ setup(
         'Intended Audience :: Developers',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
     ],
-    keywords=('http',),
+    keywords=['http'],
     author='Burak Arslan',
     author_email='burak+neurons@arskom.com.tr',
     maintainer='Burak Arslan',
