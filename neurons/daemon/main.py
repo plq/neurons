@@ -244,7 +244,14 @@ def _inner_main(config, init, bootstrap, bootstrapper):
         if config.drop_all_tables:
             return _do_drop_all_tables(config, init)
 
-    config.apply()
+    may_daemonize = True \
+        and (not config.write_wsdl) \
+        and (not config.write_xsd) \
+        and (not config.write_config) \
+        and (not config.shell) \
+        and (not config.ikernel) \
+
+    config.apply(may_daemonize)
     logger.info("%s config valid, initializing services...", config.name)
 
     # initialize main table model
