@@ -119,7 +119,7 @@ def decode(data, secret):
     if mac != mac2:
         raise TamperedCookieError()
 
-    return unpad(20 * '\0' + padded_data, 16)[20:]
+    return unpad(20 * b'\0' + padded_data, 16)[20:]
 
 
 class SessionObject(object):
