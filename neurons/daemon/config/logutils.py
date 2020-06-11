@@ -318,8 +318,7 @@ def Trecord_as_string(formatter):
             text = record['log_format'].format(**record) + "\n"
             ns = record.get('log_namespace', "???")
             lineno = 0
-            record = logging.LogRecord('?', level, ns, lineno, text,
-                None, None)
+            record = logging.LogRecord('?', level, ns, lineno, text, None, None)
             record.l = level
             record.r = _get_reactor_thread_sigil(record)
             record.module = ns.split('.')[-2]
