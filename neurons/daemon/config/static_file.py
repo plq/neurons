@@ -37,6 +37,7 @@ from twisted.web.resource import ForbiddenResource
 from twisted.python.filepath import InsecurePath
 
 from spyne.server.twisted.http import get_twisted_child_with_default
+from spyne.util.six.moves.urllib.parse import quote
 
 
 def TCheckedFile(disallowed_exts, url):
@@ -44,7 +45,7 @@ def TCheckedFile(disallowed_exts, url):
         def __init__(self, *args, **kwargs):
             File.__init__(self, *args, **kwargs)
 
-            self.prepath = url
+            self.prepath = quote(url).encode('ascii')
 
         def getChildWithDefault(self, path, request):
             return get_twisted_child_with_default(self, path, request)

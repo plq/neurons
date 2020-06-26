@@ -48,6 +48,10 @@ from colorama import Fore, Style
 from spyne import Application, UnsignedInteger, ComplexModel, Unicode, \
     UnsignedInteger16, Boolean, String, Array, ComplexModelBase, M, \
     ValidationError, Integer32
+
+from spyne.util import six
+from spyne.util.six.moves.urllib.parse import quote
+
 from spyne.util.resource import get_resource_path
 
 from neurons.daemon import EXIT_ERR_LISTEN_TCP, EXIT_ERR_LISTEN_UDP, \
@@ -386,7 +390,7 @@ class HttpApplication(ComplexModel):
         else:
             raise ValueError(self.app)
 
-        retval.prepath = self.url
+        retval.prepath = quote(self.url).encode('ascii')
         return retval
 
 
@@ -443,6 +447,8 @@ class HttpServer(Server):
 
         subapps = []
         for url, subapp in self.subapps.items():
+            if isinstance(url, six.text_type):
+                url = quote(url).encode('ascii')
             if isinstance(subapp, StaticFileServer):
                 self._push_asset_dir_overrides(subapp)
 
@@ -451,7 +457,7 @@ class HttpServer(Server):
                 if hasattr(subapp, 'app'):
                     if subapp.app is None:
                         logger.warning("No subapp '%s' found in app '%s': "
-                                       "Invalid key.", subapp.url, self.name)
+                                          "Invalid key.", subapp.url, self.name)
                         continue
                 subapps.append(subapp)
 
@@ -460,7 +466,7 @@ class HttpServer(Server):
 
         self._subapps = subapps
 
-        root_app = self.subapps.get('', None)
+        root_app = self.subapps.get(b'', None)
 
         if root_app is None:
             from spyne.server.twisted.http import get_twisted_child_with_default
@@ -471,13 +477,16 @@ class HttpServer(Server):
                     return get_twisted_child_with_default(self, path, request)
 
             root = TwistedResource()
-            root.prepath = '/'
+            root.prepath = b'/'
         else:
             root = root_app.gen_resource()
 
         for subapp in self._subapps:
-            if subapp.url != '':
-                root.putChild(subapp.url, subapp.gen_resource())
+            url = subapp.url
+            if isinstance(url, six.text_type):
+                url = quote(url).encode('ascii')
+            if url != b'':
+                root.putChild(url, subapp.gen_resource())
 
         retval = Site(root)
 
