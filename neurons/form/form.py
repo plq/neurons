@@ -783,6 +783,7 @@ class HtmlForm(HtmlFormRoot):
             value = self.to_unicode(cls, inst)
 
             code.append(
+                "t.datetimepicker('setDate', '%(value)s');"
                 "t.datetimepicker('setTime', '%(value)s');")
 
             script = self._format_js(code, field_name=elt.attrib['id'],
