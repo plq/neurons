@@ -107,8 +107,6 @@ class Logger(ComplexModel):
         else:
             logger.info("Logger level override %s = %s", self.path, self.level)
 
-        return self
-
 
 def TTwistedHandler(config, loggers, _meminfo, _fdinfo):
     from twisted.logger import LogLevel

@@ -384,13 +384,13 @@ class Daemon(ConfigBase):
         from twisted.logger import globalLogPublisher
 
         if Daemon.logging_init_done:
-            return self
+            return
 
         if len(logging.root.handlers) > 0 and self.log_optional:
             logger.debug("Not configuring a neurons logging "
                  "handler because previous logging handler(s) are found "
                                                      "and log_optional == True")
-            return self
+            return
 
         if len(logging.root.handlers) > 0 and self.log_exclusive:
             logger.debug("Deleting previous logging handler(s)")
@@ -464,8 +464,6 @@ class Daemon(ConfigBase):
         self.boot_message()
 
         Daemon.logging_init_done = True
-
-        return self
 
     def boot_message(self):
         if self._boot_messaged:
@@ -635,8 +633,6 @@ class Daemon(ConfigBase):
             self.apply_limits()
             self.apply_listeners()
             self.apply_uidgid()
-
-        return self
 
     def add_reactor_checks(self):
         """Logs warnings when stuff that could be better off in a dedicated
@@ -928,9 +924,14 @@ class ServiceDaemon(Daemon):
         )
 
     def apply_storage(self):
+        from twisted.internet.defer import maybeDeferred, DeferredList
+
+        dl = []
         for store in self.stores.values():
             try:
-                store.apply()
+
+                d = maybeDeferred(store.apply)
+                dl.append(d)
             except Exception as e:
                 logger.exception(e)
                 raise
@@ -950,7 +951,7 @@ class ServiceDaemon(Daemon):
                 record.msg = "[%d]%s" % (pool.checkedout(), record.msg)
             handler._modify_record = _modify_record
 
-        return self
+        return DeferredList(dl)
 
     def _parse_overrides(self):
         super(ServiceDaemon, self)._parse_overrides()

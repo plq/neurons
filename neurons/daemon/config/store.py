@@ -170,6 +170,8 @@ class RelationalStore(StorageInfo):
         self.itself = None
 
     def apply(self):
+        retval = None
+
         if self.name is None:
             raise ValueError("Unnamed store entry")
 
@@ -200,7 +202,7 @@ class RelationalStore(StorageInfo):
 
         if self.async_pool:
             if self.conn_str.startswith('postgres'):
-                self.itself.add_txpool()
+                retval = self.itself.add_txpool()
             else:
                 self.async_pool = False
 
@@ -210,7 +212,7 @@ class RelationalStore(StorageInfo):
             self.itself.engine.dispose()
             self.itself.engine = None
 
-        return self
+        return retval
 
     def close(self):
         if self.async_pool:
@@ -223,5 +225,3 @@ class RelationalStore(StorageInfo):
             self.itself.engine = None
 
         self.itself = None
-
-        return self
