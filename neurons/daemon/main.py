@@ -282,6 +282,15 @@ def _inner_main(config, init, bootstrap, bootstrapper):
         if k in config.services:
             disabled = config.services[k].disabled
 
+        try:
+            v.force
+
+        except:
+            logger.error(
+                "We need something that quacks like a ServiceDefinition "
+                                                    "instance instead of %r", v)
+            raise
+
         if v.force is not None:
             if k in config.services:
                 oldconfig = config.services[k]
