@@ -95,7 +95,7 @@ class ReadContext(object):
 
             return session
 
-        elif store.type == 'ldap':
+        elif store.is_ldap:
             return store.conn
 
         raise NotImplementedError(store)

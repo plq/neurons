@@ -64,6 +64,15 @@ class DataStoreBase(object):
         self.name = name
         self.type = type
 
+    @property
+    def is_ldap(self):
+        return self.type in ('ldap', 'python-ldap')
+
+    @property
+    def is_relational(self):
+        return self.type in ('sqlalchemy')
+
+
 
 class LdapDataStore(DataStoreBase):
     SUPPORTED_BACKENDS = ('python-ldap', )  # TODO: add ldaptor for python3
@@ -332,11 +341,11 @@ class SqlDataStore(DataStoreBase):
                                        self.name, self.engine, self.kwargs, dsn)
 
 
-def get_data_store(type, *args, **kwargs):
-    if type == 'ldap':
+def get_data_store(backend, *args, **kwargs):
+    if backend.is_ldap:
         return LdapDataStore(*args, **kwargs)
 
-    if type == 'sqlalchemy':
+    if backend.is_relational:
         return SqlDataStore(*args, **kwargs)
 
     raise ValueError("Unrecognized data store %r" % type)
