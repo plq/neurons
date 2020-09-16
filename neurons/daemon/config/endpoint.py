@@ -49,16 +49,16 @@ from spyne import Application, UnsignedInteger, ComplexModel, Unicode, \
     UnsignedInteger16, Boolean, String, Array, ComplexModelBase, M, \
     ValidationError, Integer32
 
+from spyne.const.http import HTTP_404
+
 from spyne.util import six
 from spyne.util.six.moves.urllib.parse import quote
-
 from spyne.util.resource import get_resource_path
 
 from neurons.daemon import EXIT_ERR_LISTEN_TCP, EXIT_ERR_LISTEN_UDP, \
                                                                 EXIT_ERR_UNKNOWN
 from neurons.daemon.cli import config_overrides
 from neurons.daemon.config._wdict import wdict, Twdict
-
 
 class Service(ComplexModel):
     name = M(Unicode)
@@ -473,6 +473,14 @@ class HttpServer(Server):
             from twisted.web.resource import Resource
 
             class TwistedResource(Resource):
+                def render_GET(self, request):
+                    request.setResponseCode(404)
+
+                    if request.method == "HEAD":
+                        return b""
+
+                    return HTTP_404
+
                 def getChildWithDefault(self, path, request):
                     return get_twisted_child_with_default(self, path, request)
 
