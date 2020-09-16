@@ -109,7 +109,7 @@ class LdapStore(StorageInfo):
 
     def apply(self):
         if self.backend in LdapDataStore.SUPPORTED_BACKENDS:
-            self.itself = LdapDataStore(self)
+            self.itself = LdapDataStore('ldap_main', self)
             self.itself.apply()
 
         else:
