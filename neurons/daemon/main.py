@@ -148,7 +148,8 @@ def _write_xsd(config):
                 print("Error:", e)
                 return -1
 
-            print("written",file_name, "for ns", appdata.app.interface.nsmap[k])
+            print("written", file_name, "for ns",
+                                                 appdata.app.interface.nsmap[k])
 
     return 0  # to force exit
 
@@ -215,6 +216,7 @@ def _set_real_factory(lp, subconfig, factory):
     # lp = listening port -- what endpoint.listen()'s return value ends up as
     if hasattr(lp.factory, 'wrappedFactory'):
         import twisted.protocols.tls
+
         assert isinstance(lp.factory, twisted.protocols.tls.TLSMemoryBIOFactory)
         target_factory = lp.factory.wrappedFactory
 
@@ -294,7 +296,7 @@ def _inner_main(config, init, bootstrap, bootstrapper):
                 subconfig = config.services[k] = v.force
 
             logger.info("%s Configuration initialized from "
-                               "hard-coded object.", subconfig.colored_name)
+                                   "hard-coded object.", subconfig.colored_name)
 
         else:
             k_was_there = k in config.services
@@ -303,10 +305,10 @@ def _inner_main(config, init, bootstrap, bootstrapper):
 
             if k_was_there:
                 logger.info("%s Configuration initialized from file.",
-                                                     subconfig.colored_name)
+                                                         subconfig.colored_name)
             else:
                 logger.info("%s Configuration initialized from default.",
-                                                     subconfig.colored_name)
+                                                         subconfig.colored_name)
 
         if disabled:
             logger.info("%s Service disabled.", DARK_R('[%s]' % (k,)))
@@ -427,6 +429,7 @@ class Bootstrapper(object):
 
 def _set_reactor_thread():
     import neurons
+
     neurons.REACTOR_THREAD = threading.current_thread()
     neurons.REACTOR_THREAD_ID = neurons.REACTOR_THREAD.ident
     neurons.is_reactor_thread = neurons._base._is_reactor_thread
@@ -496,28 +499,29 @@ def boot(config_name, argv, init, bootstrap=None,
 
         elif has_services and services != config._services:
             config.do_write_config()
-            logger.info("Updating configuration file because new services were "
-                                                                     "detected")
+            logger.info("Updating configuration file because "
+                                                   "new services were detected")
 
         elif has_stores and stores != config._stores:
             config.do_write_config()
-            logger.info("Updating configuration file because new stores were "
-                                                                     "detected")
+            logger.info(
+                "Updating configuration file because new stores were detected")
 
         # FIXME: could someone need these during bootstrap above?
         if config.uuid is None:
             config.uuid = config.gen_uuid()
             config.do_write_config()
-            logger.info("Updating configuration file because new uuid was "
-                                                                    "generated")
+            logger.info("Updating configuration file because "
+                                                       "new uuid was generated")
 
         if config.secret is None:
             config.secret = config.gen_secret()
             config.do_write_config()
-            logger.info("Updating configuration file because new secret was "
-                                                                    "generated")
+            logger.info("Updating configuration file because "
+                                                     "new secret was generated")
 
     return None, config
+
 
 def _log_ready(config_name, orig_stack, py_start_t, func_start_t):
     import resource
@@ -525,6 +529,7 @@ def _log_ready(config_name, orig_stack, py_start_t, func_start_t):
     try:
         import psutil
         proc_start_t = psutil.Process(os.getpid()).create_time()
+
     except ImportError:
         proc_start_t = '?'
 
@@ -539,11 +544,11 @@ def _log_ready(config_name, orig_stack, py_start_t, func_start_t):
 
     logger.info(
         "%s version %s ready. Max RSS: %.1fmb uptime: %s import: %.2fs "
-                                                              "main: %.2fs",
+                                                                  "main: %.2fs",
         config_name, get_package_version(package_name),
         max_rss,
         '[?psutil?]' if proc_start_t == '?'
-                                    else '%.2fs' % (time() - proc_start_t,),
+                                        else '%.2fs' % (time() - proc_start_t,),
         time() - py_start_t,
         time() - func_start_t,
     )

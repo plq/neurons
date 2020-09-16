@@ -41,8 +41,8 @@ import os
 
 from os.path import abspath
 
-from spyne import ComplexModel, Boolean, Unicode, \
-    UnsignedInteger16, M, Decimal, UnsignedInteger
+from spyne import ComplexModel, Boolean, Unicode, UnsignedInteger16, M, \
+    Decimal, UnsignedInteger
 from spyne.util import get_version
 
 from neurons.daemon.cli import config_overrides
