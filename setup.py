@@ -10,7 +10,7 @@ import sys
 from setuptools import setup
 from setuptools import find_packages
 from setuptools.command.test import test as TestCommand
-
+PY2 = sys.version_info[0] == 2
 
 try:
     import colorama
@@ -45,19 +45,22 @@ try:
 except OSError:
     pass
 
+common_reqs = ()
 
-common_reqs = ('spyne>=2.12', 'SQLAlchemy<1.2.99', 'Twisted>=15.2',
+# twisted requirements that need an upper bound
+if PY2:
+    common_reqs += 'idna<3',
+
+common_reqs += ('spyne>=2.12', 'SQLAlchemy<1.2.99',
+    'Twisted' if not PY2 else 'Twisted<21',
     'lxml>=3.8.0', 'pyyaml', 'msgpack-python', 'pycrypto', 'slimit',
     'txpostgres', 'colorama',
 )
 
-
-test_reqs = common_reqs + ('pytest', 'pytest-cov', 'pytest-twisted',
-    'tox',
-)
+test_reqs = common_reqs + ('pytest', 'pytest-cov', 'pytest-twisted','tox')
 
 install_reqs = common_reqs + (
-    'werkzeug', 'psycopg2>=2.5', 'txpostgres',
+    'werkzeug' if not PY2 else 'werkzeug<2', 'psycopg2>=2.5', 'txpostgres',
 )
 
 ##################
