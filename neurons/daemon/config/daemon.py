@@ -47,6 +47,7 @@ from os.path import isfile, abspath, dirname, getsize
 from argparse import Action
 from pwd import getpwnam, getpwuid
 from grp import getgrnam
+from datetime import datetime
 
 from spyne import ComplexModel, Boolean, ByteArray, Uuid, Unicode, Array, \
     String, UnsignedInteger16, M, Integer32, ComplexModelMeta, ComplexModelBase
@@ -484,9 +485,10 @@ class Daemon(ConfigBase):
         pyversion = '.'.join([str(i) for i in sys.version_info[:3]])
 
         logger.info("Booting daemon %s on python-%s with spyne-%s, neurons-%s, "
-            "sqlalchemy-%s and twisted-%s.", myname, pyversion,
-                                spyne.__version__, neurons.__version__,
-                                sqlalchemy.__version__, twisted.version.short())
+            "sqlalchemy-%s and twisted-%s at %s.", myname, pyversion,
+                             spyne.__version__, neurons.__version__,
+                        sqlalchemy.__version__, twisted.version.short(),
+                           datetime.now().replace(microsecond=0).isoformat(' '))
 
     @staticmethod
     def hello_darkness_my_old_friend():

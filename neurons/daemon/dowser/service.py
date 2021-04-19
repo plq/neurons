@@ -44,6 +44,7 @@ import sys
 
 from types import FrameType, ModuleType
 from collections import defaultdict
+from datetime import datetime
 
 from lxml.html.builder import E
 from neurons.daemon.dowser.const import ASSETS_DIR
@@ -157,7 +158,7 @@ class DowserServices(Service):
 
     @classmethod
     def tick(cls):
-        logger.debug("Dowser tick")
+        logger.debug("Dowser tick %s", datetime.now().isoformat(' '))
         gc.collect()
 
         typecounts = {}
