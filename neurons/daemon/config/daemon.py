@@ -483,12 +483,15 @@ class Daemon(ConfigBase):
             myname = self.name
 
         pyversion = '.'.join([str(i) for i in sys.version_info[:3]])
-
+        if six.PY2:
+            isosep = b' '
+        else:
+            isosep = ' '
         logger.info("Booting daemon %s on python-%s with spyne-%s, neurons-%s, "
             "sqlalchemy-%s and twisted-%s at %s.", myname, pyversion,
                              spyne.__version__, neurons.__version__,
                         sqlalchemy.__version__, twisted.version.short(),
-                           datetime.now().replace(microsecond=0).isoformat(' '))
+                        datetime.now().replace(microsecond=0).isoformat(isosep))
 
     @staticmethod
     def hello_darkness_my_old_friend():
