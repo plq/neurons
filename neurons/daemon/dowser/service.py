@@ -43,13 +43,12 @@ import gc
 import sys
 
 from types import FrameType, ModuleType
-from collections import defaultdict
 from datetime import datetime
 
 from lxml.html.builder import E
 from neurons.daemon.dowser.const import ASSETS_DIR
 
-from spyne import rpc, Unicode, Service, ByteArray, AnyHtml, Iterable
+from spyne import rpc, Unicode, Service, ByteArray, AnyHtml
 from spyne import Integer
 from spyne.protocol.http import HttpPattern, HttpRpc
 from spyne.util.six import BytesIO
