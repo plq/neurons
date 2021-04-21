@@ -49,14 +49,14 @@ from neurons.daemon.cli import config_overrides
 from neurons.daemon.store import SqlDataStore, LdapDataStore
 
 
-class StorageInfo(ComplexModel):
+class StoreInfo(ComplexModel):
     name = Unicode
     backend = Unicode
 
     def __init__(self, *args, **kwargs):
         self._parent = None
 
-        super(StorageInfo, self).__init__(*args, **kwargs)
+        super(StoreInfo, self).__init__(*args, **kwargs)
 
     def set_parent(self, parent):
         assert self._parent is None
@@ -89,7 +89,7 @@ class SyncPoolConfig(ComplexModel):
 DistinguishedName = Unicode
 
 
-class LdapStore(StorageInfo):
+class LdapStore(StoreInfo):
     method = M(Unicode(values=['simple', 'gssapi']))
     backend = M(Unicode(values=['python-ldap']))
 
@@ -116,7 +116,7 @@ class LdapStore(StorageInfo):
             raise ValueError(self.backend)
 
 
-class FileStore(StorageInfo):
+class FileStore(StoreInfo):
     path = M(Unicode)
 
     def apply(self):
@@ -125,7 +125,7 @@ class FileStore(StorageInfo):
             os.makedirs(self.path)
 
 
-class RelationalStore(StorageInfo):
+class RelationalStore(StoreInfo):
     # this is not supposed to be mandatory because it's overrideable by cli args
     conn_str = Unicode
 
@@ -136,6 +136,7 @@ class RelationalStore(StorageInfo):
     pool_use_lifo = Boolean(default=False)
     pool_pre_ping = Boolean(default=True)
     sync_case_sensitive = Boolean(default=True)
+    store_id_table = Unicode
 
     max_overflow = UnsignedInteger(default=3)
     echo_pool = Boolean(default=False)

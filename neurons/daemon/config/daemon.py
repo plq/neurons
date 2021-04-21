@@ -69,7 +69,7 @@ from neurons.daemon.config import FILE_VERSION_KEY
 from neurons.daemon.config.endpoint import Service, Server
 from neurons.daemon.config.logutils import Logger, Trecord_as_string, \
     TDynamicallyRotatedLog, TTwistedHandler
-from neurons.daemon.config.store import RelationalStore, StorageInfo
+from neurons.daemon.config.store import RelationalStore, StoreInfo
 
 
 _some_prot = ProtocolBase()
@@ -858,7 +858,7 @@ class ServiceDaemon(Daemon):
         )),
 
         ('gen_data', Boolean(help="Generates random data", no_file=True)),
-        ('_stores', Array(StorageInfo, sub_name='stores')),
+        ('_stores', Array(StoreInfo, sub_name='stores')),
     ]
 
     # FIXME: We need all this hacky magic with custom constructor and properties
