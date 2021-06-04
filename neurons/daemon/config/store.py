@@ -38,6 +38,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 import os
+import errno
 
 from os.path import abspath
 
@@ -121,8 +122,28 @@ class FileStore(StoreInfo):
 
     def apply(self):
         self.path = abspath(self.path)
-        if not os.path.isdir(self.path):
+
+        is_broken_symlink = \
+            os.path.lexists(self.path) and not os.path.exists(self.path)
+        not_a_directory = \
+             os.path.exists(self.path) and not os.path.isdir(self.path)
+
+        if is_broken_symlink or not_a_directory:
+            counter = 0
+            path_renamed = self.path + ".%3d" % counter
+            while os.path.lexists(path_renamed):
+                counter += 1
+                path_renamed = self.path + ".%3d" % counter
+
+            os.rename(self.path, path_renamed)
+
+        try:
             os.makedirs(self.path)
+        except OSError as e:
+            if e.errno == errno.EEXIST:
+                pass
+            else:
+                raise
 
 
 class RelationalStore(StoreInfo):
