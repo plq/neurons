@@ -29,6 +29,7 @@ except ImportError:
 import inspect
 from os.path import join, dirname, abspath
 
+PY2 = sys.version_info[0] == 2
 OWN_PATH = abspath(inspect.getfile(inspect.currentframe()))
 EXAMPLES_DIR = join(dirname(OWN_PATH), 'examples')
 
@@ -60,7 +61,8 @@ common_reqs += ('spyne>=2.12', 'SQLAlchemy<1.2.99',
 test_reqs = common_reqs + ('pytest', 'pytest-cov', 'pytest-twisted','tox')
 
 install_reqs = common_reqs + (
-    'werkzeug' if not PY2 else 'werkzeug<2', 'psycopg2>=2.5', 'txpostgres',
+    'werkzeug' if not PY2 else 'werkzeug<2',
+    'psycopg2' if not PY2 else 'psycopg2<2.8.99',
 )
 
 ##################
