@@ -201,6 +201,9 @@ class Daemon(ConfigBase):
             help="The path to the log file. The server won't daemonize "
                  "without this. Converted to an absolute path if not.")),
 
+        ('logger_format', String(
+            help="Python logging format. Passed to logging.Formatter ctor.")),
+
         ('logger_dest_rotation_period', Unicode(
             values=['DAILY', 'WEEKLY', 'MONTHLY'],
             help="Logs rotation period")),
@@ -444,6 +447,9 @@ class Daemon(ConfigBase):
             except Exception as e:
                 if self.debug:
                     print("coloarama not loaded: %r" % e)
+
+        if self.logger_format is not None:
+            formatter = logging.Formatter(self.logger_format)
 
         record_as_string = Trecord_as_string(formatter)
         observer = FileLogObserver(log_dest, record_as_string)
