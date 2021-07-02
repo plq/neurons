@@ -146,7 +146,7 @@ class Version(TableModel):
                     inner_session.commit()
 
                 num_migops += 1
-                logger.info("%s schema migration to version %d took %.1fs.",
+                logger.info("%s schema migration to version %d took %.1fs",
                                             submodule, vernum, time() - start_t)
 
         if num_migops == 0:
