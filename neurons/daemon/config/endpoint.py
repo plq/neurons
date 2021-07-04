@@ -449,6 +449,7 @@ class HttpServer(Server):
         for url, subapp in self.subapps.items():
             if isinstance(url, six.text_type):
                 url = quote(url).encode('ascii')
+
             if isinstance(subapp, StaticFileServer):
                 self._push_asset_dir_overrides(subapp)
 
@@ -459,6 +460,7 @@ class HttpServer(Server):
                         logger.warning("No subapp '%s' found in app '%s': "
                                           "Invalid key.", subapp.url, self.name)
                         continue
+
                 subapps.append(subapp)
 
             else:
