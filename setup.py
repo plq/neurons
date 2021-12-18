@@ -54,7 +54,9 @@ if PY2:
 
 common_reqs += ('spyne>=2.12', 'SQLAlchemy<1.2.99',
     'Twisted' if not PY2 else 'Twisted<21',
-    'lxml>=3.8.0', 'pyyaml', 'msgpack-python', 'pycrypto', 'slimit',
+    'pyyaml' if not PY2 else 'pyyaml<6',
+    'lxml>=3.8.0',
+    'msgpack-python', 'pycrypto', 'slimit',
     'txpostgres', 'colorama',
 )
 
