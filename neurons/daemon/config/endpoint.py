@@ -237,7 +237,7 @@ class Server(Service):
         self.failed = True
 
         self.color = Fore.RED
-        logging.error("%s Error listening to %s, stopping reactor\n%s",
+        logger.error("%s Error listening to %s, stopping reactor\n%s",
                                self.colored_name, self.lstr, err.getTraceback())
 
         if self.type.startswith('udp'):
