@@ -97,7 +97,8 @@ def get_mgmt_address_for_tcp_port(port):
 def get_mgmt_addresses_for_tcp_port(port):
     """Gets management service address from a tcp port.
 
-    Returns a tuple containing the computed host as string and the port as int.
+    Returns a generator of tuples of the computed host as string and the port as
+    int.
     """
 
     known_listeners = {(conn.laddr.ip, conn.laddr.port) : conn.pid
