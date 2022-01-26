@@ -66,7 +66,7 @@ def get_own_dowser_address():
     return get_dowser_address_for_pid(os.getpid())
 
 
-def get_mgmt_address_for_pid(pid):
+def gen_mgmt_address_for_pid(pid):
     """Computes management service address from process id.
 
     Returns a tuple containing the computed host as string and the port as int.
@@ -75,7 +75,8 @@ def get_mgmt_address_for_pid(pid):
 
 
 def get_mgmt_address_for_tcp_port(port):
-    """Gets management service address from a tcp port.
+    """Generates management service address from a tcp port. Doesn't check for
+    existence of returned endpoint
 
     Returns a tuple containing the computed host as string and the port as int.
     """
@@ -89,13 +90,14 @@ def get_mgmt_address_for_tcp_port(port):
 
         h, p = conn.laddr
         if p == port:
-            return get_mgmt_address_for_pid(conn.pid)
+            return gen_mgmt_address_for_pid(conn.pid)
 
     return None, None
 
 
-def get_mgmt_addresses_for_tcp_port(port):
-    """Gets management service address from a tcp port.
+def get_mgmt_addresses_for_tcp_port(port, kl=None):
+    """Gets management service address from a tcp port. Doesn't return
+     non-existent endpoints
 
     Returns a generator of tuples of the computed host as string and the port as
     int.
@@ -104,20 +106,22 @@ def get_mgmt_addresses_for_tcp_port(port):
     known_listeners = {(conn.laddr.ip, conn.laddr.port) : conn.pid
                     for conn in psutil.net_connections()
                             if conn.status == 'LISTEN' and conn.pid is not None}
+    if kl is not None:
+        kl[0] = known_listeners
 
     for ((h, p), pid) in known_listeners.items():
         if p != port:
             continue
 
-        ma = get_mgmt_address_for_pid(pid)
+        ma = gen_mgmt_address_for_pid(pid)
         if not (ma in known_listeners):
             continue
 
         yield ma
 
 
-def get_own_mgmt_address():
-    return get_mgmt_address_for_pid(os.getpid())
+def gen_own_mgmt_address():
+    return gen_mgmt_address_for_pid(os.getpid())
 
 
 class DaemonServices(TReaderService()):
