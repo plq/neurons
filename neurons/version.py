@@ -50,6 +50,7 @@ MigrationOperation = namedtuple("MigrationOperation",
 
 class Version(TableModel):
     migopts = []
+    PG_LOCK_MIGRATION = "pg_advisory_xact_lock(0)"
 
     __tablename__ = "neurons_version"
     _type_info = [
@@ -71,14 +72,14 @@ class Version(TableModel):
         for migopt in Version.migopts:
             Version.migrate(config, *migopt)
 
-    @staticmethod
-    def migrate(config, submodule, migration_dict, current_version,
+    @classmethod
+    def migrate(cls, config, submodule, migration_dict, current_version,
                                                                   migrate_init):
         num_migops = 0
         Version.Attributes.sqla_table.create(checkfirst=True)
 
         db = config.get_main_store()
-        lock_name = "pg_advisory_xact_lock(0)"
+        lock_name = cls.PG_LOCK_MIGRATION
         with closing(db.Session()) as session:
             logger.info("Acquiring %s for schema version checks", lock_name)
             session.connection().execute("select {}".format(lock_name))
