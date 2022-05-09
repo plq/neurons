@@ -52,12 +52,13 @@ common_reqs = ()
 if PY2:
     common_reqs += 'idna<3',
 
-common_reqs += ('spyne>=2.12', 'SQLAlchemy<1.2.99',
+common_reqs += (
+    'spyne>=2.14',
+    'SQLAlchemy<1.2.99',
     'Twisted' if not PY2 else 'Twisted<21',
     'pyyaml' if not PY2 else 'pyyaml<6',
     'lxml>=3.8.0',
-    'msgpack-python', 'pycrypto', 'slimit',
-    'txpostgres', 'colorama',
+    'msgpack-python', 'pycrypto', 'slimit', 'txpostgres', 'colorama',
 )
 
 test_reqs = common_reqs + ('pytest', 'pytest-cov', 'pytest-twisted','tox')
