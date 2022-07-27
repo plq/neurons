@@ -198,7 +198,7 @@ class SqlDataStore(DataStoreBase):
                 self.session = session
                 self.connection = session.connection()
 
-            def runQuery(self, qstr, args):
+            def runQuery(self, qstr, args=()):
                 # it's actually never deferred :)
                 return maybeDeferred(self.connection.execute, qstr, *args) \
                     .addCallback(lambda cur: cur.fetchall())
