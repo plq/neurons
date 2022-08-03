@@ -35,6 +35,8 @@
 import logging
 logger = logging.getLogger(__name__)
 
+from contextlib import closing
+
 import threading
 import traceback
 
@@ -234,7 +236,8 @@ class SqlDataStore(DataStoreBase):
                 return DeadConnectionDetector.connectionRecovered(self)
 
         try:
-            dsn = self.engine.raw_connection().connection.dsn
+            with closing(self.engine.raw_connection()) as connection:
+                dsn = connection.connection.dsn
         except Exception:
             print("Error getting dsn for conn_str", self.connection_string)
             raise
