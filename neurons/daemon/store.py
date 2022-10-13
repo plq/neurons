@@ -195,6 +195,20 @@ class SqlDataStore(DataStoreBase):
     def set_fake_txpool(self, session):
         from twisted.internet.defer import maybeDeferred
 
+        class FakeInteraction(object):
+            def __init__(self, connection, callable):
+                self.connection = connection
+                self.callable = callable
+
+            def __call__(self, *args, **kwargs):
+                return self.callable(self, *args, **kwargs)
+
+            def execute(self, qstr, args):
+                self.cur = self.connection.execute(qstr, *args)
+
+            def fetchall(self):
+                return self.cur.fetchall()
+
         class FakeTxPool(object):
             def __init__(self, session):
                 self.session = session
@@ -209,6 +223,10 @@ class SqlDataStore(DataStoreBase):
                 # it's actually never deferred :)
                 return maybeDeferred(self.connection.execute, qstr, *args) \
                     .addCallback(lambda cur: None)
+
+            def runInteraction(self, callable, *args, **kwargs):
+                retval = FakeInteraction(self.connection, callable)
+                return retval(*args, **kwargs)
 
         self._txpool = FakeTxPool(session)
 
