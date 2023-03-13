@@ -48,7 +48,6 @@ def get_package_version(pkg_name):
         return 'unknown'
 
 
-from neurons.daemon import dowser
 from neurons.daemon.main import main
 
 from neurons.daemon.config import Service

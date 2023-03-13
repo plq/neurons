@@ -51,19 +51,6 @@ def _gen_addr(base, num):
 
 
 MGMT_ADDR_BASE =   0x7f0100010400 # 127.1.0.1:1024
-DOWSER_ADDR_BASE = 0x7f0101010400 # 127.1.1.1:1024
-
-
-def get_dowser_address_for_pid(pid):
-    """Computes dowser service address from process id.
-
-    Returns a tuple containing the computed host as string and the port as int.
-    """
-    return _gen_addr(DOWSER_ADDR_BASE, pid)
-
-
-def get_own_dowser_address():
-    return get_dowser_address_for_pid(os.getpid())
 
 
 def gen_mgmt_address_for_pid(pid):
