@@ -58,7 +58,7 @@ common_reqs += (
     'Twisted' if not PY2 else 'Twisted<21',
     'pyyaml' if not PY2 else 'pyyaml<6',
     'lxml>=3.8.0',
-    'msgpack-python', 'pycrypto', 'slimit', 'txpostgres', 'colorama',
+    'msgpack', 'pycrypto', 'slimit', 'txpostgres', 'colorama',
 )
 
 test_reqs = common_reqs + ('pytest', 'pytest-cov', 'pytest-twisted','tox')
